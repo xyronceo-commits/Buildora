@@ -128,7 +128,7 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
               {business.businessName}
             </h1>
 
-            <div className="flex items-center gap-3 text-xs text-slate-300 pt-1">
+            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-300 pt-1">
               <span className="flex items-center gap-1 font-bold text-amber-400">
                 <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
                 <span>{business.rating}</span>
@@ -137,9 +137,15 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
 
               <span>·</span>
 
-              <span className="flex items-center gap-1 text-slate-400 font-medium">
+              <span className="flex items-center gap-1 text-slate-300 font-bold">
                 <MapPin className="h-3.5 w-3.5 text-amber-500" />
-                <span>📍 {distanceStr} from {activeProject.name}</span>
+                <span>{business.location.address ? `${business.location.address}, ${business.location.city}, ${business.location.state}` : `${business.location.city}, ${business.location.state}`}</span>
+              </span>
+
+              <span>·</span>
+
+              <span className="text-slate-400 font-medium">
+                📍 {distanceStr} from {activeProject.name}
               </span>
             </div>
           </div>
@@ -157,8 +163,8 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
         {/* Business Info Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs pt-2">
           <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-            <span className="text-[10px] text-slate-400 font-bold uppercase block">Physical Address</span>
-            <span className="text-white font-semibold block mt-0.5">{business.location.address}, {business.location.city}</span>
+            <span className="text-[10px] text-amber-400 font-extrabold uppercase block">Supplier Physical Address</span>
+            <span className="text-white font-semibold block mt-0.5">{business.location.address || 'Gbongan Road Industrial Zone'}, {business.location.city}, {business.location.state}</span>
           </div>
           <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
             <span className="text-[10px] text-slate-400 font-bold uppercase block">Opening Hours</span>

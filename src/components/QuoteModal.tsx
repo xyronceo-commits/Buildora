@@ -11,9 +11,10 @@ interface QuoteModalProps {
   isOpen: boolean;
   onClose: () => void;
   listing: Listing;
+  onQuoteSent?: (quote: any) => void;
 }
 
-export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, listing }) => {
+export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, listing, onQuoteSent }) => {
   const { currentUser } = useAuth();
   const { activeProject } = useProject();
 
@@ -36,6 +37,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, listing
       userName: currentUser?.displayName || 'Buildora Visitor',
       userPhone: currentUser?.phoneNumber || '',
       businessId: listing.businessId,
+      supplierId: listing.ownerId || listing.businessId,
       listingId: listing.listingId,
       listingTitle: listing.title,
       projectId: activeProject.projectId,
@@ -52,6 +54,9 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({ isOpen, onClose, listing
     try {
       if (currentUser && !currentUser.uid.startsWith('demo_')) {
         await addDoc(collection(db, 'quoteRequests'), quoteData);
+      }
+      if (onQuoteSent) {
+        onQuoteSent(quoteData);
       }
       setSentSuccess(true);
       setTimeout(() => {

@@ -1,5 +1,5 @@
 {
-  "name": "BUILDORA",
+  "name": "CONSTRORA",
   "description": "Find what you need to build. Construction discovery platform for materials, equipment, logistics, and businesses.",
   "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

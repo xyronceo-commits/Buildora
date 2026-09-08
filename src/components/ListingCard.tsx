@@ -158,14 +158,24 @@ export const ListingCard: React.FC<ListingCardProps> = ({
         </div>
 
         {/* Rate & Distance Footer */}
-        <div className="pt-3 border-t-2 border-slate-800/80 dark:border-slate-800/80 light:border-slate-200 space-y-3">
-          <div className="flex items-end justify-between">
-            <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-400 light:text-slate-600 text-xs font-semibold">
-              <MapPin className="h-4 w-4 text-amber-500 shrink-0" />
-              <span>{distanceStr} from site</span>
+        <div className="pt-3 border-t-2 border-slate-800/80 dark:border-slate-800/80 light:border-slate-200 space-y-2">
+          <div className="flex items-start justify-between gap-2">
+            <div className="space-y-0.5 min-w-0">
+              <div
+                className="flex items-center gap-1.5 text-slate-300 dark:text-slate-300 light:text-slate-800 text-xs font-extrabold truncate"
+                title={listing.location.address ? `${listing.location.address}, ${listing.location.city}` : `${listing.location.city}, ${listing.location.state}`}
+              >
+                <MapPin className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                <span className="truncate">
+                  {listing.location.address ? `${listing.location.address}, ${listing.location.city}` : `${listing.location.city}, ${listing.location.state}`}
+                </span>
+              </div>
+              <div className="text-[10px] text-slate-400 font-semibold pl-5">
+                {distanceStr} from site
+              </div>
             </div>
 
-            <div className="text-right">
+            <div className="text-right shrink-0">
               <div className="text-lg sm:text-xl font-black text-amber-500 dark:text-amber-500 light:text-amber-600 tracking-tight leading-none">
                 {priceObj.price}
               </div>

@@ -20,6 +20,7 @@ import {
   Phone,
   MapPin,
   ChevronRight,
+  Truck,
   Trash2,
   AlertTriangle,
   X,
@@ -74,6 +75,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     try {
       await deleteAccount();
       setShowDeleteModal(false);
+      if (onNavigateTab) {
+        onNavigateTab('profile');
+      }
+      if (onOpenSignUpModal) {
+        onOpenSignUpModal();
+      } else if (onOpenSignInModal) {
+        onOpenSignInModal();
+      } else if (onOpenAuthModal) {
+        onOpenAuthModal();
+      }
     } catch (err: any) {
       setDeleteError(err?.message || 'Failed to delete account. Please try signing out and signing in again.');
       setDeleting(false);
@@ -135,20 +146,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">{currentUser.email}</p>
-              {activeProject && (
+              {isSupplier ? (
+                <p className="text-[11px] text-slate-300 font-medium mt-1 flex items-center gap-1">
+                  <MapPin className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                  <span>Yard Address: <strong className="text-white">Plot 12, Gbongan Road Industrial Zone, Osogbo, Osun State</strong></span>
+                </p>
+              ) : activeProject && (
                 <p className="text-[11px] text-amber-400 font-semibold mt-1 flex items-center gap-1">
                   <MapPin className="h-3 w-3" /> Site: {activeProject.name} ({activeProject.location.city})
                 </p>
               )}
             </div>
           </div>
-
-          <button
-            onClick={() => setUserRole(isSupplier ? 'client' : 'supplier')}
-            className="self-start sm:self-center text-xs font-bold px-3 py-2 rounded-xl bg-slate-900 dark:bg-slate-900 light:bg-slate-100 border border-slate-800 dark:border-slate-800 light:border-slate-200 text-slate-300 dark:text-slate-300 light:text-slate-700 hover:border-amber-500 transition-all cursor-pointer"
-          >
-            Switch to {isSupplier ? 'Client Mode' : 'Supplier Mode'}
-          </button>
         </div>
 
         {/* Tab Selector */}
@@ -199,65 +208,85 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       {/* OVERVIEW TAB */}
       {activeSubTab === 'profile' && (
         <div className="space-y-4">
-          {/* Supplier Dashboard Quick Access */}
-          {isSupplier && (
-            <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-extrabold text-sm text-white dark:text-white light:text-slate-900 flex items-center gap-2">
-                    <Building className="h-4 w-4 text-amber-500" /> SUPPLIER DASHBOARD
-                  </h3>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Manage your equipment fleet, material listings, pricing, and quote inquiries.
-                  </p>
-                </div>
-                <button
-                  onClick={() => onNavigateTab('supplier')}
-                  className="bg-amber-500 text-black font-extrabold text-xs px-4 py-2 rounded-xl hover:bg-amber-400 transition-all cursor-pointer shrink-0"
-                >
-                  OPEN DASHBOARD
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* Core Navigation Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            <button
-              onClick={() => onNavigateTab('projects')}
-              className="p-4 rounded-2xl bg-[#121418] dark:bg-[#121418] light:bg-white border border-slate-800 dark:border-slate-800 light:border-slate-200 hover:border-amber-500 transition-all text-left space-y-2 cursor-pointer shadow-sm"
-            >
-              <div className="flex items-center justify-between">
-                <div className="h-8 w-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
-                  <HardHat className="h-4 w-4" />
-                </div>
-                <ChevronRight className="h-4 w-4 text-slate-500" />
-              </div>
-              <h4 className="font-bold text-sm text-white dark:text-white light:text-slate-900">
-                My Construction Projects
-              </h4>
-              <p className="text-[11px] text-slate-400">
-                Set construction site addresses and discover nearby equipment & materials.
-              </p>
-            </button>
+            {isSupplier ? (
+              <>
+                <button
+                  onClick={() => onNavigateTab('supplier')}
+                  className="p-4 rounded-2xl bg-[#121418] dark:bg-[#121418] light:bg-white border border-slate-800 dark:border-slate-800 light:border-slate-200 hover:border-amber-500 transition-all text-left space-y-2 cursor-pointer shadow-sm"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="h-8 w-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                      <Truck className="h-4 w-4" />
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-slate-500" />
+                  </div>
+                  <h4 className="font-bold text-sm text-white dark:text-white light:text-slate-900">
+                    My Supplier Fleet & Listings
+                  </h4>
+                  <p className="text-[11px] text-slate-400">
+                    Manage active machinery rentals, building material inventories, and daily rental rates.
+                  </p>
+                </button>
 
-            <button
-              onClick={() => onNavigateTab('saved')}
-              className="p-4 rounded-2xl bg-[#121418] dark:bg-[#121418] light:bg-white border border-slate-800 dark:border-slate-800 light:border-slate-200 hover:border-amber-500 transition-all text-left space-y-2 cursor-pointer shadow-sm"
-            >
-              <div className="flex items-center justify-between">
-                <div className="h-8 w-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
-                  <Bookmark className="h-4 w-4" />
-                </div>
-                <ChevronRight className="h-4 w-4 text-slate-500" />
-              </div>
-              <h4 className="font-bold text-sm text-white dark:text-white light:text-slate-900">
-                Saved Resources Binder
-              </h4>
-              <p className="text-[11px] text-slate-400">
-                Quick access to saved excavators, mixers, cement suppliers and tipper haulage.
-              </p>
-            </button>
+                <button
+                  onClick={() => onNavigateTab('quotes')}
+                  className="p-4 rounded-2xl bg-[#121418] dark:bg-[#121418] light:bg-white border border-slate-800 dark:border-slate-800 light:border-slate-200 hover:border-amber-500 transition-all text-left space-y-2 cursor-pointer shadow-sm"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="h-8 w-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                      <FileText className="h-4 w-4" />
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-slate-500" />
+                  </div>
+                  <h4 className="font-bold text-sm text-white dark:text-white light:text-slate-900">
+                    Received Quote Requests
+                  </h4>
+                  <p className="text-[11px] text-slate-400">
+                    Review and respond to client inquiries for heavy equipment and site deliveries.
+                  </p>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => onNavigateTab('projects')}
+                  className="p-4 rounded-2xl bg-[#121418] dark:bg-[#121418] light:bg-white border border-slate-800 dark:border-slate-800 light:border-slate-200 hover:border-amber-500 transition-all text-left space-y-2 cursor-pointer shadow-sm"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="h-8 w-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                      <HardHat className="h-4 w-4" />
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-slate-500" />
+                  </div>
+                  <h4 className="font-bold text-sm text-white dark:text-white light:text-slate-900">
+                    My Construction Projects
+                  </h4>
+                  <p className="text-[11px] text-slate-400">
+                    Set construction site addresses and discover nearby equipment & materials.
+                  </p>
+                </button>
+
+                <button
+                  onClick={() => onNavigateTab('saved')}
+                  className="p-4 rounded-2xl bg-[#121418] dark:bg-[#121418] light:bg-white border border-slate-800 dark:border-slate-800 light:border-slate-200 hover:border-amber-500 transition-all text-left space-y-2 cursor-pointer shadow-sm"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="h-8 w-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                      <Bookmark className="h-4 w-4" />
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-slate-500" />
+                  </div>
+                  <h4 className="font-bold text-sm text-white dark:text-white light:text-slate-900">
+                    Saved Resources Binder
+                  </h4>
+                  <p className="text-[11px] text-slate-400">
+                    Quick access to saved excavators, mixers, cement suppliers and tipper haulage.
+                  </p>
+                </button>
+              </>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">

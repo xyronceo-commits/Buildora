@@ -30,6 +30,7 @@ interface ListingDetailViewProps {
   onViewBusiness: (businessId: string) => void;
   onCompareToggle: (listing: Listing) => void;
   isCompared: boolean;
+  onQuoteSent?: (quote: any) => void;
 }
 
 export const ListingDetailView: React.FC<ListingDetailViewProps> = ({
@@ -38,6 +39,7 @@ export const ListingDetailView: React.FC<ListingDetailViewProps> = ({
   onViewBusiness,
   onCompareToggle,
   isCompared,
+  onQuoteSent,
 }) => {
   const { activeProject } = useProject();
   const { isSaved, toggleSave } = useSaved();
@@ -151,18 +153,23 @@ export const ListingDetailView: React.FC<ListingDetailViewProps> = ({
               {listing.title}
             </h1>
 
-            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400 pt-1">
-              <span className="flex items-center gap-1 text-amber-400 font-semibold bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-lg">
-                <MapPin className="h-3.5 w-3.5" /> 📍 {distanceStr} from {activeProject.name}
+            <div className="flex flex-wrap items-center gap-2.5 text-xs text-slate-300 pt-1">
+              <span className="flex items-center gap-1.5 text-slate-200 font-bold bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl">
+                <MapPin className="h-4 w-4 text-amber-500 shrink-0" />
+                <span>Supplier Address: <strong className="text-white">{listing.location.address ? `${listing.location.address}, ${listing.location.city}, ${listing.location.state}` : `${listing.location.city}, ${listing.location.state}`}</strong></span>
+              </span>
+
+              <span className="flex items-center gap-1 text-amber-400 font-semibold bg-slate-900 border border-slate-800 px-2.5 py-1.5 rounded-xl">
+                📍 {distanceStr} from {activeProject.name}
               </span>
 
               {listing.condition && (
-                <span className="bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-lg text-slate-300 font-medium">
+                <span className="bg-slate-900 border border-slate-800 px-2.5 py-1.5 rounded-xl text-slate-300 font-medium">
                   Condition: <strong className="text-white">{listing.condition}</strong>
                 </span>
               )}
 
-              <span className="bg-emerald-500/10 text-emerald-400 font-bold px-2.5 py-1 rounded-lg border border-emerald-500/20">
+              <span className="bg-emerald-500/10 text-emerald-400 font-bold px-2.5 py-1.5 rounded-xl border border-emerald-500/20">
                 {listing.availability.status}
               </span>
             </div>
@@ -239,6 +246,19 @@ export const ListingDetailView: React.FC<ListingDetailViewProps> = ({
               </div>
             )}
 
+            {/* Supplier Yard Address */}
+            <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-xs space-y-1">
+              <div className="font-extrabold text-amber-400 flex items-center gap-1.5 uppercase text-[10px] tracking-wider">
+                <MapPin className="h-3.5 w-3.5 text-amber-500" /> Supplier Yard Address
+              </div>
+              <div className="text-white font-bold text-xs">
+                {listing.location.address ? `${listing.location.address}, ${listing.location.city}, ${listing.location.state}` : `${listing.location.city}, ${listing.location.state}`}
+              </div>
+              <div className="text-[10px] text-slate-400 font-semibold">
+                Distance: {distanceStr} ({activeProject.name})
+              </div>
+            </div>
+
             {/* Delivery Info */}
             {listing.delivery && (
               <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs space-y-1">
@@ -292,6 +312,7 @@ export const ListingDetailView: React.FC<ListingDetailViewProps> = ({
         isOpen={isQuoteModalOpen}
         onClose={() => setIsQuoteModalOpen(false)}
         listing={listing}
+        onQuoteSent={onQuoteSent}
       />
     </div>
   );

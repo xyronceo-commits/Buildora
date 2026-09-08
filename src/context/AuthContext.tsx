@@ -34,7 +34,6 @@ interface AuthContextType {
   ) => Promise<void>;
   sendVerificationEmail: () => Promise<void>;
   checkEmailVerification: () => Promise<boolean>;
-  signInAsDemoUser: (role?: UserRole) => void;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
   updateUserProfile: (data: Partial<UserProfile>) => Promise<void>;
@@ -313,29 +312,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signInAsDemoUser = (role: UserRole = 'client') => {
-    const demoProfile: UserProfile = {
-      uid: role === 'admin' ? 'demo_admin_uid' : role === 'supplier' ? 'owner_01' : 'demo_user_uid',
-      displayName: role === 'admin' ? 'Buildora Platform Admin' : role === 'supplier' ? 'Osun Machinery Director' : 'Project Manager',
-      email: role === 'admin' ? 'buildsafe247@gmail.com' : 'contractor@osogbo.ng',
-      role,
-      onboardingCompleted: true,
-      supplierOnboardingCompleted: role === 'supplier',
-      supplierOnboardingStep: role === 'supplier' ? 6 : 1,
-      clientOnboardingCompleted: role === 'client',
-      activeProjectId: 'proj_osogbo_01',
-      businessId: role === 'supplier' ? 'biz_osogbo_machinery' : undefined,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    localStorage.setItem('buildora_demo_active', 'true');
-    localStorage.setItem('buildora_temp_role', role);
-    localStorage.setItem('buildora_user_session', JSON.stringify(demoProfile));
-    setCurrentUser(demoProfile);
-  };
-
   const signOut = async () => {
-    localStorage.removeItem('buildora_demo_active');
     localStorage.removeItem('buildora_user_session');
     setCurrentUser(null);
     try {
@@ -350,7 +327,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const userObj = auth.currentUser || firebaseUser;
 
     // Delete Firestore user document first
-    if (uid && !uid.startsWith('demo_')) {
+    if (uid) {
       try {
         await deleteDoc(doc(db, 'users', uid));
       } catch (err) {
@@ -372,7 +349,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // Clear local storage and state
-    localStorage.removeItem('buildora_demo_active');
     localStorage.removeItem('buildora_user_session');
     localStorage.removeItem('buildora_temp_role');
     localStorage.removeItem('buildora_supplier_onboarding_completed');
@@ -390,7 +366,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('buildora_user_session', JSON.stringify(sanitizedLocal));
 
     const uid = firebaseUser?.uid || auth.currentUser?.uid || currentUser.uid;
-    if (uid && !uid.startsWith('demo_')) {
+    if (uid) {
       try {
         const patchData = sanitizeForFirestore({
           ...data,
@@ -424,7 +400,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signUpWithEmail,
         sendVerificationEmail,
         checkEmailVerification,
-        signInAsDemoUser,
         signOut,
         deleteAccount,
         updateUserProfile,

@@ -1,9 +1,27 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { collection, doc, getDocs, query, setDoc, where } from 'firebase/firestore';
+import { collection, doc, getDocs, query, setDoc, deleteDoc, where } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { LocationData, Project } from '../types';
 import { INITIAL_PROJECTS } from '../data/seedData';
 import { useAuth } from './AuthContext';
+
+const DEFAULT_SITE: Project = {
+  projectId: 'proj_default_site',
+  ownerId: 'default_user',
+  name: 'Main Site',
+  location: {
+    address: 'Ring Road Phase 2',
+    city: 'Osogbo',
+    state: 'Osun',
+    country: 'Nigeria',
+    latitude: 7.7827,
+    longitude: 4.5418,
+  },
+  isDefault: true,
+  savedItemIds: [],
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+};
 
 interface ProjectContextType {
   projects: Project[];
@@ -11,6 +29,7 @@ interface ProjectContextType {
   setActiveProject: (project: Project) => void;
   createProject: (name: string, location: LocationData) => Promise<Project>;
   updateProjectLocation: (projectId: string, location: LocationData) => Promise<void>;
+  deleteProject: (projectId: string) => Promise<void>;
   loadingProjects: boolean;
 }
 
@@ -21,9 +40,14 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [projects, setProjects] = useState<Project[]>(() => {
     const saved = localStorage.getItem('buildora_user_projects');
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) { return INITIAL_PROJECTS; }
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {
+        return [];
+      }
     }
-    return INITIAL_PROJECTS;
+    return [];
   });
 
   const [activeProject, setActiveProjectState] = useState<Project>(() => {
@@ -32,7 +56,7 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const found = projects.find((p) => p.projectId === savedActiveId);
       if (found) return found;
     }
-    return projects[0] || INITIAL_PROJECTS[0];
+    return projects[0] || DEFAULT_SITE;
   });
 
   const [loadingProjects, setLoadingProjects] = useState(false);
@@ -40,7 +64,7 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Load user projects from Firestore if authenticated
   useEffect(() => {
     async function loadFirestoreProjects() {
-      if (!currentUser || currentUser.uid.startsWith('demo_')) return;
+      if (!currentUser) return;
       setLoadingProjects(true);
       try {
         const q = query(collection(db, 'projects'), where('ownerId', '==', currentUser.uid));
@@ -52,6 +76,9 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
           setActiveProjectState(defaultProj);
           localStorage.setItem('buildora_user_projects', JSON.stringify(loaded));
           localStorage.setItem('buildora_active_project_id', defaultProj.projectId);
+        } else {
+          setProjects([]);
+          localStorage.removeItem('buildora_user_projects');
         }
       } catch (err) {
         console.warn('Could not load projects from Firestore, fallback to local', err);
@@ -84,7 +111,7 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setActiveProject(newProj);
     localStorage.setItem('buildora_user_projects', JSON.stringify(updatedList));
 
-    if (currentUser && !currentUser.uid.startsWith('demo_')) {
+    if (currentUser) {
       try {
         await setDoc(doc(db, 'projects', newProj.projectId), newProj);
       } catch (err) {
@@ -106,11 +133,31 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setActiveProjectState({ ...activeProject, location, updatedAt: new Date().toISOString() });
     }
 
-    if (currentUser && !currentUser.uid.startsWith('demo_')) {
+    if (currentUser) {
       try {
         await setDoc(doc(db, 'projects', projectId), { location, updatedAt: new Date().toISOString() }, { merge: true });
       } catch (err) {
         handleFirestoreError(err, OperationType.UPDATE, `projects/${projectId}`);
+      }
+    }
+  };
+
+  const deleteProject = async (projectId: string) => {
+    const updatedProjects = projects.filter((p) => p.projectId !== projectId);
+    setProjects(updatedProjects);
+    localStorage.setItem('buildora_user_projects', JSON.stringify(updatedProjects));
+
+    if (activeProject.projectId === projectId) {
+      const nextActive = updatedProjects[0] || DEFAULT_SITE;
+      setActiveProjectState(nextActive);
+      localStorage.setItem('buildora_active_project_id', nextActive.projectId);
+    }
+
+    if (currentUser) {
+      try {
+        await deleteDoc(doc(db, 'projects', projectId));
+      } catch (err) {
+        console.warn('Could not delete project from Firestore:', err);
       }
     }
   };
@@ -123,6 +170,7 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setActiveProject,
         createProject,
         updateProjectLocation,
+        deleteProject,
         loadingProjects,
       }}
     >

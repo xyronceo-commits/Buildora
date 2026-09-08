@@ -85,11 +85,74 @@ export function App() {
 
   // Compared Items & Requests
   const [comparedListings, setComparedListings] = useState<Listing[]>([]);
-  const [quoteRequests, setQuoteRequests] = useState<QuoteRequest[]>([]);
 
-  // Master Data collections
-  const [listings, setListings] = useState<Listing[]>(INITIAL_LISTINGS);
-  const [businesses, setBusinesses] = useState<Business[]>(INITIAL_BUSINESSES);
+  const [quoteRequests, setQuoteRequests] = useState<QuoteRequest[]>(() => {
+    const saved = localStorage.getItem('buildora_quote_requests_v2');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse quote requests from localStorage:', e);
+      }
+    }
+    return [];
+  });
+
+  // Master Data collections with automatic persistence across page reloads
+  const DEMO_LISTING_IDS = [
+    'list_cat320_01',
+    'list_komatsu210_02',
+    'list_mixer350_03',
+    'list_dangote_04',
+    'list_blocks9inch_05',
+    'list_tipper10ton_06',
+    'list_tipper10t_05',
+  ];
+
+  const [listings, setListings] = useState<Listing[]>(() => {
+    const saved = localStorage.getItem('buildora_listings_v3') || localStorage.getItem('buildora_listings_v2');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // Remove all demo listings
+          const userOnlyListings = parsed.filter((item: Listing) => !DEMO_LISTING_IDS.includes(item.listingId));
+          return userOnlyListings;
+        }
+      } catch (e) {
+        console.error('Failed to parse listings from localStorage:', e);
+      }
+    }
+    return INITIAL_LISTINGS;
+  });
+
+  const [businesses, setBusinesses] = useState<Business[]>(() => {
+    const saved = localStorage.getItem('buildora_businesses_v3') || localStorage.getItem('buildora_businesses_v2');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      } catch (e) {
+        console.error('Failed to parse businesses from localStorage:', e);
+      }
+    }
+    return INITIAL_BUSINESSES;
+  });
+
+  // Automatically save state to localStorage whenever modified
+  useEffect(() => {
+    localStorage.setItem('buildora_listings_v3', JSON.stringify(listings));
+  }, [listings]);
+
+  useEffect(() => {
+    localStorage.setItem('buildora_quote_requests_v2', JSON.stringify(quoteRequests));
+  }, [quoteRequests]);
+
+  useEffect(() => {
+    localStorage.setItem('buildora_businesses_v2', JSON.stringify(businesses));
+  }, [businesses]);
 
   // Sync user state on auth change
   useEffect(() => {

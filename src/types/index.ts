@@ -120,6 +120,7 @@ export interface EquipmentSpecifications {
 
 export interface Listing {
   listingId: string;
+  ownerId?: string;
   businessId: string;
   businessName?: string;
   businessVerification?: VerificationStatus;
@@ -175,6 +176,7 @@ export interface CatalogItem {
 export interface QuoteRequest {
   quoteRequestId: string;
   userId: string;
+  supplierId?: string;
   userName?: string;
   userPhone?: string;
   businessId: string;
