@@ -83,7 +83,7 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
       reviewId: `rev_${Date.now()}`,
       businessId: business.businessId,
       userId: currentUser?.uid || 'guest_user',
-      userName: currentUser?.displayName || 'Buildora Contractor',
+      userName: currentUser?.displayName || 'Constrora Contractor',
       rating: newRating,
       comment: newComment.trim(),
       status: 'visible',
@@ -327,7 +327,7 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
             ) : (
               <div className="text-center py-4 space-y-2 text-xs">
                 <CheckCircle2 className="h-8 w-8 text-emerald-400 mx-auto" />
-                <p>Report submitted to Buildora Admin moderation team.</p>
+                <p>Report submitted to Constrora Admin moderation team.</p>
               </div>
             )}
           </div>

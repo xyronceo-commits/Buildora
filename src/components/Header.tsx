@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MapPin, Search, User, HardHat, Shield, Scale, Sun, Moon } from 'lucide-react';
+import { MapPin, Search, User, Shield, ShieldCheck, Scale, Sun, Moon } from 'lucide-react';
 import { useProject } from '../context/ProjectContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -30,7 +30,7 @@ export const Header: React.FC<HeaderProps> = ({
   comparedCount,
 }) => {
   const { activeProject } = useProject();
-  const { currentUser, signInWithGoogle } = useAuth();
+  const { currentUser } = useAuth();
   const { isDark, setTheme } = useTheme();
   const [deniedModal, setDeniedModal] = useState(false);
 
@@ -45,25 +45,8 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
 
-  const handleShieldClick = async () => {
-    // Admin access check for buildsafe247@gmail.com
-    if (currentUser && currentUser.email.toLowerCase() === 'buildsafe247@gmail.com') {
-      onChangeTab('admin');
-      return;
-    }
-
-    try {
-      await signInWithGoogle();
-      // After sign-in check window session
-      const savedUser = JSON.parse(localStorage.getItem('buildora_user_session') || '{}');
-      if (savedUser?.email?.toLowerCase() === 'buildsafe247@gmail.com') {
-        onChangeTab('admin');
-      } else {
-        setDeniedModal(true);
-      }
-    } catch (e) {
-      setDeniedModal(true);
-    }
+  const handleShieldClick = () => {
+    onChangeTab('admin');
   };
 
   return (
@@ -73,17 +56,19 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-6">
           <button
             onClick={() => onChangeTab(isSupplier ? 'supplier' : 'home')}
-            className="flex items-center gap-2 text-left cursor-pointer group"
+            className="flex items-center gap-2.5 text-left cursor-pointer group"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-500 shadow-sm group-hover:border-amber-500 transition-colors">
-              <HardHat className="h-5 w-5" />
-            </div>
+            <img
+              src="/constrora-logo.svg"
+              alt="CONSTRORA Logo"
+              className="h-9 w-9 rounded-xl object-contain shadow-sm group-hover:scale-105 transition-transform"
+            />
             <div>
-              <span className="font-['Cabinet_Grotesk'] text-xl font-black tracking-wider text-white dark:text-white light:text-slate-900">
-                BUILD<span className="text-amber-500">ORA</span>
+              <span className="font-['Cabinet_Grotesk'] text-xl font-black tracking-tight text-white dark:text-white light:text-slate-900">
+                CONSTR<span className="text-amber-500">ORA</span>
               </span>
-              <span className="hidden sm:block text-[9px] uppercase tracking-[0.2em] text-slate-400 font-bold -mt-1">
-                {isSupplier ? 'SUPPLIER FLEET PORTAL' : 'DISCOVER · COMPARE · CONNECT'}
+              <span className="hidden sm:block text-[9px] uppercase tracking-[0.18em] text-slate-400 font-bold -mt-1">
+                {isSupplier ? 'SUPPLIER PORTAL' : 'FIND WHAT YOU NEED TO BUILD'}
               </span>
             </div>
           </button>
@@ -110,7 +95,7 @@ export const Header: React.FC<HeaderProps> = ({
                       : 'text-slate-400 hover:text-white dark:hover:text-white light:hover:text-slate-900'
                   }`}
                 >
-                  REQUEST FOR QUOTES
+                  QUOTE REQUESTS
                 </button>
                 <button
                   onClick={() => onChangeTab('profile')}
@@ -234,13 +219,14 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Discreet Shield Icon for Admin */}
+          {/* Prominent Admin Control Icon Button */}
           <button
             onClick={handleShieldClick}
-            className="p-1.5 text-slate-600 hover:text-amber-500 transition-colors cursor-pointer rounded-lg hover:bg-slate-800/50"
-            title="Platform Verification Shield"
+            className="flex items-center gap-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shadow-sm shadow-amber-500/5 hover:border-amber-500/60"
+            title="Access Constrora Admin Control Portal"
           >
-            <Shield className="h-3.5 w-3.5" />
+            <ShieldCheck className="h-4 w-4 text-amber-500 shrink-0" />
+            <span className="hidden sm:inline text-[11px] uppercase tracking-wider font-black">ADMIN</span>
           </button>
         </div>
       </div>
@@ -255,7 +241,7 @@ export const Header: React.FC<HeaderProps> = ({
             <div>
               <h3 className="text-lg font-bold text-white">ACCESS DENIED</h3>
               <p className="text-xs text-slate-400 mt-1">
-                You don't have permission to access this portal.
+                You don't have permission to access the admin portal. Sign in with buildsafe247@gmail.com.
               </p>
             </div>
             <button

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Building,
   Plus,
@@ -17,15 +17,25 @@ import {
   Power,
   Inbox,
   AlertCircle,
+  FileText,
+  Download,
+  Share2,
+  MessageSquare,
+  Search,
+  Filter,
 } from 'lucide-react';
-import { Business, Listing, QuoteRequest } from '../types';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { Business, Listing, QuoteRequest, SupplierQuote } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { VerificationBadge } from '../components/VerificationBadge';
+import { QuoteBuilderModal } from '../components/QuoteBuilderModal';
+import { QuoteRequestDetailModal } from '../components/QuoteRequestDetailModal';
 
 interface SupplierDashboardViewProps {
   business: Business;
   listings: Listing[];
-  initialTab?: 'listings' | 'quotes' | 'verification';
+  initialTab?: 'listings' | 'requests' | 'quotes' | 'verification';
   quoteRequests?: QuoteRequest[];
   onAddListingClick: () => void;
   onUpdateAvailability: (listingId: string, status: any) => void;
@@ -40,11 +50,107 @@ export const SupplierDashboardView: React.FC<SupplierDashboardViewProps> = ({
   onUpdateAvailability,
 }) => {
   const { currentUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<'listings' | 'quotes' | 'verification' | 'profile'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'listings' | 'requests' | 'quotes' | 'verification'>(
+    initialTab === 'quotes' ? 'quotes' : initialTab === 'requests' ? 'requests' : 'listings'
+  );
+
+  // Quote Sub-Filter for Generated Quotes
+  const [quoteFilter, setQuoteFilter] = useState<'ALL' | 'DRAFTS' | 'GENERATED'>('ALL');
+
+  // Modal States
+  const [selectedRequest, setSelectedRequest] = useState<QuoteRequest | null>(null);
+  const [isRequestDetailOpen, setIsRequestDetailOpen] = useState(false);
+
+  const [builderRequest, setBuilderRequest] = useState<QuoteRequest | null>(null);
+  const [selectedQuote, setSelectedQuote] = useState<SupplierQuote | null>(null);
+  const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+
+  // Supplier Generated Quotes List State
+  const [generatedQuotes, setGeneratedQuotes] = useState<SupplierQuote[]>(() => {
+    // Load local cache if available
+    try {
+      const saved = localStorage.getItem(`constrora_quotes_${business.businessId}`);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    // Sample mock generated quotes for demonstration
+    return [
+      {
+        quoteId: `quote_sample_1`,
+        businessId: business.businessId,
+        businessName: business.businessName,
+        clientName: 'Adewale Construction Ltd',
+        clientPhone: '+234 803 456 7890',
+        clientEmail: 'adewale@site.ng',
+        projectName: 'Commercial Shopping Complex',
+        projectLocation: 'Ring Road, Osogbo, Osun State',
+        quoteNumber: `CTR-${new Date().getFullYear()}-1082`,
+        items: [
+          {
+            itemId: 'i1',
+            item: 'CAT 320 Excavator',
+            description: '22 Ton Crawler Excavator with Operator',
+            quantity: 5,
+            unit: 'Days',
+            unitPrice: 180000,
+            total: 900000,
+          },
+          {
+            itemId: 'i2',
+            item: 'Lowbed Trailer Transport',
+            description: 'Mobilization and demobilization to Osogbo site',
+            quantity: 1,
+            unit: 'Trip',
+            unitPrice: 250000,
+            total: 250000,
+          },
+        ],
+        subtotal: 1150000,
+        discount: 50000,
+        deliveryFee: 100000,
+        labourFee: 0,
+        otherCharges: 0,
+        tax: 0,
+        grandTotal: 1200000,
+        notes: 'Includes diesel and certified operator. Valid for 7 days.',
+        validUntil: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+        status: 'GENERATED',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ];
+  });
+
+  // Sync to Firestore and LocalStorage
+  useEffect(() => {
+    const fetchQuotesFromFirestore = async () => {
+      if (!business?.businessId) return;
+      try {
+        const quotesRef = collection(db, 'businesses', business.businessId, 'quotes');
+        const snap = await getDocs(quotesRef);
+        if (!snap.empty) {
+          const list = snap.docs.map((d) => d.data() as SupplierQuote);
+          setGeneratedQuotes(list);
+        }
+      } catch (e) {
+        console.warn('Firestore fetch quotes info:', e);
+      }
+    };
+    fetchQuotesFromFirestore();
+  }, [business.businessId]);
+
+  useEffect(() => {
+    if (business?.businessId) {
+      try {
+        localStorage.setItem(`constrora_quotes_${business.businessId}`, JSON.stringify(generatedQuotes));
+      } catch (e) {}
+    }
+  }, [generatedQuotes, business.businessId]);
 
   React.useEffect(() => {
     if (initialTab) {
-      setActiveTab(initialTab);
+      if (initialTab === 'quotes') setActiveTab('quotes');
+      else if (initialTab === 'requests') setActiveTab('requests');
+      else setActiveTab('listings');
     }
   }, [initialTab]);
 
@@ -57,13 +163,56 @@ export const SupplierDashboardView: React.FC<SupplierDashboardViewProps> = ({
 
   const quoteRequests = passedQuoteRequests.filter(
     (q) =>
-      (business?.businessId && q.businessId === business.businessId) ||
-      (currentUser?.uid && q.supplierId === currentUser.uid) ||
+      (business?.businessId && (q.businessId === business.businessId || q.supplierBusinessId === business.businessId)) ||
+      (currentUser?.uid && q.userId === currentUser.uid) ||
       (q.listingId && supplierListingIds.has(q.listingId))
   );
 
   const availableListingsCount = supplierListings.filter((l) => l.availability?.status === 'AVAILABLE').length;
   const rentedListingsCount = supplierListings.filter((l) => l.availability?.status !== 'AVAILABLE').length;
+
+  // Filtered generated quotes
+  const filteredQuotes = generatedQuotes.filter((q) => {
+    if (quoteFilter === 'DRAFTS') return q.status === 'DRAFT';
+    if (quoteFilter === 'GENERATED') return q.status === 'GENERATED';
+    return true;
+  });
+
+  // Handlers
+  const handleOpenRequestDetail = (req: QuoteRequest) => {
+    setSelectedRequest(req);
+    setIsRequestDetailOpen(true);
+  };
+
+  const handleStartQuoteFromRequest = (req: QuoteRequest) => {
+    setBuilderRequest(req);
+    setSelectedQuote(null);
+    setIsBuilderOpen(true);
+  };
+
+  const handleCreateBlankQuote = () => {
+    setBuilderRequest(null);
+    setSelectedQuote(null);
+    setIsBuilderOpen(true);
+  };
+
+  const handleEditQuote = (q: SupplierQuote) => {
+    setBuilderRequest(null);
+    setSelectedQuote(q);
+    setIsBuilderOpen(true);
+  };
+
+  const handleQuoteSaved = (newQuote: SupplierQuote) => {
+    setGeneratedQuotes((prev) => {
+      const idx = prev.findIndex((q) => q.quoteId === newQuote.quoteId);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = newQuote;
+        return copy;
+      }
+      return [newQuote, ...prev];
+    });
+  };
 
   return (
     <div className="space-y-6 pb-20 max-w-5xl mx-auto">
@@ -73,72 +222,92 @@ export const SupplierDashboardView: React.FC<SupplierDashboardViewProps> = ({
           <div>
             <div className="flex items-center gap-2 mb-1">
               <VerificationBadge status={business.verificationStatus} size="sm" />
+              <span className="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded font-black uppercase tracking-wider">
+                SUPPLIER PORTAL
+              </span>
             </div>
             <h1 className="font-['Cabinet_Grotesk'] text-2xl sm:text-3xl font-black text-white">
-              {currentUser?.displayName || (business.businessName.includes('Osun Heavy') ? 'Company Name' : business.businessName)}
+              {business.businessName || currentUser?.displayName || 'Supplier Business'}
             </h1>
             <p className="text-xs text-amber-400 font-extrabold uppercase tracking-wider mt-0.5">
-              Equipment Rental
+              Equipment Rental & Material Supplier
             </p>
             <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium mt-2">
               <MapPin className="h-4 w-4 text-amber-500 shrink-0" />
-              <span>Registered Address: <strong className="text-white">{business.location?.address || 'Plot 12, Gbongan Road Industrial Zone'}, {business.location?.city || 'Osogbo'}, {business.location?.state || 'Osun State'}</strong></span>
+              <span>Address: <strong className="text-white">{business.location?.address || 'Industrial Zone'}, {business.location?.city || 'Osogbo'}, {business.location?.state || 'Osun State'}</strong></span>
             </div>
           </div>
 
-          <button
-            onClick={onAddListingClick}
-            className="flex items-center gap-2 bg-amber-500 text-black font-extrabold px-5 py-3 rounded-xl text-xs hover:bg-amber-400 transition-all cursor-pointer shadow-lg shadow-amber-500/20 uppercase tracking-wider"
-          >
-            <Plus className="h-4 w-4" /> ADD NEW LISTING
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleCreateBlankQuote}
+              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 font-extrabold px-4 py-3 rounded-2xl text-xs transition-all cursor-pointer shadow-lg uppercase tracking-wider"
+            >
+              <FileText className="h-4 w-4" /> CREATE QUOTE
+            </button>
+
+            <button
+              onClick={onAddListingClick}
+              className="flex items-center gap-2 bg-amber-500 text-black font-extrabold px-5 py-3 rounded-2xl text-xs hover:bg-amber-400 transition-all cursor-pointer shadow-lg shadow-amber-500/20 uppercase tracking-wider"
+            >
+              <Plus className="h-4 w-4" /> ADD LISTING
+            </button>
+          </div>
         </div>
 
         {/* Real Dynamic Supplier Metrics Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 text-xs">
-          <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 text-center">
-            <div className="text-slate-400 text-[10px] uppercase font-bold">Published Listings</div>
+          <div className="bg-slate-900 p-3 rounded-2xl border border-slate-800 text-center">
+            <div className="text-slate-400 text-[10px] uppercase font-bold">Listings</div>
             <div className="text-lg font-black text-amber-400 mt-0.5">{supplierListings.length}</div>
           </div>
-          <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 text-center">
-            <div className="text-slate-400 text-[10px] uppercase font-bold">Available Equipment</div>
+          <div className="bg-slate-900 p-3 rounded-2xl border border-slate-800 text-center">
+            <div className="text-slate-400 text-[10px] uppercase font-bold">Available</div>
             <div className="text-lg font-black text-emerald-400 mt-0.5">{availableListingsCount}</div>
           </div>
-          <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 text-center">
-            <div className="text-slate-400 text-[10px] uppercase font-bold">Rented / In Field</div>
-            <div className="text-lg font-black text-white mt-0.5">{rentedListingsCount}</div>
-          </div>
-          <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 text-center">
-            <div className="text-slate-400 text-[10px] uppercase font-bold">Quote Requests</div>
+          <div className="bg-slate-900 p-3 rounded-2xl border border-slate-800 text-center">
+            <div className="text-slate-400 text-[10px] uppercase font-bold">Quote Inquiries</div>
             <div className="text-lg font-black text-amber-400 mt-0.5">{quoteRequests.length}</div>
+          </div>
+          <div className="bg-slate-900 p-3 rounded-2xl border border-slate-800 text-center">
+            <div className="text-slate-400 text-[10px] uppercase font-bold">Generated Quotes</div>
+            <div className="text-lg font-black text-emerald-400 mt-0.5">{generatedQuotes.length}</div>
           </div>
         </div>
 
-        {/* Dashboard Tabs */}
-        <div className="flex items-center gap-2 border-t border-slate-800 pt-4 text-xs font-bold">
+        {/* Navigation Tabs */}
+        <div className="flex flex-wrap items-center gap-2 border-t border-slate-800 pt-4 text-xs font-bold">
           <button
             onClick={() => setActiveTab('listings')}
-            className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
-              activeTab === 'listings' ? 'bg-amber-500 text-black' : 'bg-slate-900 text-slate-400'
+            className={`px-4 py-2.5 rounded-xl transition-all cursor-pointer ${
+              activeTab === 'listings' ? 'bg-amber-500 text-black font-black' : 'bg-slate-900 text-slate-400 hover:text-white'
             }`}
           >
             LISTINGS & INVENTORY ({supplierListings.length})
           </button>
           <button
-            onClick={() => setActiveTab('quotes')}
-            className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
-              activeTab === 'quotes' ? 'bg-amber-500 text-black' : 'bg-slate-900 text-slate-400'
+            onClick={() => setActiveTab('requests')}
+            className={`px-4 py-2.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'requests' ? 'bg-amber-500 text-black font-black' : 'bg-slate-900 text-slate-400 hover:text-white'
             }`}
           >
             QUOTE REQUESTS ({quoteRequests.length})
           </button>
           <button
-            onClick={() => setActiveTab('verification')}
-            className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
-              activeTab === 'verification' ? 'bg-amber-500 text-black' : 'bg-slate-900 text-slate-400'
+            onClick={() => setActiveTab('quotes')}
+            className={`px-4 py-2.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'quotes' ? 'bg-amber-500 text-black font-black' : 'bg-slate-900 text-slate-400 hover:text-white'
             }`}
           >
-            VERIFICATION STATUS
+            <FileText className="h-4 w-4" /> GENERATED QUOTES ({generatedQuotes.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('verification')}
+            className={`px-4 py-2.5 rounded-xl transition-all cursor-pointer ${
+              activeTab === 'verification' ? 'bg-amber-500 text-black font-black' : 'bg-slate-900 text-slate-400 hover:text-white'
+            }`}
+          >
+            VERIFICATION
           </button>
         </div>
       </div>
@@ -222,7 +391,7 @@ export const SupplierDashboardView: React.FC<SupplierDashboardViewProps> = ({
       )}
 
       {/* Tab 2: Quote Requests Inbox */}
-      {activeTab === 'quotes' && (
+      {activeTab === 'requests' && (
         <div className="space-y-4">
           {quoteRequests.length === 0 ? (
             <div className="rounded-3xl bg-[#121418] border border-slate-800 p-8 text-center space-y-3">
@@ -232,65 +401,185 @@ export const SupplierDashboardView: React.FC<SupplierDashboardViewProps> = ({
               <div className="space-y-1">
                 <h3 className="text-base font-bold text-white">No Quote Requests Received Yet</h3>
                 <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                  When project managers and site engineers send quote inquiries for your machinery or material listings, they will appear here in real-time.
+                  When contractors send quote inquiries for your machinery or material listings, they will appear here.
                 </p>
               </div>
             </div>
           ) : (
-            quoteRequests.map((req) => (
-              <div key={req.quoteRequestId} className="rounded-2xl bg-[#121418] border border-amber-500/30 p-5 space-y-3 text-xs shadow-xl">
-                <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-3 gap-2">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="bg-amber-500 text-black font-extrabold px-2 py-0.5 rounded text-[10px] uppercase">
-                        NEW QUOTE REQUEST
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {quoteRequests.map((req) => (
+                <div key={req.quoteRequestId} className="rounded-2xl bg-[#121418] border border-amber-500/30 p-5 space-y-3 text-xs shadow-xl flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                      <span className="bg-amber-500 text-black font-black px-2 py-0.5 rounded text-[10px] uppercase">
+                        QUOTE INQUIRY
                       </span>
                       <span className="text-[10px] text-slate-400 font-mono">
                         {new Date(req.createdAt).toLocaleDateString()}
                       </span>
                     </div>
-                    <span className="font-extrabold text-white text-base block mt-1">{req.userName}</span>
-                    <span className="text-slate-400 text-[11px] block">{req.userPhone || 'No phone provided'}</span>
+
+                    <div>
+                      <h4 className="font-extrabold text-white text-base">{req.clientName || req.userName}</h4>
+                      <p className="text-slate-400 text-xs">{req.projectName}</p>
+                    </div>
+
+                    <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
+                      <div className="text-xs text-slate-300">Item: <strong className="text-amber-400 font-bold">{req.itemName || req.listingTitle}</strong></div>
+                      <div className="text-xs text-slate-300">Quantity: <strong className="text-white font-bold">{req.quantity}</strong></div>
+                      <div className="text-xs text-slate-400 truncate">Site: {typeof req.projectLocation === 'string' ? req.projectLocation : `${req.projectLocation.city}, ${req.projectLocation.state}`}</div>
+                    </div>
+
+                    {req.message && (
+                      <p className="text-slate-300 italic text-[11px] line-clamp-2 bg-slate-950 p-2.5 rounded-lg border border-slate-850">
+                        "{req.message}"
+                      </p>
+                    )}
                   </div>
-                  <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-extrabold px-3 py-1 rounded-full text-[10px] uppercase">
-                    STATUS: {req.status.toUpperCase()}
-                  </span>
-                </div>
 
-                <div className="p-3.5 bg-slate-900/90 border border-slate-800 rounded-xl space-y-1.5">
-                  <div className="text-xs">Requested Product: <strong className="text-amber-400 font-extrabold">{req.itemName || req.listingTitle}</strong></div>
-                  <div className="text-xs">Quantity / Duration: <strong className="text-white font-bold">{req.quantity}</strong></div>
-                  <div className="text-xs">Target Project Site: <strong className="text-slate-200">{req.projectName} ({req.projectLocation.address || req.projectLocation.city})</strong></div>
-                </div>
-
-                <div className="bg-slate-950 p-3 rounded-xl border border-slate-850 text-slate-300 italic">
-                  "{req.message}"
-                </div>
-
-                <div className="flex items-center gap-2 pt-1">
-                  {req.userPhone && (
+                  <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
                     <button
-                      onClick={() => window.location.href = `tel:${req.userPhone}`}
-                      className="bg-amber-500 text-black font-extrabold px-4 py-2.5 rounded-xl text-xs hover:bg-amber-400 cursor-pointer shadow-md shadow-amber-500/10 flex items-center gap-1.5 uppercase tracking-wider"
+                      onClick={() => handleOpenRequestDetail(req)}
+                      className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-extrabold rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 uppercase"
                     >
-                      <PhoneCall className="h-3.5 w-3.5" /> Call Client Back
+                      <Eye className="h-4 w-4" /> VIEW REQUEST
                     </button>
-                  )}
+
+                    <button
+                      onClick={() => handleStartQuoteFromRequest(req)}
+                      className="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-extrabold rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 uppercase shadow-md shadow-amber-500/10"
+                    >
+                      <FileText className="h-4 w-4" /> GENERATE QUOTE
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
       )}
 
-      {/* Tab 3: Verification Details */}
+      {/* Tab 3: Generated Supplier Quotes Section (Sections 8, 9, 10, 18) */}
+      {activeTab === 'quotes' && (
+        <div className="space-y-4">
+          {/* Sub-Filter Controls */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#121418] border border-slate-800 p-4 rounded-2xl text-xs">
+            <div className="flex items-center gap-2 font-bold">
+              <span className="text-slate-400 text-[10px] uppercase tracking-wider mr-1">Filter Quotes:</span>
+              <button
+                onClick={() => setQuoteFilter('ALL')}
+                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+                  quoteFilter === 'ALL' ? 'bg-amber-500 text-black font-black' : 'bg-slate-900 text-slate-400 hover:text-white'
+                }`}
+              >
+                ALL ({generatedQuotes.length})
+              </button>
+              <button
+                onClick={() => setQuoteFilter('DRAFTS')}
+                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+                  quoteFilter === 'DRAFTS' ? 'bg-amber-500 text-black font-black' : 'bg-slate-900 text-slate-400 hover:text-white'
+                }`}
+              >
+                DRAFTS ({generatedQuotes.filter((q) => q.status === 'DRAFT').length})
+              </button>
+              <button
+                onClick={() => setQuoteFilter('GENERATED')}
+                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+                  quoteFilter === 'GENERATED' ? 'bg-amber-500 text-black font-black' : 'bg-slate-900 text-slate-400 hover:text-white'
+                }`}
+              >
+                GENERATED ({generatedQuotes.filter((q) => q.status === 'GENERATED').length})
+              </button>
+            </div>
+
+            <button
+              onClick={handleCreateBlankQuote}
+              className="bg-amber-500 text-black font-black px-4 py-2 rounded-xl text-xs hover:bg-amber-400 transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider"
+            >
+              <Plus className="h-4 w-4" /> CREATE NEW QUOTE
+            </button>
+          </div>
+
+          {/* Quotes Cards Grid */}
+          {filteredQuotes.length === 0 ? (
+            <div className="rounded-3xl bg-[#121418] border border-slate-800 p-8 text-center space-y-3">
+              <div className="mx-auto h-12 w-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400">
+                <FileText className="h-6 w-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-white">No Generated Quotations Found</h3>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                  Build formal PDF quotations for your clients with line item pricing, delivery fees, and discount calculations.
+                </p>
+              </div>
+              <button
+                onClick={handleCreateBlankQuote}
+                className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs rounded-xl transition-all cursor-pointer uppercase tracking-wider inline-flex items-center gap-2 shadow-lg shadow-amber-500/20"
+              >
+                <Plus className="h-4 w-4" /> Create Quotation Document
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredQuotes.map((q) => (
+                <div key={q.quoteId} className="rounded-2xl bg-[#121418] border border-slate-800 p-5 space-y-4 text-xs shadow-xl flex flex-col justify-between hover:border-slate-700 transition-all">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                      <span className="font-mono text-amber-400 font-extrabold text-xs bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                        {q.quoteNumber}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        Valid Until: {new Date(q.validUntil).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h4 className="font-extrabold text-white text-base">{q.clientName}</h4>
+                      <p className="text-amber-400 text-xs font-semibold">{q.projectName}</p>
+                      <p className="text-slate-400 text-[11px] truncate">{q.projectLocation}</p>
+                    </div>
+
+                    <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
+                      <div className="text-[11px] text-slate-400">Items: <strong className="text-white font-bold">{q.items.length} line items</strong></div>
+                      <div className="text-sm font-black text-white flex justify-between items-center mt-1 pt-1 border-t border-slate-850">
+                        <span className="text-xs text-slate-400 font-normal">Grand Total:</span>
+                        <span className="text-amber-400 font-mono">₦{Number(q.grandTotal).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Actions */}
+                  <div className="pt-3 border-t border-slate-800 flex items-center gap-2">
+                    <button
+                      onClick={() => handleEditQuote(q)}
+                      className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center gap-1 uppercase"
+                    >
+                      <Eye className="h-3.5 w-3.5 text-amber-400" /> VIEW / EDIT
+                    </button>
+
+                    <button
+                      onClick={() => handleEditQuote(q)}
+                      className="px-3 py-2 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500 hover:text-black text-amber-400 font-extrabold rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center gap-1 uppercase"
+                      title="Export PDF"
+                    >
+                      <Download className="h-3.5 w-3.5" /> PDF
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab 4: Verification Details */}
       {activeTab === 'verification' && (
         <div className="rounded-3xl bg-[#121418] border border-slate-800 p-6 space-y-4 text-xs">
           <h3 className="font-bold text-white text-base flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-amber-500" /> BUILDORA SUPPLIER VERIFICATION
+            <ShieldCheck className="h-5 w-5 text-amber-500" /> CONSTRORA SUPPLIER VERIFICATION
           </h3>
           <p className="text-slate-300">
-            Buildora verifies equipment rental yards, block factories and material suppliers to ensure safety and trust for contractors.
+            Constrora verifies equipment rental yards, block factories and material suppliers to ensure safety and trust for contractors.
           </p>
 
           <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800 space-y-2">
@@ -304,6 +593,24 @@ export const SupplierDashboardView: React.FC<SupplierDashboardViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Quote Request Detail Modal */}
+      <QuoteRequestDetailModal
+        isOpen={isRequestDetailOpen}
+        onClose={() => setIsRequestDetailOpen(false)}
+        request={selectedRequest}
+        onGenerateQuote={(req) => handleStartQuoteFromRequest(req)}
+      />
+
+      {/* Quote Builder Modal */}
+      <QuoteBuilderModal
+        isOpen={isBuilderOpen}
+        onClose={() => setIsBuilderOpen(false)}
+        business={business}
+        quoteRequest={builderRequest}
+        existingQuote={selectedQuote}
+        onQuoteSaved={handleQuoteSaved}
+      />
     </div>
   );
 };

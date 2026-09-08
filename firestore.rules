@@ -13,8 +13,8 @@ service cloud.firestore {
 
     function isAdmin() {
       return isSignedIn() && 
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+        request.auth.token.email != null &&
+        request.auth.token.email.lower() == 'buildsafe247@gmail.com';
     }
 
     // Default deny
@@ -26,7 +26,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isSignedIn();
       allow create: if isOwner(userId);
-      allow update: if isOwner(userId) || isAdmin();
+      allow update, delete: if isOwner(userId) || isAdmin();
       
       // Saved subcollection
       match /saved/{savedId} {
@@ -45,8 +45,7 @@ service cloud.firestore {
     match /businesses/{businessId} {
       allow read: if true;
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
-      allow update: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
-      allow delete: if isAdmin();
+      allow update, delete: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
 
       // Listings subcollection
       match /listings/{listingId} {
@@ -54,9 +53,15 @@ service cloud.firestore {
         allow create, update, delete: if isSignedIn() && 
           (get(/databases/$(database)/documents/businesses/$(businessId)).data.ownerId == request.auth.uid || isAdmin());
       }
+
+      // Private Supplier Quotes subcollection
+      match /quotes/{quoteId} {
+        allow read, write: if isSignedIn() && 
+          (get(/databases/$(database)/documents/businesses/$(businessId)).data.ownerId == request.auth.uid || isAdmin());
+      }
     }
 
-    // Standardized Catalogue Items
+    // Standardized Catalogue Items (Platform owned)
     match /catalogItems/{catalogItemId} {
       allow read: if true;
       allow write: if isAdmin();
@@ -66,13 +71,20 @@ service cloud.firestore {
     match /quoteRequests/{quoteRequestId} {
       allow read: if isSignedIn() && (
         resource.data.userId == request.auth.uid || 
-        get(/databases/$(database)/documents/businesses/$(resource.data.businessId)).data.ownerId == request.auth.uid ||
+        resource.data.clientId == request.auth.uid ||
+        (resource.data.supplierBusinessId != null && get(/databases/$(database)/documents/businesses/$(resource.data.supplierBusinessId)).data.ownerId == request.auth.uid) ||
+        (resource.data.businessId != null && get(/databases/$(database)/documents/businesses/$(resource.data.businessId)).data.ownerId == request.auth.uid) ||
         isAdmin()
       );
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isSignedIn() && (
+      allow create: if isSignedIn() && (
+        request.resource.data.userId == request.auth.uid || 
+        request.resource.data.clientId == request.auth.uid
+      );
+      allow update, delete: if isSignedIn() && (
         resource.data.userId == request.auth.uid || 
-        get(/databases/$(database)/documents/businesses/$(resource.data.businessId)).data.ownerId == request.auth.uid ||
+        resource.data.clientId == request.auth.uid ||
+        (resource.data.supplierBusinessId != null && get(/databases/$(database)/documents/businesses/$(resource.data.supplierBusinessId)).data.ownerId == request.auth.uid) ||
+        (resource.data.businessId != null && get(/databases/$(database)/documents/businesses/$(resource.data.businessId)).data.ownerId == request.auth.uid) ||
         isAdmin()
       );
     }

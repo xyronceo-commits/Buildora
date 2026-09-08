@@ -165,7 +165,7 @@ export const SupplierOnboardingView: React.FC<SupplierOnboardingViewProps> = ({
       description: description || 'Certified heavy construction equipment rental yard and haulage logistics supplier.',
       phone: phone || '+234 803 123 4567',
       whatsapp: whatsapp || '+234 803 123 4567',
-      email: email || currentUser?.email || 'supplier@buildora.ng',
+      email: email || currentUser?.email || 'supplier@constrora.ng',
       website,
       location: {
         address: address || 'Site Depot',
@@ -281,10 +281,10 @@ export const SupplierOnboardingView: React.FC<SupplierOnboardingViewProps> = ({
               SUPPLIER PROFILE CREATED
             </span>
             <h1 className="font-['Cabinet_Grotesk'] text-3xl sm:text-5xl font-black text-white uppercase tracking-tight">
-              YOU'RE LIVE ON BUILDORA
+              YOU'RE LIVE ON CONSTRORA
             </h1>
             <p className="text-sm text-slate-300 font-medium max-w-md mx-auto">
-              Builders across <strong className="text-amber-400">{city}, {state}</strong> can now find your business on Buildora.
+              Builders across <strong className="text-amber-400">{city}, {state}</strong> can now find your business on Constrora.
             </p>
           </div>
 
@@ -315,7 +315,7 @@ export const SupplierOnboardingView: React.FC<SupplierOnboardingViewProps> = ({
                 description,
                 phone,
                 whatsapp,
-                email: currentUser?.email || 'contact@buildora.ng',
+                email: currentUser?.email || 'contact@constrora.ng',
                 location: { address, city, state, country: 'Nigeria', latitude: 7.78, longitude: 4.54 },
                 verificationStatus: 'VERIFICATION_PENDING',
                 rating: 5.0,
@@ -381,7 +381,7 @@ export const SupplierOnboardingView: React.FC<SupplierOnboardingViewProps> = ({
                 TELL US ABOUT YOUR BUSINESS.
               </h1>
               <p className="text-xs text-slate-300 font-medium">
-                Create your Buildora supplier profile so builders can find what you offer around their site.
+                Create your Constrora supplier profile so builders can find what you offer around their site.
               </p>
             </div>
 
@@ -487,7 +487,7 @@ export const SupplierOnboardingView: React.FC<SupplierOnboardingViewProps> = ({
             <div className="space-y-3 pt-2">
               <div className="font-black text-xs text-amber-400 uppercase tracking-wider flex items-center justify-between">
                 <span>WHAT SPECIFICALLY DO YOU OFFER?</span>
-                <span className="text-[10px] text-slate-400 font-normal">BUILDORA STANDARDIZED CATALOGUE</span>
+                <span className="text-[10px] text-slate-400 font-normal">CONSTRORA STANDARDIZED CATALOGUE</span>
               </div>
 
               <div className="relative">
@@ -888,7 +888,7 @@ export const SupplierOnboardingView: React.FC<SupplierOnboardingViewProps> = ({
                     AUTHENTICATION REQUIRED TO SAVE BUSINESS
                   </div>
                   <p className="text-slate-300 text-[11px]">
-                    Sign in with Google or Email so your supplier profile is permanently linked to your Buildora account.
+                    Sign in with your Email so your supplier profile is permanently linked to your CONSTRORA account.
                   </p>
                   <button
                     type="button"
@@ -922,7 +922,7 @@ export const SupplierOnboardingView: React.FC<SupplierOnboardingViewProps> = ({
                 REVIEW YOUR BUSINESS
               </h1>
               <p className="text-xs text-slate-300 font-medium">
-                Here is a preview of exactly how builders will see your business on Buildora.
+                Here is a preview of exactly how builders will see your business on Constrora.
               </p>
             </div>
 
@@ -1005,7 +1005,7 @@ export const SupplierOnboardingView: React.FC<SupplierOnboardingViewProps> = ({
               onClick={handlePublishBusiness}
               className="w-full bg-amber-500 text-black font-black py-4 rounded-2xl text-xs hover:bg-amber-400 transition-all cursor-pointer uppercase tracking-wider shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2"
             >
-              <CheckCircle2 className="h-5 w-5" /> PUBLISH BUSINESS TO BUILDORA
+              <CheckCircle2 className="h-5 w-5" /> PUBLISH BUSINESS TO CONSTRORA
             </button>
           </div>
         )}

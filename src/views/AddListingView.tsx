@@ -155,7 +155,7 @@ export const AddListingView: React.FC<AddListingViewProps> = ({
             <p className="text-xs text-slate-400">Step {step} of 5 — Structured Supplier Listing System</p>
           </div>
           <span className="text-xs bg-amber-500 text-black font-extrabold px-3 py-1 rounded-full">
-            BUILDORA CATALOGUE
+            CONSTRORA CATALOGUE
           </span>
         </div>
 

@@ -51,7 +51,7 @@ export const ListingDetailView: React.FC<ListingDetailViewProps> = ({
 
   const handleWhatsApp = () => {
     const text = encodeURIComponent(
-      `Hello! I am inquiring about "${listing.title}" on Buildora for our site in ${activeProject.location.city}. Is this available?`
+      `Hello! I am inquiring about "${listing.title}" on Constrora for our site in ${activeProject.location.city}. Is this available?`
     );
     window.open(`https://wa.me/?text=${text}`, '_blank');
   };

@@ -88,17 +88,55 @@
       "type": "object",
       "properties": {
         "quoteRequestId": { "type": "string" },
+        "clientId": { "type": "string" },
         "userId": { "type": "string" },
+        "supplierBusinessId": { "type": "string" },
         "businessId": { "type": "string" },
         "listingId": { "type": "string" },
-        "projectId": { "type": "string" },
+        "clientName": { "type": "string" },
+        "clientPhone": { "type": "string" },
+        "clientEmail": { "type": "string" },
+        "projectName": { "type": "string" },
+        "projectLocation": { "type": "string" },
+        "requiredDate": { "type": "string" },
         "itemName": { "type": "string" },
         "quantity": { "type": "string" },
         "message": { "type": "string" },
+        "attachments": { "type": "array" },
         "status": { "type": "string", "enum": ["sent", "viewed", "responded", "closed"] },
-        "createdAt": { "type": "string" }
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
       },
-      "required": ["quoteRequestId", "userId", "businessId", "itemName"]
+      "required": ["quoteRequestId", "clientName", "itemName"]
+    },
+    "Quote": {
+      "title": "Quote",
+      "description": "Formal supplier quotation document",
+      "type": "object",
+      "properties": {
+        "quoteId": { "type": "string" },
+        "quoteRequestId": { "type": "string" },
+        "businessId": { "type": "string" },
+        "clientName": { "type": "string" },
+        "clientPhone": { "type": "string" },
+        "clientEmail": { "type": "string" },
+        "projectName": { "type": "string" },
+        "projectLocation": { "type": "string" },
+        "quoteNumber": { "type": "string" },
+        "items": { "type": "array" },
+        "subtotal": { "type": "number" },
+        "discount": { "type": "number" },
+        "deliveryFee": { "type": "number" },
+        "labourFee": { "type": "number" },
+        "otherCharges": { "type": "number" },
+        "tax": { "type": "number" },
+        "grandTotal": { "type": "number" },
+        "notes": { "type": "string" },
+        "validUntil": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["quoteId", "businessId", "quoteNumber", "clientName", "grandTotal"]
     },
     "Review": {
       "title": "Review",
@@ -147,6 +185,10 @@
     "/businesses/{businessId}/listings/{listingId}": {
       "schema": { "$ref": "#/entities/Listing" },
       "description": "Business inventory listings"
+    },
+    "/businesses/{businessId}/quotes/{quoteId}": {
+      "schema": { "$ref": "#/entities/Quote" },
+      "description": "Supplier generated quotations"
     },
     "/quoteRequests/{quoteRequestId}": {
       "schema": { "$ref": "#/entities/QuoteRequest" },

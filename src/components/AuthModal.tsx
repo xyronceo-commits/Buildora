@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Mail, Lock, User, Phone, MapPin, Building2, HardHat, AlertCircle, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { X, Mail, Lock, User, Phone, MapPin, Building2, HardHat, AlertCircle, CheckCircle2, RefreshCw, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { UserRole } from '../types';
 
@@ -10,6 +10,7 @@ interface AuthModalProps {
   isAdminMode?: boolean;
   initialRole?: UserRole;
   initialIsSignUp?: boolean;
+  onOpenAdminPortal?: () => void;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -18,26 +19,41 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   isAdminMode = false,
   initialRole = 'client',
   initialIsSignUp = false,
+  onOpenAdminPortal,
 }) => {
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
-  const [isSignUp, setIsSignUp] = useState(initialIsSignUp);
+  const {
+    signInWithEmail,
+    signUpWithEmail,
+    sendPasswordReset,
+    sendVerificationEmail,
+    checkEmailVerification,
+    firebaseUser,
+    currentUser,
+  } = useAuth();
+
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot' | 'verify'>(
+    initialIsSignUp ? 'signup' : 'signin'
+  );
   const [role, setRole] = useState<UserRole>(initialRole);
 
   // Form Fields
   const [displayName, setDisplayName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [location, setLocation] = useState('Osogbo, Osun State');
-  const [businessCategory, setBusinessCategory] = useState('Equipment Rental');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
+  // Status & Feedback
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [verificationChecked, setVerificationChecked] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setRole(initialRole);
-      setIsSignUp(initialIsSignUp);
+      setMode(initialIsSignUp ? 'signup' : 'signin');
+      setError(null);
+      setSuccessMsg(null);
     }
   }, [isOpen, initialRole, initialIsSignUp]);
 
@@ -45,40 +61,45 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const handleRoleSwitch = (newRole: UserRole) => {
     setRole(newRole);
-    localStorage.setItem('buildora_temp_role', newRole);
-  };
-
-  const handleGoogleSignIn = async () => {
-    setError(null);
-    setLoading(true);
-    try {
-      localStorage.setItem('buildora_temp_role', role);
-      await signInWithGoogle();
-      onClose();
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign in with Google');
-    } finally {
-      setLoading(false);
-    }
+    localStorage.setItem('constrora_temp_role', newRole);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setLoading(true);
-    try {
-      localStorage.setItem('buildora_temp_role', role);
-      if (isSignUp) {
-        await signUpWithEmail(email, password, displayName, role, {
-          phoneNumber,
-          location,
-          businessName: role === 'supplier' ? displayName : undefined,
-          businessCategory: role === 'supplier' ? businessCategory : undefined,
-        });
-      } else {
-        await signInWithEmail(email, password);
+    setSuccessMsg(null);
+
+    // Form validations
+    if (mode === 'signup') {
+      if (!displayName.trim()) {
+        setError('Please enter your full name.');
+        return;
       }
-      onClose();
+      if (password.length < 6) {
+        setError('Password must be at least 6 characters long.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('Passwords do not match. Please re-enter your password.');
+        return;
+      }
+    }
+
+    setLoading(true);
+
+    try {
+      localStorage.setItem('constrora_temp_role', role);
+
+      if (mode === 'signup') {
+        await signUpWithEmail(email, password, displayName, role);
+        onClose();
+      } else if (mode === 'signin') {
+        await signInWithEmail(email, password);
+        onClose();
+      } else if (mode === 'forgot') {
+        await sendPasswordReset(email);
+        setSuccessMsg(`Password reset link sent to ${email}. Please check your inbox.`);
+      }
     } catch (err: any) {
       setError(err.message || 'Authentication failed. Please check your credentials.');
     } finally {
@@ -86,25 +107,59 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
+  const handleCheckVerification = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const isVerified = await checkEmailVerification();
+      if (isVerified) {
+        setSuccessMsg('Email successfully verified!');
+        setTimeout(() => {
+          onClose();
+        }, 1200);
+      } else {
+        setVerificationChecked(true);
+        setError('Email not verified yet. Please click the link in your email and click Check Verification again.');
+      }
+    } catch (err: any) {
+      setError('Could not verify status. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await sendVerificationEmail();
+      setSuccessMsg('A new verification link has been sent to your email address.');
+    } catch (err: any) {
+      setError('Failed to resend email. Please try again in a few moments.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
-          className="relative w-full max-w-lg rounded-2xl bg-[#121418] border border-slate-800 p-6 sm:p-8 shadow-2xl text-white my-8 max-h-[90vh] overflow-y-auto"
+          className="relative w-full max-w-md rounded-3xl bg-[#121418] border border-slate-800 p-6 sm:p-8 shadow-2xl text-white my-8 max-h-[90vh] overflow-y-auto"
         >
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+            className="absolute top-5 right-5 text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="h-5 w-5" />
           </button>
 
-          {/* Account Role Selector at Top - Distinguish Supplier vs Client */}
-          {!isAdminMode && (
-            <div className="mb-6 p-1.5 bg-slate-900 border border-slate-800 rounded-2xl grid grid-cols-2 gap-1.5">
+          {/* Role Switcher (Client vs Supplier) - Only for Signup/Signin */}
+          {!isAdminMode && (mode === 'signin' || mode === 'signup') && (
+            <div className="mb-6 p-1 bg-slate-900 border border-slate-800 rounded-2xl grid grid-cols-2 gap-1">
               <button
                 type="button"
                 onClick={() => handleRoleSwitch('client')}
@@ -132,231 +187,277 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           )}
 
-          <div className="text-center mb-6">
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/30 mb-3">
-              {role === 'supplier' ? <Building2 className="h-6 w-6" /> : <HardHat className="h-6 w-6" />}
+          {/* Logo & Brand Header */}
+          <div className="text-center mb-6 space-y-2">
+            <div className="flex items-center justify-center gap-2.5">
+              <img
+                src="/constrora-logo.svg"
+                alt="CONSTRORA Logo"
+                className="h-10 w-10 rounded-xl object-contain shadow-md"
+              />
+              <span className="font-['Cabinet_Grotesk'] text-2xl font-black text-white tracking-tight">
+                CONSTR<span className="text-amber-500">ORA</span>
+              </span>
             </div>
-            <h3 className="font-['Cabinet_Grotesk'] text-2xl font-black uppercase tracking-tight">
-              {isAdminMode
-                ? 'BUILDORA ADMIN ACCESS'
-                : isSignUp
-                ? `CREATE ${role === 'supplier' ? 'SUPPLIER FLEET' : 'CLIENT / BUILDER'} ACCOUNT`
-                : `${role === 'supplier' ? 'SUPPLIER FLEET PORTAL' : 'CLIENT & BUILDER'} SIGN IN`}
-            </h3>
-            <p className="text-xs text-slate-400 mt-1 uppercase font-bold tracking-wider leading-relaxed">
-              {isAdminMode
-                ? 'Sign in with buildsafe247@gmail.com'
-                : isSignUp
-                ? role === 'supplier'
-                  ? 'Register your equipment yard or material depot to start listing & receiving quote requests'
-                  : 'Register your contractor profile to discover machinery, request quotes & manage sites'
-                : role === 'supplier'
-                ? 'Sign in to manage equipment listings, view quote requests & update yard availability'
-                : 'Sign in to discover machinery, request supplier quotes & manage site projects'}
+            <p className="text-xs text-amber-400 font-extrabold uppercase tracking-wider">
+              Find what you need to build.
             </p>
           </div>
 
+          {/* Subtitle / Mode Title */}
+          <div className="text-center mb-5">
+            <h3 className="font-['Cabinet_Grotesk'] text-lg font-black text-white uppercase tracking-wider">
+              {mode === 'verify'
+                ? 'VERIFY YOUR EMAIL'
+                : mode === 'forgot'
+                ? 'RESET YOUR PASSWORD'
+                : mode === 'signup'
+                ? `CREATE ${role.toUpperCase()} ACCOUNT`
+                : `${role.toUpperCase()} SIGN IN`}
+            </h3>
+          </div>
+
+          {/* Feedback Banners */}
           {error && (
-            <div className="mb-4 flex items-center gap-2 p-3 text-xs bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl font-medium">
+            <div className="mb-4 flex items-center gap-2 p-3 text-xs bg-red-500/10 border border-red-500/30 text-red-400 rounded-2xl font-semibold">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
-          {/* Google SSO */}
-          <button
-            onClick={handleGoogleSignIn}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-3 rounded-xl bg-white text-black font-extrabold py-3.5 px-4 hover:bg-slate-100 transition-all cursor-pointer shadow-md mb-4 text-xs uppercase"
-          >
-            <svg className="h-5 w-5" viewBox="0 0 24 24">
-              <path
-                fill="#4285F4"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-              />
-            </svg>
-            <span>
-              {isAdminMode
-                ? 'SIGN IN WITH GOOGLE ADMIN'
-                : `SIGN IN WITH GOOGLE (${role === 'supplier' ? 'SUPPLIER' : 'CLIENT'})`}
-            </span>
-          </button>
+          {successMsg && (
+            <div className="mb-4 flex items-center gap-2 p-3 text-xs bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-2xl font-semibold">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              <span>{successMsg}</span>
+            </div>
+          )}
 
-          <div className="flex items-center my-4">
-            <div className="flex-1 border-t border-slate-800"></div>
-            <span className="px-3 text-[10px] text-slate-500 font-black uppercase tracking-widest">
-              OR EMAIL SIGN IN
-            </span>
-            <div className="flex-1 border-t border-slate-800"></div>
-          </div>
+          {/* EMAIL VERIFICATION SCREEN (Section 3 Requirement) */}
+          {mode === 'verify' ? (
+            <div className="space-y-4 text-center">
+              <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-2 text-xs">
+                <p className="text-slate-300 leading-relaxed font-medium">
+                  We've sent a verification link to your email address:
+                </p>
+                <div className="font-bold text-amber-400 font-mono text-sm break-all">
+                  {email || firebaseUser?.email || 'your email address'}
+                </div>
+                <p className="text-slate-400 text-[11px] pt-1">
+                  Click the link in the email to activate your CONSTRORA account. (Be sure to check your SPAM folder).
+                </p>
+              </div>
 
-          {/* Form Content */}
-          <form onSubmit={handleSubmit} className="space-y-3.5">
-            {isSignUp && (
-              <>
-                {/* Name / Business Name */}
+              <div className="space-y-2 pt-2">
+                <button
+                  type="button"
+                  onClick={handleCheckVerification}
+                  disabled={loading}
+                  className="w-full rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-black py-3.5 text-xs transition-all cursor-pointer uppercase tracking-wider shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2"
+                >
+                  <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                  <span>{loading ? 'CHECKING...' : 'CHECK VERIFICATION'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={loading}
+                  className="w-full rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-3 text-xs transition-all cursor-pointer uppercase tracking-wider"
+                >
+                  RESEND EMAIL
+                </button>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  onClick={() => setMode('signin')}
+                  className="text-xs text-slate-400 hover:text-white underline cursor-pointer"
+                >
+                  Back to Sign In
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* EMAIL SIGN IN / SIGN UP / FORGOT PASSWORD FORMS */
+            <form onSubmit={handleSubmit} className="space-y-3.5">
+              {mode === 'signup' && (
                 <div>
-                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                    {role === 'supplier' ? 'Company / Business Name' : 'Full Name / Organization'}
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                    Full Name *
                   </label>
                   <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+                    <User className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
                     <input
                       type="text"
                       required
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
-                      placeholder={role === 'supplier' ? 'e.g. Osun Heavy Rentals Ltd' : 'e.g. Engr. David Adeleke'}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-bold"
+                      placeholder={role === 'supplier' ? 'Company or Fleet Manager Name' : 'John Doe'}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-2xl pl-10 pr-3.5 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-bold"
                     />
                   </div>
                 </div>
+              )}
 
-                {/* Phone & Location */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                      Phone Number
-                    </label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
-                      <input
-                        type="tel"
-                        required
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        placeholder="+234 801 234 5678"
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-bold"
-                      />
-                    </div>
-                  </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                  Email Address *
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@example.com"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-2xl pl-10 pr-3.5 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-bold"
+                  />
+                </div>
+              </div>
 
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                      City / Location
-                    </label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
-                      <input
-                        type="text"
-                        required
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        placeholder="Osogbo, Osun State"
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-bold"
-                      />
-                    </div>
+              {mode !== 'forgot' && (
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                    Password *
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
+                    <input
+                      type="password"
+                      required
+                      minLength={6}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="•••••••• (At least 6 characters)"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-2xl pl-10 pr-3.5 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-bold"
+                    />
                   </div>
                 </div>
+              )}
 
-                {/* Supplier Category */}
-                {role === 'supplier' && (
+              {mode === 'signup' && (
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                    Confirm Password *
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
+                    <input
+                      type="password"
+                      required
+                      minLength={6}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Re-enter your password"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-2xl pl-10 pr-3.5 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-bold"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Forgot password link on Sign In mode */}
+              {mode === 'signin' && (
+                <div className="flex justify-end text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('forgot');
+                      setError(null);
+                      setSuccessMsg(null);
+                    }}
+                    className="text-amber-400 hover:underline cursor-pointer font-semibold"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-black py-3.5 text-xs transition-all cursor-pointer uppercase tracking-wider mt-2 shadow-lg shadow-amber-500/20"
+              >
+                {loading
+                  ? 'PROCESSING...'
+                  : mode === 'forgot'
+                  ? 'SEND RESET LINK'
+                  : mode === 'signup'
+                  ? 'CREATE ACCOUNT'
+                  : 'SIGN IN'}
+              </button>
+
+              {/* Account Toggle Link */}
+              <div className="mt-4 text-center text-xs font-bold text-slate-400 space-y-3">
+                {mode === 'signin' && (
                   <div>
-                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                      Primary Business Offerings
-                    </label>
-                    <div className="relative">
-                      <Building2 className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
-                      <select
-                        value={businessCategory}
-                        onChange={(e) => setBusinessCategory(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500 font-bold appearance-none cursor-pointer"
-                      >
-                        <option value="Equipment Rental">Heavy Equipment Rentals</option>
-                        <option value="Construction Materials">Building & Construction Materials</option>
-                        <option value="Construction Logistics">Haulage & Tipper Logistics</option>
-                        <option value="Construction Services">Site Contracting & Services</option>
-                        <option value="Block Factory">Block & Concrete Production</option>
-                      </select>
-                    </div>
+                    Don't have an account?{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('signup');
+                        setError(null);
+                        setSuccessMsg(null);
+                      }}
+                      className="text-amber-400 hover:underline cursor-pointer"
+                    >
+                      Create account
+                    </button>
                   </div>
                 )}
-              </>
-            )}
 
-            {/* Email Field */}
-            <div>
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@buildora.ng"
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-bold"
-                />
+                {mode === 'signup' && (
+                  <div>
+                    Already have an account?{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('signin');
+                        setError(null);
+                        setSuccessMsg(null);
+                      }}
+                      className="text-amber-400 hover:underline cursor-pointer"
+                    >
+                      Sign In
+                    </button>
+                  </div>
+                )}
+
+                {mode === 'forgot' && (
+                  <div>
+                    Remembered your password?{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('signin');
+                        setError(null);
+                        setSuccessMsg(null);
+                      }}
+                      className="text-amber-400 hover:underline cursor-pointer"
+                    >
+                      Sign In
+                    </button>
+                  </div>
+                )}
+
+                {onOpenAdminPortal && (
+                  <div className="pt-2 border-t border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onOpenAdminPortal();
+                      }}
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-black transition-all cursor-pointer uppercase tracking-wider"
+                    >
+                      <ShieldCheck className="h-4 w-4 text-amber-500 shrink-0" />
+                      <span>ADMIN PORTAL SIGN IN</span>
+                    </button>
+                  </div>
+                )}
               </div>
-            </div>
-
-            {/* Password Field */}
-            <div>
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="•••••••• (Min 6 characters)"
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-bold"
-                />
-              </div>
-            </div>
-
-            {/* SPAM Folder Notice for Sign Up */}
-            {isSignUp && (
-              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-[11px] text-amber-300 font-medium leading-relaxed space-y-1">
-                <div className="font-black text-amber-400 uppercase flex items-center gap-1.5">
-                  <Mail className="h-3.5 w-3.5 shrink-0" /> Check Your SPAM Folder!
-                </div>
-                <p>
-                  A verification link will be sent to your email immediately. If you don't see it in your inbox, <strong>please check your SPAM or Junk folder</strong>.
-                </p>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-xl bg-amber-500 text-black font-black py-3.5 text-xs hover:bg-amber-400 transition-all cursor-pointer uppercase tracking-wider mt-2 shadow-lg shadow-amber-500/20"
-            >
-              {loading
-                ? 'PROCESSING...'
-                : isSignUp
-                ? `CREATE ${role.toUpperCase()} ACCOUNT & VERIFY EMAIL`
-                : 'SIGN IN WITH EMAIL'}
-            </button>
-          </form>
-
-          {/* Toggle between Sign In & Sign Up */}
-          <div className="mt-4 text-center">
-            <button
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-xs font-bold text-slate-400 hover:text-amber-400 transition-colors uppercase tracking-wider cursor-pointer"
-            >
-              {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Create One Now"}
-            </button>
-          </div>
+            </form>
+          )}
         </motion.div>
       </div>
     </AnimatePresence>

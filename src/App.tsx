@@ -28,11 +28,35 @@ import { AddListingView } from './views/AddListingView';
 import { SupplierOnboardingView } from './views/SupplierOnboardingView';
 import { ClientOnboardingView } from './views/ClientOnboardingView';
 import { AdminDashboardView } from './views/AdminDashboardView';
+import { AdminSignInView } from './views/AdminSignInView';
 
 export function App() {
-  const { currentUser, setUserRole } = useAuth();
+  const { currentUser, setUserRole, signOut } = useAuth();
   const { activeProject } = useProject();
   const { isDark } = useTheme();
+
+  const isAdminAuthorized =
+    Boolean(currentUser) &&
+    currentUser?.email?.toLowerCase() === 'buildsafe247@gmail.com';
+
+  const handleAdminSignOut = async () => {
+    await signOut();
+    setActiveTab('admin');
+  };
+
+  // Admin Route Listener for /admin and #admin
+  useEffect(() => {
+    const checkAdminRoute = () => {
+      const path = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      if (path.startsWith('/admin') || hash.startsWith('#admin')) {
+        setActiveTab('admin');
+      }
+    };
+    checkAdminRoute();
+    window.addEventListener('popstate', checkAdminRoute);
+    return () => window.removeEventListener('popstate', checkAdminRoute);
+  }, []);
 
   // App Initialization Flow
   const [showSplash, setShowSplash] = useState(true);
@@ -86,16 +110,86 @@ export function App() {
   // Compared Items & Requests
   const [comparedListings, setComparedListings] = useState<Listing[]>([]);
 
+  const SAMPLE_QUOTE_REQUESTS: QuoteRequest[] = [
+    {
+      quoteRequestId: 'req_sample_101',
+      clientId: 'client_01',
+      userId: 'client_01',
+      supplierBusinessId: 'biz_osun_heavy',
+      businessId: 'biz_osun_heavy',
+      listingId: 'list_cat320_01',
+      listingTitle: 'CAT 320 Excavator',
+      clientName: 'Engineer Michael Adebayo',
+      clientPhone: '+234 803 112 2334',
+      clientEmail: 'michael@adebayoconstruction.ng',
+      projectName: 'Commercial Plaza Substructure',
+      projectLocation: 'Gbongan Road, Osogbo, Osun State',
+      requiredDate: '18 Sept 2026',
+      items: [
+        {
+          listingId: 'list_cat320_01',
+          name: 'CAT 320 Excavator',
+          quantity: '5',
+          unit: 'Days',
+          specifications: '22 Ton crawler excavator with experienced operator',
+        },
+      ],
+      itemName: 'CAT 320 Excavator',
+      quantity: '5 Days',
+      message: 'Site work starts next week. Please provide daily rate including mobilization fee to Gbongan Road site.',
+      status: 'sent',
+      createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+      updatedAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+    },
+    {
+      quoteRequestId: 'req_sample_102',
+      clientId: 'client_02',
+      userId: 'client_02',
+      supplierBusinessId: 'biz_osun_heavy',
+      businessId: 'biz_osun_heavy',
+      listingId: 'list_dangote_04',
+      listingTitle: 'Dangote Cement 50kg (Bag)',
+      clientName: 'Chief Rotimi Williams',
+      clientPhone: '+234 802 998 8776',
+      clientEmail: 'rotimi@williamshomes.com',
+      projectName: '3 Bedroom Residential Duplex',
+      projectLocation: 'Ring Road Area, Osogbo, Osun State',
+      requiredDate: '15 Sept 2026',
+      items: [
+        {
+          listingId: 'list_dangote_04',
+          name: 'Dangote Cement 50kg',
+          quantity: '200',
+          unit: 'Bags',
+          specifications: 'Grade 42.5N',
+        },
+        {
+          name: 'Granite (3/4 inch)',
+          quantity: '3',
+          unit: 'Trips',
+          specifications: 'Quarry crushed',
+        },
+      ],
+      itemName: 'Dangote Cement 50kg + Granite',
+      quantity: '200 Bags, 3 Trips',
+      message: 'Required for foundation slab pour. Please confirm stock availability and offloading cost.',
+      status: 'sent',
+      createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
+      updatedAt: new Date(Date.now() - 3600000 * 24).toISOString(),
+    },
+  ];
+
   const [quoteRequests, setQuoteRequests] = useState<QuoteRequest[]>(() => {
-    const saved = localStorage.getItem('buildora_quote_requests_v2');
+    const saved = localStorage.getItem('constrora_quote_requests_v3') || localStorage.getItem('buildora_quote_requests_v2');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       } catch (e) {
         console.error('Failed to parse quote requests from localStorage:', e);
       }
     }
-    return [];
+    return SAMPLE_QUOTE_REQUESTS;
   });
 
   // Master Data collections with automatic persistence across page reloads
@@ -160,47 +254,32 @@ export function App() {
       if (currentUser.role) {
         setSelectedRole(currentUser.role);
       }
+      setSubView('none');
       if (currentUser.role === 'supplier') {
-        if (!currentUser.supplierOnboardingCompleted && localStorage.getItem('buildora_supplier_onboarding_completed') !== 'true') {
-          setSubView('supplier_onboarding');
-        } else {
-          setActiveTab('supplier');
-        }
-      } else if (currentUser.role === 'client') {
-        if (!currentUser.clientOnboardingCompleted && localStorage.getItem('buildora_client_onboarding_completed') !== 'true') {
-          setSubView('client_onboarding');
-        } else {
-          setActiveTab('home');
-        }
+        setActiveTab('supplier');
+      } else {
+        setActiveTab('home');
       }
+    } else {
+      setSubView('none');
+      setActiveTab('home');
     }
   }, [currentUser]);
 
   // Handlers
   const handleRoleSelectionComplete = async (role: UserRole) => {
-    localStorage.setItem('buildora_onboarding_done', 'true');
-    localStorage.setItem('buildora_temp_role', role);
+    localStorage.setItem('constrora_onboarding_done', 'true');
+    localStorage.setItem('constrora_temp_role', role);
     setSelectedRole(role);
     setShowRoleSelection(false);
 
     if (currentUser) {
       await setUserRole(role);
+      setSubView('none');
       if (role === 'supplier') {
-        const isSupplierDone = localStorage.getItem('buildora_supplier_onboarding_completed') === 'true';
-        if (!isSupplierDone && !currentUser?.supplierOnboardingCompleted) {
-          setSubView('supplier_onboarding');
-        } else {
-          setActiveTab('supplier');
-          setSubView('none');
-        }
+        setActiveTab('supplier');
       } else {
-        const isClientDone = localStorage.getItem('buildora_client_onboarding_completed') === 'true';
-        if (!isClientDone && !currentUser?.clientOnboardingCompleted) {
-          setSubView('client_onboarding');
-        } else {
-          setActiveTab('home');
-          setSubView('none');
-        }
+        setActiveTab('home');
       }
     } else {
       // Unauthenticated user clicking Get Started -> open 1-page AuthModal for registration
@@ -313,53 +392,17 @@ export function App() {
           setShowRoleSelection(false);
           openSignInModal();
         }}
+        onAdminClick={() => {
+          localStorage.setItem('buildora_onboarding_done', 'true');
+          setShowRoleSelection(false);
+          setActiveTab('admin');
+        }}
       />
     );
   }
 
-  // SUPPLIER ROUTE GUARD: If role is supplier & onboarding incomplete, render SupplierOnboardingView
   const effectiveRole: UserRole = currentUser?.role || selectedRole || 'client';
   const isSupplierRole = effectiveRole === 'supplier';
-  const isSupplierOnboardingDone =
-    currentUser?.supplierOnboardingCompleted ||
-    localStorage.getItem('buildora_supplier_onboarding_completed') === 'true';
-
-  if (isSupplierRole && !isSupplierOnboardingDone) {
-    return (
-      <div
-        className={`min-h-screen flex flex-col font-['Plus_Jakarta_Sans',sans-serif] transition-colors ${
-          isDark ? 'bg-[#0B0C0E] text-slate-100' : 'bg-slate-50 text-slate-900'
-        }`}
-      >
-        <Header
-          activeTab="supplier"
-          userRole={effectiveRole}
-          onChangeTab={() => {}}
-          onOpenProjectModal={() => setIsProjectModalOpen(true)}
-          onOpenAuthModal={() => openSignInModal()}
-          onOpenSignInModal={() => openSignInModal()}
-          onOpenSignUpModal={() => openSignUpModal()}
-          onOpenCompareDrawer={() => setIsCompareDrawerOpen(true)}
-          comparedCount={comparedListings.length}
-        />
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-          <SupplierOnboardingView
-            onBackToRoleSelection={() => {
-              setShowRoleSelection(true);
-            }}
-            onComplete={handleSupplierOnboardingFinished}
-            onOpenAuthModal={() => openSignInModal()}
-          />
-        </main>
-        <AuthModal
-          isOpen={isAuthModalOpen}
-          onClose={() => setIsAuthModalOpen(false)}
-          initialRole={authModalRole}
-          initialIsSignUp={authModalIsSignUp}
-        />
-      </div>
-    );
-  }
 
   return (
     <div
@@ -451,11 +494,29 @@ export function App() {
               quoteRequests={quoteRequests}
             />
           ) : activeTab === 'admin' ? (
-            <AdminDashboardView
-              businesses={businesses}
-              listings={listings}
-              onVerifyBusiness={handleVerifyBusiness}
-            />
+            isAdminAuthorized ? (
+              <AdminDashboardView
+                businesses={businesses}
+                listings={listings}
+                onVerifyBusiness={handleVerifyBusiness}
+                onSignOutAdmin={handleAdminSignOut}
+              />
+            ) : (
+              <AdminSignInView
+                onSuccess={() => setActiveTab('admin')}
+                onReturnHome={() => {
+                  setActiveTab('home');
+                  if (window.location.pathname.toLowerCase().startsWith('/admin')) {
+                    window.history.pushState({}, '', '/');
+                  }
+                }}
+                initialError={
+                  currentUser && currentUser.email?.toLowerCase() !== 'buildsafe247@gmail.com'
+                    ? 'Access denied. This Google account is not authorized to access the Constrora admin portal.'
+                    : null
+                }
+              />
+            )
           ) : (
             <SupplierDashboardView
               business={currentBusiness}
@@ -475,6 +536,7 @@ export function App() {
             onOpenProjectModal={() => setIsProjectModalOpen(true)}
             onCompareToggle={handleToggleCompare}
             comparedListings={comparedListings}
+            onNavigateToAdmin={() => setActiveTab('admin')}
           />
         ) : activeTab === 'search' ? (
           <SearchView
@@ -508,11 +570,29 @@ export function App() {
             quoteRequests={quoteRequests}
           />
         ) : activeTab === 'admin' ? (
-          <AdminDashboardView
-            businesses={businesses}
-            listings={listings}
-            onVerifyBusiness={handleVerifyBusiness}
-          />
+          isAdminAuthorized ? (
+            <AdminDashboardView
+              businesses={businesses}
+              listings={listings}
+              onVerifyBusiness={handleVerifyBusiness}
+              onSignOutAdmin={handleAdminSignOut}
+            />
+          ) : (
+            <AdminSignInView
+              onSuccess={() => setActiveTab('admin')}
+              onReturnHome={() => {
+                setActiveTab('home');
+                if (window.location.pathname.toLowerCase().startsWith('/admin')) {
+                  window.history.pushState({}, '', '/');
+                }
+              }}
+              initialError={
+                currentUser && currentUser.email?.toLowerCase() !== 'buildsafe247@gmail.com'
+                  ? 'Access denied. This Google account is not authorized to access the Constrora admin portal.'
+                  : null
+              }
+            />
+          )
         ) : (
           <HomeView
             listings={listings}
@@ -522,6 +602,7 @@ export function App() {
             onOpenProjectModal={() => setIsProjectModalOpen(true)}
             onCompareToggle={handleToggleCompare}
             comparedListings={comparedListings}
+            onNavigateToAdmin={() => setActiveTab('admin')}
           />
         )}
       </main>
@@ -547,6 +628,10 @@ export function App() {
         onClose={() => setIsAuthModalOpen(false)}
         initialRole={authModalRole}
         initialIsSignUp={authModalIsSignUp}
+        onOpenAdminPortal={() => {
+          setIsAuthModalOpen(false);
+          setActiveTab('admin');
+        }}
       />
 
       <CompareDrawer

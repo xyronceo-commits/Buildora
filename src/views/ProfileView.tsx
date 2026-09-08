@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   User,
   Building,
@@ -25,6 +25,7 @@ import {
   AlertTriangle,
   X,
   Loader2,
+  Lock,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme, Theme } from '../context/ThemeContext';
@@ -51,42 +52,58 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const { activeProject } = useProject();
 
   const [activeSubTab, setActiveSubTab] = useState<'profile' | 'requests' | 'settings' | 'help'>('profile');
+
+  // Account Deletion State Machine
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteConfirmationStep, setDeleteConfirmationStep] = useState<1 | 2>(1);
+  const [deleteStep, setDeleteStep] = useState<1 | 2 | 'reauth'>(1);
+  const [confirmText, setConfirmText] = useState('');
+  const [reauthPassword, setReauthPassword] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [confirmInputText, setConfirmInputText] = useState('');
+
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showDeleteModal && !deleting) {
+        setShowDeleteModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showDeleteModal, deleting]);
 
   const handleStartDeleteFlow = () => {
     setShowDeleteModal(true);
-    setDeleteConfirmationStep(1);
-    setDeleteError(null);
-    setConfirmInputText('');
-  };
-
-  const handleProceedToStep2 = () => {
-    setDeleteConfirmationStep(2);
+    setDeleteStep(1);
+    setConfirmText('');
+    setReauthPassword('');
     setDeleteError(null);
   };
 
-  const handleFinalDeleteAccount = async () => {
+  const handleCancelModal = () => {
+    if (deleting) return;
+    setShowDeleteModal(false);
+    setDeleteStep(1);
+    setConfirmText('');
+    setReauthPassword('');
+    setDeleteError(null);
+  };
+
+  const handleExecuteDelete = async (passOverride?: string) => {
     setDeleting(true);
     setDeleteError(null);
+
     try {
-      await deleteAccount();
+      await deleteAccount(passOverride || (deleteStep === 'reauth' ? reauthPassword : undefined));
       setShowDeleteModal(false);
-      if (onNavigateTab) {
-        onNavigateTab('profile');
-      }
-      if (onOpenSignUpModal) {
-        onOpenSignUpModal();
-      } else if (onOpenSignInModal) {
-        onOpenSignInModal();
-      } else if (onOpenAuthModal) {
-        onOpenAuthModal();
-      }
     } catch (err: any) {
-      setDeleteError(err?.message || 'Failed to delete account. Please try signing out and signing in again.');
+      if (err?.code === 'auth/requires-recent-login' || err?.message?.includes('auth/requires-recent-login')) {
+        setDeleteStep('reauth');
+        setDeleteError(null);
+      } else {
+        setDeleteError(err?.message || 'Your account could not be deleted. Please try again.');
+      }
+    } finally {
       setDeleting(false);
     }
   };
@@ -99,7 +116,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </div>
         <div>
           <h2 className="font-['Cabinet_Grotesk'] text-2xl font-black text-white dark:text-white light:text-slate-900">
-            WELCOME TO BUILDORA
+            WELCOME TO CONSTRORA
           </h2>
           <p className="text-xs text-slate-400 mt-1">
             Sign in with email & password or create an account to list equipment, request supplier quotes, or track construction projects.
@@ -149,7 +166,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               {isSupplier ? (
                 <p className="text-[11px] text-slate-300 font-medium mt-1 flex items-center gap-1">
                   <MapPin className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                  <span>Yard Address: <strong className="text-white">Plot 12, Gbongan Road Industrial Zone, Osogbo, Osun State</strong></span>
+                  <span>Yard Address: <strong className="text-white">Osogbo Industrial Zone, Osun State</strong></span>
                 </p>
               ) : activeProject && (
                 <p className="text-[11px] text-amber-400 font-semibold mt-1 flex items-center gap-1">
@@ -289,20 +306,30 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-            <button
-              onClick={signOut}
-              className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-extrabold transition-all cursor-pointer uppercase tracking-wider"
-            >
-              <LogOut className="h-4 w-4 text-amber-400" /> Sign Out of Buildora
-            </button>
+          {/* Account Actions Section: SIGN OUT & DELETE ACCOUNT side by side */}
+          <div className="p-4 rounded-2xl bg-[#121418] dark:bg-[#121418] light:bg-white border border-slate-800 dark:border-slate-800 light:border-slate-200 space-y-3">
+            <label className="text-[11px] font-black uppercase text-slate-400 tracking-wider block">
+              ACCOUNT ACTIONS
+            </label>
+            <div className="flex flex-col sm:flex-row items-center gap-2.5">
+              <button
+                type="button"
+                onClick={signOut}
+                className="w-full sm:flex-1 py-3 px-4 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-black transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
+              >
+                <LogOut className="h-4 w-4 text-amber-400" />
+                <span>SIGN OUT</span>
+              </button>
 
-            <button
-              onClick={handleStartDeleteFlow}
-              className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl border border-rose-500/40 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-extrabold transition-all cursor-pointer uppercase tracking-wider"
-            >
-              <Trash2 className="h-4 w-4 text-rose-400" /> Delete Account
-            </button>
+              <button
+                type="button"
+                onClick={handleStartDeleteFlow}
+                className="w-full sm:flex-1 py-3 px-4 rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-black transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
+              >
+                <Trash2 className="h-4 w-4 text-rose-400" />
+                <span>DELETE ACCOUNT</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -431,20 +458,29 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               </div>
             </div>
 
-            <div className="pt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button
-                onClick={signOut}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-extrabold transition-all cursor-pointer uppercase tracking-wider"
-              >
-                <LogOut className="h-4 w-4 text-amber-400" /> Sign Out
-              </button>
+            <div className="pt-3">
+              <label className="text-[11px] font-black uppercase text-slate-400 tracking-wider block mb-2">
+                ACCOUNT ACTIONS
+              </label>
+              <div className="flex flex-col sm:flex-row items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={signOut}
+                  className="w-full sm:flex-1 py-3 px-4 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-black transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
+                >
+                  <LogOut className="h-4 w-4 text-amber-400" />
+                  <span>SIGN OUT</span>
+                </button>
 
-              <button
-                onClick={handleStartDeleteFlow}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-rose-500/40 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-extrabold transition-all cursor-pointer uppercase tracking-wider"
-              >
-                <Trash2 className="h-4 w-4 text-rose-400" /> Delete Account
-              </button>
+                <button
+                  type="button"
+                  onClick={handleStartDeleteFlow}
+                  className="w-full sm:flex-1 py-3 px-4 rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-black transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="h-4 w-4 text-rose-400" />
+                  <span>DELETE ACCOUNT</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -462,19 +498,19 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
           <div className="space-y-3 pt-2 text-xs font-bold">
             <a
-              href="mailto:support@buildora.ng"
+              href="mailto:support@constrora.ng"
               className="flex items-center justify-between p-3.5 rounded-xl bg-slate-900 dark:bg-slate-900 light:bg-slate-100 border border-slate-800 dark:border-slate-800 light:border-slate-200 text-amber-500"
             >
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4" />
-                <span>Contact Buildora Support</span>
+                <span>Contact Constrora Support</span>
               </div>
               <ChevronRight className="h-4 w-4" />
             </a>
 
             <div className="p-4 bg-slate-900 dark:bg-slate-900 light:bg-slate-100 rounded-xl border border-slate-800 dark:border-slate-800 light:border-slate-200 text-slate-400 text-[11px] space-y-1">
               <div className="font-bold text-white dark:text-white light:text-slate-900">
-                BUILDORA PLATFORM V1.0
+                CONSTRORA PLATFORM V1.0
               </div>
               <div>Find what you need to build. DISCOVER · COMPARE · CONNECT.</div>
             </div>
@@ -482,84 +518,205 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </div>
       )}
 
-      {/* Delete Account Modal (2-Step Warning Flow) */}
+      {/* DELETE ACCOUNT CONFIRMATION MODALS */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#121418] border border-rose-500/40 rounded-3xl max-w-md w-full p-6 space-y-5 text-left shadow-2xl relative">
             <button
-              onClick={() => setShowDeleteModal(false)}
+              onClick={handleCancelModal}
               disabled={deleting}
               className="absolute top-5 right-5 text-slate-400 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+              aria-label="Close modal"
             >
               <X className="h-5 w-5" />
             </button>
 
-            {/* Header */}
-            <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
-              <div className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-500 rounded-2xl shrink-0">
-                <AlertTriangle className="h-6 w-6 animate-pulse" />
-              </div>
-              <div>
-                <h3 className="font-['Cabinet_Grotesk'] text-lg font-black text-white">
-                  DELETE ACCOUNT
-                </h3>
-                <p className="text-xs text-rose-400 font-semibold uppercase tracking-wider">
-                  {deleteConfirmationStep === 1 ? 'Attempt 1 of 2: Warning Notice' : 'Attempt 2 of 2: Final Confirmation'}
-                </p>
-              </div>
-            </div>
-
-            {/* STEP 1: FIRST ATTEMPT WARNING */}
-            {deleteConfirmationStep === 1 && (
+            {/* FIRST WARNING MODAL */}
+            {deleteStep === 1 && (
               <div className="space-y-4">
-                <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-2xl text-xs text-slate-200 space-y-2">
-                  <p className="font-extrabold text-rose-400 flex items-center gap-1.5 text-sm">
-                    <AlertTriangle className="h-4 w-4 shrink-0" />
-                    ⚠️ WARNING: THIS ACTION CANNOT BE UNDONE!
-                  </p>
-                  <p className="text-slate-300 leading-relaxed text-[11px]">
-                    Deleting your Buildora account will permanently erase:
-                  </p>
-                  <ul className="list-disc list-inside text-[11px] text-slate-300 space-y-1 font-medium pl-1">
-                    <li>Your complete user profile & business data</li>
-                    <li>Saved equipment & material resource binders</li>
-                    <li>Active construction site projects & quotes</li>
-                    <li>Supplier fleet & rental quote history</li>
-                  </ul>
+                <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
+                  <div className="p-2.5 bg-rose-500/10 border border-rose-500/30 text-rose-500 rounded-xl shrink-0">
+                    <AlertTriangle className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-['Cabinet_Grotesk'] text-lg font-black text-white">
+                      Delete your account?
+                    </h3>
+                  </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                <p className="text-xs text-slate-300 leading-relaxed font-medium">
+                  Deleting your account is permanent. Your account and associated data may be removed and you will be signed out.
+                </p>
+
+                {deleteError && (
+                  <div className="p-3 bg-rose-500/20 border border-rose-500/40 rounded-xl text-rose-300 text-xs font-semibold">
+                    {deleteError}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2.5 pt-2">
                   <button
                     type="button"
-                    onClick={() => setShowDeleteModal(false)}
-                    className="flex-1 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer uppercase"
+                    onClick={handleCancelModal}
+                    className="flex-1 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl transition-all cursor-pointer uppercase"
                   >
-                    Cancel & Keep Account
+                    CANCEL
                   </button>
+
                   <button
                     type="button"
-                    onClick={handleProceedToStep2}
-                    className="flex-1 py-3 px-4 bg-rose-600 hover:bg-rose-500 text-white font-black text-xs rounded-xl transition-all cursor-pointer uppercase shadow-lg shadow-rose-600/30"
+                    onClick={() => setDeleteStep(2)}
+                    className="flex-1 py-3 px-4 bg-rose-600 hover:bg-rose-500 text-white font-black text-xs rounded-xl transition-all cursor-pointer uppercase shadow-lg shadow-rose-600/20"
                   >
-                    Proceed to Confirm
+                    CONTINUE
                   </button>
                 </div>
               </div>
             )}
 
-            {/* STEP 2: SECOND ATTEMPT FINAL CONFIRMATION */}
-            {deleteConfirmationStep === 2 && (
+            {/* SECOND WARNING MODAL */}
+            {deleteStep === 2 && (
               <div className="space-y-4">
-                <div className="p-4 bg-rose-950/40 border border-rose-500/50 rounded-2xl space-y-3">
-                  <p className="text-xs font-bold text-rose-200">
-                    Please type <span className="bg-rose-500 text-black font-black px-1.5 py-0.5 rounded tracking-widest uppercase">DELETE</span> below to confirm second attempt:
+                <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
+                  <div className="p-2.5 bg-rose-500/10 border border-rose-500/30 text-rose-500 rounded-xl shrink-0">
+                    <AlertTriangle className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-['Cabinet_Grotesk'] text-lg font-black text-white">
+                      Are you absolutely sure?
+                    </h3>
+                  </div>
+                </div>
+
+                <div className="space-y-3 text-xs text-slate-300 font-medium">
+                  <p className="leading-relaxed">
+                    This action cannot be undone.
                   </p>
+                  <p className="leading-relaxed text-slate-200 font-semibold">
+                    Your CONSTRORA account will be permanently deleted. You may lose access to your profile, saved resources, quote requests, business information, listings and other account data associated with this account.
+                  </p>
+
+                  <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl space-y-1.5 text-[11px] text-rose-200 font-medium">
+                    <span className="font-black uppercase text-rose-400 block">
+                      {isSupplier ? 'DATA TO BE REMOVED (SUPPLIER ACCOUNT)' : 'DATA TO BE REMOVED (CLIENT ACCOUNT)'}
+                    </span>
+                    {isSupplier ? (
+                      <ul className="list-disc list-inside space-y-0.5 text-slate-300">
+                        <li>Business profile & CAC verification info</li>
+                        <li>Equipment & material listings</li>
+                        <li>Supplier quote history & received requests</li>
+                        <li>Saved data & supplier information</li>
+                      </ul>
+                    ) : (
+                      <ul className="list-disc list-inside space-y-0.5 text-slate-300">
+                        <li>Client profile information</li>
+                        <li>Saved listings & binder items</li>
+                        <li>Construction project site addresses</li>
+                        <li>Quote requests & account data</li>
+                      </ul>
+                    )}
+                  </div>
+                </div>
+
+                {/* Mandatory Type DELETE Confirmation */}
+                <div className="space-y-1.5 pt-1">
+                  <label htmlFor="delete-confirm-input" className="text-xs font-bold text-slate-300 block">
+                    Type <strong className="text-rose-400">DELETE</strong> to confirm
+                  </label>
                   <input
+                    id="delete-confirm-input"
                     type="text"
-                    value={confirmInputText}
-                    onChange={(e) => setConfirmInputText(e.target.value)}
-                    placeholder="Type DELETE to confirm"
-                    className="w-full bg-slate-900 border border-rose-500/40 rounded-xl px-3.5 py-2.5 text-white font-black text-sm tracking-wider uppercase focus:outline-none focus:border-rose-500 placeholder:normal-case placeholder:font-normal placeholder:text-slate-500"
+                    value={confirmText}
+                    onChange={(e) => setConfirmText(e.target.value)}
+                    placeholder="DELETE"
+                    disabled={deleting}
+                    className="w-full bg-slate-900 border border-rose-500/40 rounded-xl px-3.5 py-2.5 text-white font-black text-xs uppercase tracking-widest focus:outline-none focus:border-rose-500 placeholder:normal-case placeholder:font-normal placeholder:text-slate-500"
+                  />
+                </div>
+
+                {deleteError && (
+                  <div className="p-3 bg-rose-500/20 border border-rose-500/50 rounded-xl text-rose-300 text-xs font-semibold space-y-2">
+                    <p>{deleteError}</p>
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => handleExecuteDelete()}
+                        className="px-3 py-1.5 bg-rose-600 text-white font-bold text-[11px] rounded-lg uppercase"
+                      >
+                        TRY AGAIN
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCancelModal}
+                        className="px-3 py-1.5 bg-slate-800 text-slate-300 font-bold text-[11px] rounded-lg uppercase"
+                      >
+                        CANCEL
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setDeleteStep(1)}
+                    disabled={deleting}
+                    className="flex-1 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl transition-all cursor-pointer uppercase"
+                  >
+                    GO BACK
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleExecuteDelete()}
+                    disabled={confirmText !== 'DELETE' || deleting}
+                    className="flex-1 py-3 px-4 bg-rose-600 hover:bg-rose-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:border-slate-700 text-white font-black text-xs rounded-xl transition-all cursor-pointer uppercase flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20"
+                  >
+                    {deleting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" /> Deleting your account...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4" /> YES, DELETE MY ACCOUNT
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* REAUTHENTICATION MODAL */}
+            {deleteStep === 'reauth' && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
+                  <div className="p-2.5 bg-amber-500/10 border border-amber-500/30 text-amber-500 rounded-xl shrink-0">
+                    <Lock className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-['Cabinet_Grotesk'] text-lg font-black text-white">
+                      CONFIRM YOUR PASSWORD
+                    </h3>
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-300 leading-relaxed font-medium">
+                  For security, please enter your password before deleting your account.
+                </p>
+
+                <div className="space-y-1.5">
+                  <label htmlFor="reauth-password-input" className="text-xs font-bold text-slate-300 block">
+                    Password
+                  </label>
+                  <input
+                    id="reauth-password-input"
+                    type="password"
+                    value={reauthPassword}
+                    onChange={(e) => setReauthPassword(e.target.value)}
+                    placeholder="Enter your current password"
+                    disabled={deleting}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white font-semibold text-xs focus:outline-none focus:border-amber-500"
                   />
                 </div>
 
@@ -569,29 +726,28 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   </div>
                 )}
 
-                <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                <div className="flex items-center gap-2.5 pt-2">
                   <button
                     type="button"
-                    onClick={() => setDeleteConfirmationStep(1)}
+                    onClick={handleCancelModal}
                     disabled={deleting}
-                    className="flex-1 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer uppercase"
+                    className="flex-1 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl transition-all cursor-pointer uppercase"
                   >
-                    Back
+                    CANCEL
                   </button>
+
                   <button
                     type="button"
-                    onClick={handleFinalDeleteAccount}
-                    disabled={confirmInputText.trim().toUpperCase() !== 'DELETE' || deleting}
-                    className="flex-1 py-3 px-4 bg-rose-600 hover:bg-rose-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:border-slate-700 text-white font-black text-xs rounded-xl transition-all cursor-pointer uppercase flex items-center justify-center gap-2 shadow-lg shadow-rose-600/30"
+                    onClick={() => handleExecuteDelete(reauthPassword)}
+                    disabled={!reauthPassword || deleting}
+                    className="flex-1 py-3 px-4 bg-rose-600 hover:bg-rose-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-black text-xs rounded-xl transition-all cursor-pointer uppercase flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20"
                   >
                     {deleting ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" /> Deleting...
                       </>
                     ) : (
-                      <>
-                        <Trash2 className="h-4 w-4" /> Permanent Delete
-                      </>
+                      <span>CONTINUE</span>
                     )}
                   </button>
                 </div>

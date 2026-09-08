@@ -22,6 +22,7 @@ import { UserRole } from '../types';
 interface OnboardingProps {
   onComplete: (role: UserRole) => void;
   onSignInClick: () => void;
+  onAdminClick?: () => void;
 }
 
 const SCREENS = [
@@ -162,7 +163,7 @@ const SCREENS = [
   {
     title: "SEARCH AROUND WHERE YOU'RE BUILDING.",
     description:
-      'Buildora prioritizes resources around your active construction project site location, not just where your phone happens to be.',
+      'Constrora prioritizes resources around your active construction project site location, not just where your phone happens to be.',
     badge: 'PROJECT SITE',
     mockup: (
       <div className="w-full rounded-2xl bg-slate-900 border-2 border-slate-800 p-4 space-y-3">
@@ -181,7 +182,7 @@ const SCREENS = [
   },
 ];
 
-export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onSignInClick }) => {
+export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onSignInClick, onAdminClick }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showRoleSelection, setShowRoleSelection] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole>('client');
@@ -217,14 +218,16 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onSignInClic
           </button>
         ) : (
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-amber-500 text-black flex items-center justify-center font-black">
-              <HardHat className="h-5 w-5" />
-            </div>
+            <img
+              src="/constrora-logo.svg"
+              alt="CONSTRORA Logo"
+              className="h-8 w-8 rounded-lg object-contain shadow-sm"
+            />
           </div>
         )}
 
         <div className="font-['Cabinet_Grotesk'] text-xl font-black tracking-wider text-white">
-          BUILD<span className="text-amber-500">ORA</span>
+          CONSTR<span className="text-amber-500">ORA</span>
         </div>
 
         {!showRoleSelection && !isFinalSlide && (
@@ -253,7 +256,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onSignInClic
                   ACCOUNT ROLE
                 </span>
                 <h2 className="font-['Cabinet_Grotesk'] text-3xl sm:text-5xl font-black text-white leading-tight uppercase">
-                  HOW WILL YOU USE BUILDORA?
+                  HOW WILL YOU USE CONSTRORA?
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-300 font-medium">
                   Select your platform workflow. You can switch modes anytime.
@@ -390,12 +393,29 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onSignInClic
                   GET STARTED NOW <ArrowRight className="h-5 w-5" />
                 </button>
 
-                <button
-                  onClick={onSignInClick}
-                  className="w-full text-xs font-bold text-slate-400 hover:text-white transition-colors py-2 cursor-pointer uppercase tracking-wider"
-                >
-                  Already have an account? <span className="text-amber-500 underline">Sign In</span>
-                </button>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-1">
+                  <button
+                    onClick={onSignInClick}
+                    className="w-full sm:w-auto text-xs font-bold text-slate-400 hover:text-white transition-colors py-2 cursor-pointer uppercase tracking-wider"
+                  >
+                    Already have an account? <span className="text-amber-500 underline">Sign In</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onAdminClick) {
+                        onAdminClick();
+                      } else {
+                        onSignInClick();
+                      }
+                    }}
+                    className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-extrabold transition-all cursor-pointer uppercase tracking-wider"
+                  >
+                    <ShieldCheck className="h-4 w-4 text-amber-500 shrink-0" />
+                    <span>ADMIN PORTAL</span>
+                  </button>
+                </div>
               </div>
             </motion.div>
           )}

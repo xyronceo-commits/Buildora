@@ -173,23 +173,73 @@ export interface CatalogItem {
   updatedAt: string;
 }
 
+export interface QuoteRequestItem {
+  listingId?: string;
+  catalogItemId?: string;
+  name: string;
+  quantity: string | number;
+  unit: string;
+  specifications?: string;
+}
+
 export interface QuoteRequest {
   quoteRequestId: string;
-  userId: string;
-  supplierId?: string;
-  userName?: string;
-  userPhone?: string;
-  businessId: string;
+  clientId: string;
+  userId?: string;
+  supplierBusinessId: string;
+  businessId?: string;
   listingId?: string;
   listingTitle?: string;
-  projectId?: string;
-  projectName?: string;
+  clientName: string;
+  userName?: string;
+  clientPhone: string;
+  userPhone?: string;
+  clientEmail: string;
+  projectName: string;
+  projectLocation: string; // string or location summary
+  requiredDate: string;
+  items: QuoteRequestItem[];
   itemName: string;
   quantity: string;
-  projectLocation: LocationData;
   message: string;
+  attachments?: string[];
   status: 'sent' | 'viewed' | 'responded' | 'closed';
-  responseMessage?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface QuoteLineItem {
+  itemId: string;
+  item: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  total: number;
+}
+
+export interface SupplierQuote {
+  quoteId: string;
+  quoteRequestId?: string;
+  businessId: string;
+  businessName?: string;
+  clientName: string;
+  clientPhone: string;
+  clientEmail: string;
+  projectName: string;
+  projectLocation: string;
+  quoteNumber: string;
+  items: QuoteLineItem[];
+  subtotal: number;
+  discount: number;
+  deliveryFee: number;
+  labourFee: number;
+  otherCharges: number;
+  tax: number;
+  grandTotal: number;
+  notes: string;
+  validUntil: string;
+  status: 'DRAFT' | 'GENERATED';
   createdAt: string;
   updatedAt: string;
 }

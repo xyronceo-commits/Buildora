@@ -138,7 +138,7 @@ export const ProjectSelectorModal: React.FC<ProjectSelectorModalProps> = ({ isOp
           </div>
 
           <p className="text-xs text-slate-400 mb-6">
-            Buildora searches resources around your project site, not your phone's current position.
+            Constrora searches resources around your project site, not your phone's current position.
           </p>
 
           {!isAddingNew ? (

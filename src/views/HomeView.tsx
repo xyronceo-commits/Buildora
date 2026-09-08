@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Wrench, Package, Truck, Building2, ArrowRight, HardHat, CheckCircle2 } from 'lucide-react';
+import { Search, MapPin, Wrench, Package, Truck, Building2, ArrowRight, HardHat, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { useProject } from '../context/ProjectContext';
 import { Listing } from '../types';
 import { ListingCard } from '../components/ListingCard';
@@ -12,6 +12,7 @@ interface HomeViewProps {
   onOpenProjectModal: () => void;
   onCompareToggle: (listing: Listing) => void;
   comparedListings: Listing[];
+  onNavigateToAdmin?: () => void;
 }
 
 const SEARCH_PLACEHOLDERS = [
@@ -31,6 +32,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onOpenProjectModal,
   onCompareToggle,
   comparedListings,
+  onNavigateToAdmin,
 }) => {
   const { activeProject } = useProject();
   const [searchQuery, setSearchQuery] = useState('');
@@ -91,9 +93,22 @@ export const HomeView: React.FC<HomeViewProps> = ({
       {/* Industrial Hero Banner Section */}
       <div className="relative rounded-3xl bg-[#121418] dark:bg-[#121418] light:bg-white border-2 border-slate-800 dark:border-slate-800 light:border-slate-200 p-6 sm:p-12 overflow-hidden shadow-2xl transition-colors bg-grid-industrial">
         <div className="relative z-10 max-w-3xl space-y-6">
-          <div className="inline-flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-1 text-xs font-black text-amber-500 border border-amber-500/30 uppercase tracking-widest">
-            <HardHat className="h-4 w-4" />
-            <span>PROJECT SITE RESOURCE DISCOVERY</span>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="inline-flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-1 text-xs font-black text-amber-500 border border-amber-500/30 uppercase tracking-widest">
+              <HardHat className="h-4 w-4" />
+              <span>PROJECT SITE RESOURCE DISCOVERY</span>
+            </div>
+
+            {onNavigateToAdmin && (
+              <button
+                type="button"
+                onClick={onNavigateToAdmin}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/40 px-3 py-1.5 text-xs font-black uppercase tracking-wider transition-all cursor-pointer hover:border-amber-500/80 shadow-md shadow-amber-500/5"
+              >
+                <ShieldCheck className="h-4 w-4 text-amber-500" />
+                <span>ADMIN PORTAL</span>
+              </button>
+            )}
           </div>
 
           <h1 className="font-['Cabinet_Grotesk'] text-4xl sm:text-6xl font-black text-white dark:text-white light:text-slate-900 leading-tight uppercase tracking-tight">

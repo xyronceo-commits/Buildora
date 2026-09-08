@@ -62,7 +62,7 @@ export const ClientOnboardingView: React.FC<ClientOnboardingViewProps> = ({
             WHERE ARE YOU BUILDING?
           </h1>
           <p className="text-xs text-slate-300 font-medium max-w-md mx-auto">
-            Buildora prioritizes equipment, materials, and logistics suppliers around your specific project location.
+            Constrora prioritizes equipment, materials, and logistics suppliers around your specific project location.
           </p>
         </div>
 
@@ -128,7 +128,7 @@ export const ClientOnboardingView: React.FC<ClientOnboardingViewProps> = ({
             type="submit"
             className="w-full bg-amber-500 text-black font-black py-4 rounded-2xl text-xs hover:bg-amber-400 transition-all cursor-pointer uppercase tracking-wider shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2"
           >
-            <CheckCircle2 className="h-4 w-4" /> START SEARCHING BUILDORA
+            <CheckCircle2 className="h-4 w-4" /> START SEARCHING CONSTRORA
           </button>
         </form>
       </div>

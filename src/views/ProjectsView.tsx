@@ -18,7 +18,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ onOpenProjectModal }
             <span>CONSTRUCTION PROJECTS ({projects.length})</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            Buildora organizes resource discovery around your active project site location.
+            Constrora organizes resource discovery around your active project site location.
           </p>
         </div>
 
