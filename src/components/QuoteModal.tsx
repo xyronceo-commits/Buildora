@@ -99,7 +99,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
     };
 
     try {
-      if (currentUser && !currentUser.uid.startsWith('demo_')) {
+      if (currentUser) {
         await addDoc(collection(db, 'quoteRequests'), quoteData);
       }
       if (onQuoteSent) {

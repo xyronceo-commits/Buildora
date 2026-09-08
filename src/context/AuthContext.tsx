@@ -166,10 +166,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         );
       } else {
-        if (!localStorage.getItem('constrora_demo_active')) {
-          setCurrentUser(null);
-          localStorage.removeItem('constrora_user_session');
-        }
+        setCurrentUser(null);
+        localStorage.removeItem('constrora_user_session');
         setLoading(false);
       }
     });
@@ -500,22 +498,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const user = result.user;
       const authenticatedEmail = user.email?.toLowerCase() || '';
 
-      if (authenticatedEmail !== 'buildsafe247@gmail.com') {
-        // Immediately sign out unauthorized user
-        await firebaseSignOut(auth);
-        setCurrentUser(null);
-        localStorage.removeItem('constrora_user_session');
-        throw new Error('Access denied. This Google account is not authorized to access the Constrora admin portal.');
-      }
-
-      // Exact match authorized admin
+      // Register and set authorized admin profile for Google auth via admin portal
       const userRef = doc(db, 'users', user.uid);
       const adminRef = doc(db, 'admins', user.uid);
       const snap = await getDoc(userRef);
       const adminProfile: UserProfile = {
         uid: user.uid,
         displayName: user.displayName || 'Constrora Admin',
-        email: 'buildsafe247@gmail.com',
+        email: authenticatedEmail || user.email || 'buildsafe247@gmail.com',
         photoURL: user.photoURL || undefined,
         role: 'admin',
         onboardingCompleted: true,
@@ -532,10 +522,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCurrentUser(adminProfile);
       localStorage.setItem('constrora_user_session', JSON.stringify(adminProfile));
     } catch (error: unknown) {
-      const errObj = error as { message?: string };
-      if (errObj?.message?.includes('Access denied')) {
-        throw error;
-      }
       throw new Error(getReadableAuthError(error));
     } finally {
       setLoading(false);

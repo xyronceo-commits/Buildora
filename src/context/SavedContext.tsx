@@ -25,7 +25,7 @@ export const SavedProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Fetch saved items from Firestore
   useEffect(() => {
     async function loadSaved() {
-      if (!currentUser || currentUser.uid.startsWith('demo_')) return;
+      if (!currentUser) return;
       try {
         const ref = collection(db, 'users', currentUser.uid, 'saved');
         const snap = await getDocs(ref);
@@ -51,7 +51,7 @@ export const SavedProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setSavedItems(updated);
       localStorage.setItem('buildora_saved_items', JSON.stringify(updated));
 
-      if (currentUser && !currentUser.uid.startsWith('demo_')) {
+      if (currentUser) {
         try {
           await deleteDoc(doc(db, 'users', currentUser.uid, 'saved', existing.savedId));
         } catch (err) {
@@ -69,7 +69,7 @@ export const SavedProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setSavedItems(updated);
       localStorage.setItem('buildora_saved_items', JSON.stringify(updated));
 
-      if (currentUser && !currentUser.uid.startsWith('demo_')) {
+      if (currentUser) {
         try {
           await setDoc(doc(db, 'users', currentUser.uid, 'saved', newItem.savedId), newItem);
         } catch (err) {

@@ -9,12 +9,9 @@ export const EmailVerificationBanner: React.FC = () => {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
 
-  // Do not show banner for demo users, unauthenticated users, or verified users
-  const isDemoUser = typeof window !== 'undefined' && localStorage.getItem('buildora_demo_active') === 'true';
-
-  // Automated background check on focus and every 5 seconds
+  // Do not show banner for unauthenticated users or verified users
   useEffect(() => {
-    if (!currentUser || currentUser.emailVerified || isDemoUser) return;
+    if (!currentUser || currentUser.emailVerified) return;
 
     const silentCheck = async () => {
       try {
@@ -36,9 +33,9 @@ export const EmailVerificationBanner: React.FC = () => {
       window.removeEventListener('focus', handleFocus);
       clearInterval(interval);
     };
-  }, [currentUser, isDemoUser, checkEmailVerification]);
+  }, [currentUser, checkEmailVerification]);
 
-  if (!currentUser || currentUser.emailVerified || isDemoUser) {
+  if (!currentUser || currentUser.emailVerified) {
     return null;
   }
 

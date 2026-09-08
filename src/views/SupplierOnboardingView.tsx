@@ -236,7 +236,7 @@ export const SupplierOnboardingView: React.FC<SupplierOnboardingViewProps> = ({
     }
 
     // Store in Firestore if user is logged in
-    if (currentUser && !currentUser.uid.startsWith('demo_')) {
+    if (currentUser) {
       try {
         await setDoc(doc(db, 'businesses', bizId), sanitizeForFirestore(newBusiness));
         if (newFirstListing) {

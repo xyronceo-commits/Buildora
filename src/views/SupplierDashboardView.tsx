@@ -33,7 +33,7 @@ import { QuoteBuilderModal } from '../components/QuoteBuilderModal';
 import { QuoteRequestDetailModal } from '../components/QuoteRequestDetailModal';
 
 interface SupplierDashboardViewProps {
-  business: Business;
+  business?: Business;
   listings: Listing[];
   initialTab?: 'listings' | 'requests' | 'quotes' | 'verification';
   quoteRequests?: QuoteRequest[];
@@ -67,57 +67,12 @@ export const SupplierDashboardView: React.FC<SupplierDashboardViewProps> = ({
 
   // Supplier Generated Quotes List State
   const [generatedQuotes, setGeneratedQuotes] = useState<SupplierQuote[]>(() => {
-    // Load local cache if available
+    if (!business?.businessId) return [];
     try {
       const saved = localStorage.getItem(`constrora_quotes_${business.businessId}`);
       if (saved) return JSON.parse(saved);
     } catch (e) {}
-    // Sample mock generated quotes for demonstration
-    return [
-      {
-        quoteId: `quote_sample_1`,
-        businessId: business.businessId,
-        businessName: business.businessName,
-        clientName: 'Adewale Construction Ltd',
-        clientPhone: '+234 803 456 7890',
-        clientEmail: 'adewale@site.ng',
-        projectName: 'Commercial Shopping Complex',
-        projectLocation: 'Ring Road, Osogbo, Osun State',
-        quoteNumber: `CTR-${new Date().getFullYear()}-1082`,
-        items: [
-          {
-            itemId: 'i1',
-            item: 'CAT 320 Excavator',
-            description: '22 Ton Crawler Excavator with Operator',
-            quantity: 5,
-            unit: 'Days',
-            unitPrice: 180000,
-            total: 900000,
-          },
-          {
-            itemId: 'i2',
-            item: 'Lowbed Trailer Transport',
-            description: 'Mobilization and demobilization to Osogbo site',
-            quantity: 1,
-            unit: 'Trip',
-            unitPrice: 250000,
-            total: 250000,
-          },
-        ],
-        subtotal: 1150000,
-        discount: 50000,
-        deliveryFee: 100000,
-        labourFee: 0,
-        otherCharges: 0,
-        tax: 0,
-        grandTotal: 1200000,
-        notes: 'Includes diesel and certified operator. Valid for 7 days.',
-        validUntil: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
-        status: 'GENERATED',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-    ];
+    return [];
   });
 
   // Sync to Firestore and LocalStorage

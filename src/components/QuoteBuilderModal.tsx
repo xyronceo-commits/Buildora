@@ -227,7 +227,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   const handleSaveQuote = async (): Promise<SupplierQuote> => {
     setSaving(true);
     try {
-      if (currentUser && !currentUser.uid.startsWith('demo_')) {
+      if (currentUser) {
         const quoteRef = doc(db, 'businesses', business.businessId, 'quotes', currentQuoteObj.quoteId);
         await setDoc(quoteRef, currentQuoteObj, { merge: true });
       }

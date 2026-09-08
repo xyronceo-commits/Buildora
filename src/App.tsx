@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { collection, collectionGroup, onSnapshot, doc, setDoc, updateDoc } from 'firebase/firestore';
+import { db, sanitizeForFirestore } from './lib/firebase';
 import { useAuth } from './context/AuthContext';
 import { useProject } from './context/ProjectContext';
 import { useTheme } from './context/ThemeContext';
 import { Listing, Business, UserRole, QuoteRequest } from './types';
-import { INITIAL_LISTINGS, INITIAL_BUSINESSES } from './data/seedData';
 
 // Layout & Global Components
 import { Header } from './components/Header';
@@ -110,143 +111,48 @@ export function App() {
   // Compared Items & Requests
   const [comparedListings, setComparedListings] = useState<Listing[]>([]);
 
-  const SAMPLE_QUOTE_REQUESTS: QuoteRequest[] = [
-    {
-      quoteRequestId: 'req_sample_101',
-      clientId: 'client_01',
-      userId: 'client_01',
-      supplierBusinessId: 'biz_osun_heavy',
-      businessId: 'biz_osun_heavy',
-      listingId: 'list_cat320_01',
-      listingTitle: 'CAT 320 Excavator',
-      clientName: 'Engineer Michael Adebayo',
-      clientPhone: '+234 803 112 2334',
-      clientEmail: 'michael@adebayoconstruction.ng',
-      projectName: 'Commercial Plaza Substructure',
-      projectLocation: 'Gbongan Road, Osogbo, Osun State',
-      requiredDate: '18 Sept 2026',
-      items: [
-        {
-          listingId: 'list_cat320_01',
-          name: 'CAT 320 Excavator',
-          quantity: '5',
-          unit: 'Days',
-          specifications: '22 Ton crawler excavator with experienced operator',
-        },
-      ],
-      itemName: 'CAT 320 Excavator',
-      quantity: '5 Days',
-      message: 'Site work starts next week. Please provide daily rate including mobilization fee to Gbongan Road site.',
-      status: 'sent',
-      createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-      updatedAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-    },
-    {
-      quoteRequestId: 'req_sample_102',
-      clientId: 'client_02',
-      userId: 'client_02',
-      supplierBusinessId: 'biz_osun_heavy',
-      businessId: 'biz_osun_heavy',
-      listingId: 'list_dangote_04',
-      listingTitle: 'Dangote Cement 50kg (Bag)',
-      clientName: 'Chief Rotimi Williams',
-      clientPhone: '+234 802 998 8776',
-      clientEmail: 'rotimi@williamshomes.com',
-      projectName: '3 Bedroom Residential Duplex',
-      projectLocation: 'Ring Road Area, Osogbo, Osun State',
-      requiredDate: '15 Sept 2026',
-      items: [
-        {
-          listingId: 'list_dangote_04',
-          name: 'Dangote Cement 50kg',
-          quantity: '200',
-          unit: 'Bags',
-          specifications: 'Grade 42.5N',
-        },
-        {
-          name: 'Granite (3/4 inch)',
-          quantity: '3',
-          unit: 'Trips',
-          specifications: 'Quarry crushed',
-        },
-      ],
-      itemName: 'Dangote Cement 50kg + Granite',
-      quantity: '200 Bags, 3 Trips',
-      message: 'Required for foundation slab pour. Please confirm stock availability and offloading cost.',
-      status: 'sent',
-      createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
-      updatedAt: new Date(Date.now() - 3600000 * 24).toISOString(),
-    },
-  ];
+  const [quoteRequests, setQuoteRequests] = useState<QuoteRequest[]>([]);
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
 
-  const [quoteRequests, setQuoteRequests] = useState<QuoteRequest[]>(() => {
-    const saved = localStorage.getItem('constrora_quote_requests_v3') || localStorage.getItem('buildora_quote_requests_v2');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch (e) {
-        console.error('Failed to parse quote requests from localStorage:', e);
-      }
-    }
-    return SAMPLE_QUOTE_REQUESTS;
-  });
-
-  // Master Data collections with automatic persistence across page reloads
-  const DEMO_LISTING_IDS = [
-    'list_cat320_01',
-    'list_komatsu210_02',
-    'list_mixer350_03',
-    'list_dangote_04',
-    'list_blocks9inch_05',
-    'list_tipper10ton_06',
-    'list_tipper10t_05',
-  ];
-
-  const [listings, setListings] = useState<Listing[]>(() => {
-    const saved = localStorage.getItem('constrora_listings_v3');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          // Remove all demo listings
-          const userOnlyListings = parsed.filter((item: Listing) => !DEMO_LISTING_IDS.includes(item.listingId));
-          return userOnlyListings;
-        }
-      } catch (e) {
-        console.error('Failed to parse listings from localStorage:', e);
-      }
-    }
-    return INITIAL_LISTINGS;
-  });
-
-  const [businesses, setBusinesses] = useState<Business[]>(() => {
-    const saved = localStorage.getItem('constrora_businesses_v3');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
-      } catch (e) {
-        console.error('Failed to parse businesses from localStorage:', e);
-      }
-    }
-    return INITIAL_BUSINESSES;
-  });
-
-  // Automatically save state to localStorage whenever modified
+  // Real-time Firestore Sync for Businesses
   useEffect(() => {
-    localStorage.setItem('constrora_listings_v3', JSON.stringify(listings));
-  }, [listings]);
+    const unsub = onSnapshot(
+      collection(db, 'businesses'),
+      (snap) => {
+        const list = snap.docs.map((d) => d.data() as Business);
+        setBusinesses(list);
+      },
+      (err) => console.warn('Businesses listener warning:', err)
+    );
+    return () => unsub();
+  }, []);
 
+  // Real-time Firestore Sync for Listings across all businesses
   useEffect(() => {
-    localStorage.setItem('constrora_quote_requests_v3', JSON.stringify(quoteRequests));
-  }, [quoteRequests]);
+    const unsub = onSnapshot(
+      collectionGroup(db, 'listings'),
+      (snap) => {
+        const list = snap.docs.map((d) => d.data() as Listing);
+        setListings(list);
+      },
+      (err) => console.warn('Listings listener warning:', err)
+    );
+    return () => unsub();
+  }, []);
 
+  // Real-time Firestore Sync for Quote Requests
   useEffect(() => {
-    localStorage.setItem('constrora_businesses_v3', JSON.stringify(businesses));
-  }, [businesses]);
+    const unsub = onSnapshot(
+      collection(db, 'quoteRequests'),
+      (snap) => {
+        const list = snap.docs.map((d) => d.data() as QuoteRequest);
+        setQuoteRequests(list);
+      },
+      (err) => console.warn('Quote requests listener warning:', err)
+    );
+    return () => unsub();
+  }, []);
 
   // Sync user state on auth change
   useEffect(() => {
@@ -350,26 +256,45 @@ export function App() {
     setComparedListings(comparedListings.filter((c) => c.listingId !== listingId));
   };
 
-  const handlePublishListing = (newListing: Listing) => {
-    setListings([newListing, ...listings]);
+  const handlePublishListing = async (newListing: Listing) => {
     setSubView('none');
     setActiveTab('supplier');
+    try {
+      const listingRef = doc(db, 'businesses', newListing.businessId, 'listings', newListing.listingId);
+      await setDoc(listingRef, sanitizeForFirestore(newListing));
+    } catch (e) {
+      console.error('Error publishing listing to Firestore:', e);
+    }
   };
 
-  const handleUpdateAvailability = (listingId: string, status: 'AVAILABLE' | 'RENTED' | 'MAINTENANCE' | 'OUT_OF_STOCK') => {
-    setListings((prev) =>
-      prev.map((l) => (l.listingId === listingId ? { ...l, availability: { ...l.availability, status } } : l))
-    );
+  const handleUpdateAvailability = async (listingId: string, status: 'AVAILABLE' | 'RENTED' | 'MAINTENANCE' | 'OUT_OF_STOCK') => {
+    const target = listings.find((l) => l.listingId === listingId);
+    if (target) {
+      try {
+        const listingRef = doc(db, 'businesses', target.businessId, 'listings', listingId);
+        await updateDoc(listingRef, { 'availability.status': status, updatedAt: new Date().toISOString() });
+      } catch (e) {
+        console.error('Error updating listing availability in Firestore:', e);
+      }
+    }
   };
 
-  const handleVerifyBusiness = (businessId: string, status: 'VERIFIED' | 'REJECTED') => {
-    setBusinesses((prev) =>
-      prev.map((b) => (b.businessId === businessId ? { ...b, verificationStatus: status } : b))
-    );
+  const handleVerifyBusiness = async (businessId: string, status: 'VERIFIED' | 'REJECTED') => {
+    try {
+      const bizRef = doc(db, 'businesses', businessId);
+      await updateDoc(bizRef, { verificationStatus: status, updatedAt: new Date().toISOString() });
+    } catch (e) {
+      console.error('Error updating business verification in Firestore:', e);
+    }
   };
 
-  const handleSendQuoteRequest = (req: QuoteRequest) => {
-    setQuoteRequests([req, ...quoteRequests]);
+  const handleSendQuoteRequest = async (req: QuoteRequest) => {
+    try {
+      const reqRef = doc(db, 'quoteRequests', req.quoteRequestId);
+      await setDoc(reqRef, sanitizeForFirestore(req));
+    } catch (e) {
+      console.error('Error sending quote request to Firestore:', e);
+    }
   };
 
   const currentBusiness =
