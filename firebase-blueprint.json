@@ -1,0 +1,164 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile document",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "business", "admin"] },
+        "onboardingCompleted": { "type": "boolean" },
+        "activeProjectId": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "User construction project location and resources",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "name": { "type": "string" },
+        "address": { "type": "string" },
+        "city": { "type": "string" },
+        "state": { "type": "string" },
+        "country": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "isDefault": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["projectId", "ownerId", "name"]
+    },
+    "Business": {
+      "title": "Business",
+      "description": "Construction business profile",
+      "type": "object",
+      "properties": {
+        "businessId": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "businessName": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "phone": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "city": { "type": "string" },
+        "state": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "verificationStatus": { "type": "string", "enum": ["LISTED", "VERIFICATION_PENDING", "VERIFIED", "REJECTED"] },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["businessId", "ownerId", "businessName", "category"]
+    },
+    "Listing": {
+      "title": "Listing",
+      "description": "Resource listing (equipment, material, logistics)",
+      "type": "object",
+      "properties": {
+        "listingId": { "type": "string" },
+        "businessId": { "type": "string" },
+        "catalogItemId": { "type": "string" },
+        "type": { "type": "string", "enum": ["equipment", "material", "logistics", "service"] },
+        "title": { "type": "string" },
+        "manufacturer": { "type": "string" },
+        "model": { "type": "string" },
+        "condition": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "unavailable", "under_maintenance", "paused"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["listingId", "businessId", "type", "title"]
+    },
+    "QuoteRequest": {
+      "title": "QuoteRequest",
+      "description": "Request for quotation sent to supplier",
+      "type": "object",
+      "properties": {
+        "quoteRequestId": { "type": "string" },
+        "userId": { "type": "string" },
+        "businessId": { "type": "string" },
+        "listingId": { "type": "string" },
+        "projectId": { "type": "string" },
+        "itemName": { "type": "string" },
+        "quantity": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["sent", "viewed", "responded", "closed"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["quoteRequestId", "userId", "businessId", "itemName"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "User review for a business",
+      "type": "object",
+      "properties": {
+        "reviewId": { "type": "string" },
+        "businessId": { "type": "string" },
+        "userId": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "status": { "type": "string", "enum": ["visible", "flagged", "removed"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["reviewId", "businessId", "userId", "rating"]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "User report against a business or listing",
+      "type": "object",
+      "properties": {
+        "reportId": { "type": "string" },
+        "businessId": { "type": "string" },
+        "userId": { "type": "string" },
+        "reason": { "type": "string" },
+        "details": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "reviewed", "resolved"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["reportId", "businessId", "userId", "reason"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles"
+    },
+    "/projects/{projectId}": {
+      "schema": { "$ref": "#/entities/Project" },
+      "description": "User construction projects"
+    },
+    "/businesses/{businessId}": {
+      "schema": { "$ref": "#/entities/Business" },
+      "description": "Construction business listings"
+    },
+    "/businesses/{businessId}/listings/{listingId}": {
+      "schema": { "$ref": "#/entities/Listing" },
+      "description": "Business inventory listings"
+    },
+    "/quoteRequests/{quoteRequestId}": {
+      "schema": { "$ref": "#/entities/QuoteRequest" },
+      "description": "Quote requests"
+    },
+    "/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/Review" },
+      "description": "Business reviews"
+    },
+    "/reports/{reportId}": {
+      "schema": { "$ref": "#/entities/Report" },
+      "description": "Business/Listing reports"
+    }
+  }
+}
