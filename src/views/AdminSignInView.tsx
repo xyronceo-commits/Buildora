@@ -25,9 +25,10 @@ export const AdminSignInView: React.FC<AdminSignInViewProps> = ({
       if (onSuccess) {
         onSuccess();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Admin Google sign in error:', err);
-      const msg = err?.message || 'Authentication failed. Please sign in with the authorized Google account.';
+      const errObj = err as { message?: string };
+      const msg = errObj?.message || 'Authentication failed. Please sign in with the authorized Google account.';
       setError(msg);
     } finally {
       setLoading(false);

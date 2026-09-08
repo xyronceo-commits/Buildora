@@ -58,8 +58,8 @@ export const SupplierOnboardingView: React.FC<SupplierOnboardingViewProps> = ({
 
   // Sync Step to LocalStorage and Firestore immediately upon state change
   useEffect(() => {
-    localStorage.setItem('buildora_supplier_onboarding_step', step.toString());
-    localStorage.setItem('buildora_temp_role', 'supplier');
+    localStorage.setItem('constrora_supplier_onboarding_step', step.toString());
+    localStorage.setItem('constrora_temp_role', 'supplier');
     if (currentUser) {
       updateUserProfile({
         role: 'supplier',
@@ -70,19 +70,19 @@ export const SupplierOnboardingView: React.FC<SupplierOnboardingViewProps> = ({
 
   // STEP 1: BUSINESS INFO
   const [businessName, setBusinessName] = useState(() => {
-    return localStorage.getItem('buildora_sup_name') || '';
+    return localStorage.getItem('constrora_sup_name') || '';
   });
   const [businessType, setBusinessType] = useState<BusinessCategory>(() => {
-    return (localStorage.getItem('buildora_sup_type') as BusinessCategory) || 'Equipment Rental';
+    return (localStorage.getItem('constrora_sup_type') as BusinessCategory) || 'Equipment Rental';
   });
 
   // STEP 2: OFFERINGS & SPECIFIC CATALOGUE
   const [offeringCategories, setOfferingCategories] = useState<string[]>(() => {
-    const saved = localStorage.getItem('buildora_sup_cats');
+    const saved = localStorage.getItem('constrora_sup_cats');
     return saved ? JSON.parse(saved) : ['equipment', 'logistics'];
   });
   const [selectedCatalogItemIds, setSelectedCatalogItemIds] = useState<string[]>(() => {
-    const saved = localStorage.getItem('buildora_sup_catalog_ids');
+    const saved = localStorage.getItem('constrora_sup_catalog_ids');
     return saved ? JSON.parse(saved) : ['cat_320_excavator', 'concrete_mixer_350l', 'tipper_10ton'];
   });
   const [catalogSearch, setCatalogSearch] = useState('');
@@ -117,10 +117,10 @@ export const SupplierOnboardingView: React.FC<SupplierOnboardingViewProps> = ({
 
   // Persist form fields
   useEffect(() => {
-    localStorage.setItem('buildora_sup_name', businessName);
-    localStorage.setItem('buildora_sup_type', businessType);
-    localStorage.setItem('buildora_sup_cats', JSON.stringify(offeringCategories));
-    localStorage.setItem('buildora_sup_catalog_ids', JSON.stringify(selectedCatalogItemIds));
+    localStorage.setItem('constrora_sup_name', businessName);
+    localStorage.setItem('constrora_sup_type', businessType);
+    localStorage.setItem('constrora_sup_cats', JSON.stringify(offeringCategories));
+    localStorage.setItem('constrora_sup_catalog_ids', JSON.stringify(selectedCatalogItemIds));
   }, [businessName, businessType, offeringCategories, selectedCatalogItemIds]);
 
   const toggleCategory = (cat: string) => {
@@ -240,7 +240,7 @@ export const SupplierOnboardingView: React.FC<SupplierOnboardingViewProps> = ({
       try {
         await setDoc(doc(db, 'businesses', bizId), sanitizeForFirestore(newBusiness));
         if (newFirstListing) {
-          await setDoc(doc(db, 'listings', newFirstListing.listingId), sanitizeForFirestore(newFirstListing));
+          await setDoc(doc(db, 'businesses', bizId, 'listings', newFirstListing.listingId), sanitizeForFirestore(newFirstListing));
         }
       } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, `businesses/${bizId}`);
@@ -248,8 +248,8 @@ export const SupplierOnboardingView: React.FC<SupplierOnboardingViewProps> = ({
     }
 
     // Mark user supplier onboarding completed
-    localStorage.setItem('buildora_supplier_onboarding_completed', 'true');
-    localStorage.removeItem('buildora_supplier_onboarding_step');
+    localStorage.setItem('constrora_supplier_onboarding_completed', 'true');
+    localStorage.removeItem('constrora_supplier_onboarding_step');
 
     await updateUserProfile({
       role: 'supplier',

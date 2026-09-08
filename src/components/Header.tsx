@@ -241,7 +241,7 @@ export const Header: React.FC<HeaderProps> = ({
             <div>
               <h3 className="text-lg font-bold text-white">ACCESS DENIED</h3>
               <p className="text-xs text-slate-400 mt-1">
-                You don't have permission to access the admin portal. Sign in with buildsafe247@gmail.com.
+                You don't have permission to access the admin portal. Sign in with an authorized admin account.
               </p>
             </div>
             <button

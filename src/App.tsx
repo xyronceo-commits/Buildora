@@ -37,7 +37,7 @@ export function App() {
 
   const isAdminAuthorized =
     Boolean(currentUser) &&
-    currentUser?.email?.toLowerCase() === 'buildsafe247@gmail.com';
+    (currentUser?.role === 'admin' || currentUser?.email?.toLowerCase() === 'buildsafe247@gmail.com');
 
   const handleAdminSignOut = async () => {
     await signOut();
@@ -64,7 +64,7 @@ export function App() {
   // Role and Onboarding State Management
   const [selectedRole, setSelectedRole] = useState<UserRole>(() => {
     if (currentUser?.role) return currentUser.role;
-    const temp = localStorage.getItem('buildora_temp_role') as UserRole;
+    const temp = localStorage.getItem('constrora_temp_role') as UserRole;
     return temp || 'client';
   });
 
@@ -204,7 +204,7 @@ export function App() {
   ];
 
   const [listings, setListings] = useState<Listing[]>(() => {
-    const saved = localStorage.getItem('buildora_listings_v3') || localStorage.getItem('buildora_listings_v2');
+    const saved = localStorage.getItem('constrora_listings_v3');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -221,7 +221,7 @@ export function App() {
   });
 
   const [businesses, setBusinesses] = useState<Business[]>(() => {
-    const saved = localStorage.getItem('buildora_businesses_v3') || localStorage.getItem('buildora_businesses_v2');
+    const saved = localStorage.getItem('constrora_businesses_v3');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -237,15 +237,15 @@ export function App() {
 
   // Automatically save state to localStorage whenever modified
   useEffect(() => {
-    localStorage.setItem('buildora_listings_v3', JSON.stringify(listings));
+    localStorage.setItem('constrora_listings_v3', JSON.stringify(listings));
   }, [listings]);
 
   useEffect(() => {
-    localStorage.setItem('buildora_quote_requests_v2', JSON.stringify(quoteRequests));
+    localStorage.setItem('constrora_quote_requests_v3', JSON.stringify(quoteRequests));
   }, [quoteRequests]);
 
   useEffect(() => {
-    localStorage.setItem('buildora_businesses_v2', JSON.stringify(businesses));
+    localStorage.setItem('constrora_businesses_v3', JSON.stringify(businesses));
   }, [businesses]);
 
   // Sync user state on auth change
@@ -356,7 +356,7 @@ export function App() {
     setActiveTab('supplier');
   };
 
-  const handleUpdateAvailability = (listingId: string, status: any) => {
+  const handleUpdateAvailability = (listingId: string, status: 'AVAILABLE' | 'RENTED' | 'MAINTENANCE' | 'OUT_OF_STOCK') => {
     setListings((prev) =>
       prev.map((l) => (l.listingId === listingId ? { ...l, availability: { ...l.availability, status } } : l))
     );
@@ -388,12 +388,12 @@ export function App() {
       <Onboarding
         onComplete={handleRoleSelectionComplete}
         onSignInClick={() => {
-          localStorage.setItem('buildora_onboarding_done', 'true');
+          localStorage.setItem('constrora_onboarding_done', 'true');
           setShowRoleSelection(false);
           openSignInModal();
         }}
         onAdminClick={() => {
-          localStorage.setItem('buildora_onboarding_done', 'true');
+          localStorage.setItem('constrora_onboarding_done', 'true');
           setShowRoleSelection(false);
           setActiveTab('admin');
         }}
@@ -511,7 +511,9 @@ export function App() {
                   }
                 }}
                 initialError={
-                  currentUser && currentUser.email?.toLowerCase() !== 'buildsafe247@gmail.com'
+                  currentUser &&
+                  currentUser.email?.toLowerCase() !== 'buildsafe247@gmail.com' &&
+                  currentUser.role !== 'admin'
                     ? 'Access denied. This Google account is not authorized to access the Constrora admin portal.'
                     : null
                 }
@@ -587,7 +589,9 @@ export function App() {
                 }
               }}
               initialError={
-                currentUser && currentUser.email?.toLowerCase() !== 'buildsafe247@gmail.com'
+                currentUser &&
+                currentUser.email?.toLowerCase() !== 'buildsafe247@gmail.com' &&
+                currentUser.role !== 'admin'
                   ? 'Access denied. This Google account is not authorized to access the Constrora admin portal.'
                   : null
               }

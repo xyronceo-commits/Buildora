@@ -5,7 +5,11 @@ import { AuthProvider } from './context/AuthContext.tsx';
 import { ProjectProvider } from './context/ProjectContext.tsx';
 import { SavedProvider } from './context/SavedContext.tsx';
 import { ThemeProvider } from './context/ThemeContext.tsx';
+import { migrateLocalStorageKeys } from './utils/migration.ts';
 import './index.css';
+
+// Perform one-time migration of legacy localStorage keys
+migrateLocalStorageKeys();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

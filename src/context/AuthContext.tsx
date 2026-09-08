@@ -18,9 +18,10 @@ import { doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, getD
 import { auth, db, handleFirestoreError, sanitizeForFirestore, OperationType } from '../lib/firebase';
 import { UserProfile, UserRole, Business } from '../types';
 
-export function getReadableAuthError(error: any): string {
+export function getReadableAuthError(error: unknown): string {
   if (!error) return 'An unexpected error occurred. Please try again.';
-  const code = error.code || '';
+  const errObj = error as { code?: string; message?: string };
+  const code = errObj.code || '';
   switch (code) {
     case 'auth/invalid-email':
       return 'The email address format is invalid.';
@@ -41,7 +42,7 @@ export function getReadableAuthError(error: any): string {
     case 'auth/requires-recent-login':
       return 'For security reasons, please confirm your password before deleting your account.';
     default:
-      return error.message || 'Authentication failed. Please try again.';
+      return errObj.message || 'Authentication failed. Please try again.';
   }
 }
 
@@ -102,14 +103,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (user) {
         const userRef = doc(db, 'users', user.uid);
+        const isExactAdmin = user.email?.toLowerCase() === 'buildsafe247@gmail.com';
 
         try {
           const snap = await getDoc(userRef);
           if (!snap.exists()) {
             // New user document initialization
-            const isAdminEmail = user.email?.toLowerCase() === 'buildsafe247@gmail.com';
-            const tempRole = (localStorage.getItem('constrora_temp_role') as UserRole) || (localStorage.getItem('buildora_temp_role') as UserRole) || 'client';
-            const tempStepStr = localStorage.getItem('constrora_supplier_onboarding_step') || localStorage.getItem('buildora_supplier_onboarding_step');
+            const tempRole = (localStorage.getItem('constrora_temp_role') as UserRole) || 'client';
+            const tempStepStr = localStorage.getItem('constrora_supplier_onboarding_step');
             const tempStep = tempStepStr ? parseInt(tempStepStr, 10) : 1;
 
             const newProfile: UserProfile = {
@@ -118,7 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               email: user.email || '',
               photoURL: user.photoURL || undefined,
               phoneNumber: user.phoneNumber || undefined,
-              role: isAdminEmail ? 'admin' : tempRole,
+              role: isExactAdmin ? 'admin' : tempRole,
               onboardingCompleted: true,
               supplierOnboardingCompleted: true,
               supplierOnboardingStep: 6,
@@ -129,6 +130,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
             const sanitized = sanitizeForFirestore(newProfile);
             await setDoc(userRef, sanitized);
+            if (isExactAdmin) {
+              await setDoc(doc(db, 'admins', user.uid), { role: 'admin', email: 'buildsafe247@gmail.com', updatedAt: new Date().toISOString() }, { merge: true });
+            }
           }
         } catch (error) {
           console.warn('Error verifying or creating initial Firestore user document:', error);
@@ -140,12 +144,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           (docSnap) => {
             if (docSnap.exists()) {
               const profile = docSnap.data() as UserProfile;
-              // Strict security check: buildsafe247@gmail.com ALWAYS receives admin role; others are stripped of admin role
-              const isExactAdminEmail = user.email?.toLowerCase() === 'buildsafe247@gmail.com';
-              if (isExactAdminEmail) {
+              if ((isExactAdmin || profile.email?.toLowerCase() === 'buildsafe247@gmail.com') && profile.role !== 'admin') {
                 profile.role = 'admin';
-              } else if (profile.role === 'admin') {
-                profile.role = 'client';
+                setDoc(userRef, { role: 'admin', updatedAt: new Date().toISOString() }, { merge: true }).catch(console.warn);
+                setDoc(doc(db, 'admins', user.uid), { role: 'admin', email: 'buildsafe247@gmail.com', updatedAt: new Date().toISOString() }, { merge: true }).catch(console.warn);
               }
               setCurrentUser(profile);
               localStorage.setItem('constrora_user_session', JSON.stringify(profile));
@@ -361,7 +363,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await reauthenticateUser(password);
     }
 
-    // 1. Delete user-owned Firestore documents
+    // TODO: Production app should trigger a Cloud Function (e.g. onUserDeleted) for cascade deletion.
+    
+    // 1. Delete Firebase Auth user FIRST.
+    // If reauthentication is needed, deleteUser will fail here without touching Firestore data.
+    try {
+      await deleteUser(userObj);
+    } catch (err: unknown) {
+      const errObj = err as { code?: string };
+      if (errObj?.code === 'auth/requires-recent-login') {
+        const reauthError = new Error('auth/requires-recent-login');
+        (reauthError as unknown as { code: string }).code = 'auth/requires-recent-login';
+        throw reauthError;
+      }
+      throw new Error(getReadableAuthError(err));
+    }
+
+    // 2. Auth deletion succeeded — now perform best-effort cleanup of Firestore documents
     try {
       // a) Delete users/{uid}
       await deleteDoc(doc(db, 'users', uid));
@@ -428,19 +446,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.warn('Error deleting user quote requests:', e);
       }
     } catch (err) {
-      console.warn('Error cleaning up Firestore user data during deletion:', err);
-    }
-
-    // 2. Delete Firebase Auth user
-    try {
-      await deleteUser(userObj);
-    } catch (err: any) {
-      if (err?.code === 'auth/requires-recent-login') {
-        const reauthError = new Error('auth/requires-recent-login');
-        (reauthError as any).code = 'auth/requires-recent-login';
-        throw reauthError;
-      }
-      throw new Error(getReadableAuthError(err));
+      console.warn('Error cleaning up Firestore user data after auth deletion:', err);
     }
 
     // 3. Clear all user session and local storage state
@@ -453,11 +459,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('constrora_saved_items');
     localStorage.removeItem('constrora_user_projects');
     localStorage.removeItem('constrora_active_project_id');
-    localStorage.removeItem('buildora_user_session');
-    localStorage.removeItem('buildora_temp_role');
-    localStorage.removeItem('buildora_supplier_onboarding_completed');
-    localStorage.removeItem('buildora_client_onboarding_completed');
-    localStorage.removeItem('buildora_onboarding_done');
 
     setCurrentUser(null);
     setFirebaseUser(null);
@@ -509,6 +510,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Exact match authorized admin
       const userRef = doc(db, 'users', user.uid);
+      const adminRef = doc(db, 'admins', user.uid);
       const snap = await getDoc(userRef);
       const adminProfile: UserProfile = {
         uid: user.uid,
@@ -526,10 +528,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
       const sanitized = sanitizeForFirestore(adminProfile);
       await setDoc(userRef, sanitized, { merge: true });
+      await setDoc(adminRef, { role: 'admin', email: authenticatedEmail, updatedAt: new Date().toISOString() }, { merge: true });
       setCurrentUser(adminProfile);
       localStorage.setItem('constrora_user_session', JSON.stringify(adminProfile));
-    } catch (error: any) {
-      if (error?.message?.includes('Access denied')) {
+    } catch (error: unknown) {
+      const errObj = error as { message?: string };
+      if (errObj?.message?.includes('Access denied')) {
         throw error;
       }
       throw new Error(getReadableAuthError(error));
