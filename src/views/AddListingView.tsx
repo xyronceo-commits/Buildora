@@ -172,7 +172,7 @@ export const AddListingView: React.FC<AddListingViewProps> = ({
                   <button
                     key={t.id}
                     type="button"
-                    onClick={() => setType(t.id as any)}
+                    onClick={() => setType(t.id as ListingType)}
                     className={`p-4 rounded-2xl border flex flex-col items-center gap-2 cursor-pointer font-bold ${
                       type === t.id ? 'bg-amber-500 text-black border-amber-500' : 'bg-slate-900 text-slate-300 border-slate-800'
                     }`}
@@ -247,7 +247,7 @@ export const AddListingView: React.FC<AddListingViewProps> = ({
                   <button
                     key={cond}
                     type="button"
-                    onClick={() => setCondition(cond as any)}
+                    onClick={() => setCondition(cond as EquipmentCondition)}
                     className={`p-2.5 rounded-xl border font-bold cursor-pointer ${
                       condition === cond ? 'bg-amber-500 text-black border-amber-500' : 'bg-slate-900 text-slate-300 border-slate-800'
                     }`}

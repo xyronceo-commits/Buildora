@@ -68,7 +68,14 @@ export interface Business {
   offeringCategories?: string[]; // e.g. ['equipment', 'logistics', 'materials']
   offeringCatalogItems?: string[]; // e.g. ['cat_320', 'concrete_mixer_350l']
   verificationStatus: VerificationStatus;
+  isVerified?: boolean;
   verificationDocUrl?: string;
+  verificationDetails?: {
+    cacNumber?: string;
+    businessRegNumber?: string;
+    tinNumber?: string;
+    idCardUrl?: string;
+  };
   rejectionReason?: string;
   rating: number;
   reviewCount: number;
@@ -204,7 +211,7 @@ export interface QuoteRequest {
   quantity: string;
   message: string;
   attachments?: string[];
-  status: 'sent' | 'viewed' | 'responded' | 'closed';
+  status: 'NEW' | 'sent' | 'viewed' | 'VIEWED' | 'responded' | 'closed';
   createdAt: string;
   updatedAt: string;
 }

@@ -144,8 +144,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           (docSnap) => {
             if (docSnap.exists()) {
               const profile = docSnap.data() as UserProfile;
-              const isAdminUser = profile.role === 'admin' || isExactAdmin || profile.email?.toLowerCase() === 'buildsafe247@gmail.com';
-              if (isAdminUser) {
+              if (isExactAdmin) {
                 profile.role = 'admin';
                 profile.emailVerified = true;
                 setDoc(userRef, { role: 'admin', emailVerified: true, updatedAt: new Date().toISOString() }, { merge: true }).catch(console.warn);
@@ -258,8 +257,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await createUserWithEmailAndPassword(auth, email, pass);
       
       const isAdminEmail = email.toLowerCase() === 'buildsafe247@gmail.com';
-      const userRole = roleOverride || (localStorage.getItem('constrora_temp_role') as UserRole) || 'client';
-      const isAdminRole = isAdminEmail || userRole === 'admin';
+      const requestedRole = roleOverride || (localStorage.getItem('constrora_temp_role') as UserRole) || 'client';
+      const userRole: UserRole = (requestedRole === 'admin' && !isAdminEmail) ? 'client' : requestedRole;
+      const isAdminRole = isAdminEmail;
 
       if (!isAdminRole) {
         try {
@@ -346,6 +346,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     localStorage.removeItem('constrora_user_session');
+    localStorage.removeItem('constrora_onboarding_done');
+    localStorage.removeItem('constrora_temp_role');
+    localStorage.removeItem('constrora_supplier_onboarding_completed');
+    localStorage.removeItem('constrora_supplier_onboarding_step');
     setCurrentUser(null);
     try {
       await firebaseSignOut(auth);
@@ -492,7 +496,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateUserProfile = async (data: Partial<UserProfile>) => {
     if (!currentUser) return;
-    const updated = { ...currentUser, ...data, updatedAt: new Date().toISOString() };
+    const cleanData = { ...data };
+    const isExactAdmin = currentUser.role === 'admin' || currentUser.email?.toLowerCase() === 'buildsafe247@gmail.com';
+    if (cleanData.role === 'admin' && !isExactAdmin) {
+      console.warn('updateUserProfile: Non-admin users cannot promote themselves to admin role.');
+      delete cleanData.role;
+    }
+    const updated = { ...currentUser, ...cleanData, updatedAt: new Date().toISOString() };
     const sanitizedLocal = sanitizeForFirestore(updated);
     setCurrentUser(sanitizedLocal as UserProfile);
     localStorage.setItem('constrora_user_session', JSON.stringify(sanitizedLocal));
@@ -501,7 +511,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (uid) {
       try {
         const patchData = sanitizeForFirestore({
-          ...data,
+          ...cleanData,
           updatedAt: new Date().toISOString(),
         });
         await setDoc(doc(db, 'users', uid), patchData, { merge: true });
@@ -520,9 +530,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const user = result.user;
       const authenticatedEmail = user.email?.toLowerCase() || '';
 
+      const isExactAdmin = authenticatedEmail === 'buildsafe247@gmail.com';
+      const adminDocRef = doc(db, 'admins', user.uid);
+      const adminSnap = await getDoc(adminDocRef);
+      const isAdminDoc = adminSnap.exists();
+
+      if (!isExactAdmin && !isAdminDoc) {
+        await firebaseSignOut(auth);
+        throw new Error('Access denied. This Google account is not an authorized administrator.');
+      }
+
       // Register and set authorized admin profile for Google auth via admin portal
       const userRef = doc(db, 'users', user.uid);
-      const adminRef = doc(db, 'admins', user.uid);
       const snap = await getDoc(userRef);
       const adminProfile: UserProfile = {
         uid: user.uid,
@@ -540,7 +559,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
       const sanitized = sanitizeForFirestore(adminProfile);
       await setDoc(userRef, sanitized, { merge: true });
-      await setDoc(adminRef, { role: 'admin', email: authenticatedEmail, updatedAt: new Date().toISOString() }, { merge: true });
+      if (isExactAdmin) {
+        await setDoc(adminDocRef, { role: 'admin', email: authenticatedEmail, updatedAt: new Date().toISOString() }, { merge: true });
+      }
       setCurrentUser(adminProfile);
       localStorage.setItem('constrora_user_session', JSON.stringify(adminProfile));
     } catch (error: unknown) {
@@ -551,8 +572,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const setUserRole = async (role: UserRole) => {
-    localStorage.setItem('constrora_temp_role', role);
-    await updateUserProfile({ role });
+    if (role === 'admin' && currentUser?.role !== 'admin' && currentUser?.email?.toLowerCase() !== 'buildsafe247@gmail.com') {
+      console.warn('setUserRole: Self-service users cannot set admin role.');
+      return;
+    }
+    const validRole = (role === 'supplier' ? 'supplier' : 'client') as UserRole;
+    localStorage.setItem('constrora_temp_role', validRole);
+    await updateUserProfile({ role: validRole });
   };
 
   const setSupplierOnboardingStep = async (step: number) => {

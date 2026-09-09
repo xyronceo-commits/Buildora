@@ -230,7 +230,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
               <label className="font-bold text-slate-300 block mb-1">Sort By</label>
               <select
                 value={filters.sortBy}
-                onChange={(e) => setFilters({ ...filters, sortBy: e.target.value as any })}
+                onChange={(e) => setFilters({ ...filters, sortBy: e.target.value as FilterState['sortBy'] })}
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
               >
                 <option value="nearest">Nearest to Project Site</option>

@@ -406,7 +406,7 @@ export const SupplierOnboardingView: React.FC<SupplierOnboardingViewProps> = ({
                 </label>
                 <select
                   value={businessType}
-                  onChange={(e) => setBusinessType(e.target.value as any)}
+                  onChange={(e) => setBusinessType(e.target.value as BusinessCategory)}
                   className="w-full bg-slate-900 border-2 border-slate-800 rounded-xl p-3.5 text-xs text-white font-bold focus:border-amber-500 outline-none"
                 >
                   <option value="Equipment Rental">Equipment Rental</option>
@@ -579,7 +579,7 @@ export const SupplierOnboardingView: React.FC<SupplierOnboardingViewProps> = ({
                   </label>
                   <select
                     value={listingCondition}
-                    onChange={(e) => setListingCondition(e.target.value as any)}
+                    onChange={(e) => setListingCondition(e.target.value as EquipmentCondition)}
                     className="w-full bg-slate-900 border-2 border-slate-800 rounded-xl p-3 text-xs text-white font-bold"
                   >
                     <option value="NEW">New</option>
@@ -594,7 +594,7 @@ export const SupplierOnboardingView: React.FC<SupplierOnboardingViewProps> = ({
                   </label>
                   <select
                     value={listingAvailability}
-                    onChange={(e) => setListingAvailability(e.target.value as any)}
+                    onChange={(e) => setListingAvailability(e.target.value as AvailabilityStatus)}
                     className="w-full bg-slate-900 border-2 border-slate-800 rounded-xl p-3 text-xs text-white font-bold text-emerald-400"
                   >
                     <option value="AVAILABLE">AVAILABLE NOW</option>

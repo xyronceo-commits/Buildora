@@ -41,8 +41,12 @@ export function App() {
     (currentUser?.role === 'admin' || currentUser?.email?.toLowerCase() === 'buildsafe247@gmail.com');
 
   const handleAdminSignOut = async () => {
+    localStorage.removeItem('constrora_onboarding_done');
+    localStorage.removeItem('constrora_temp_role');
     await signOut();
-    setActiveTab('admin');
+    setShowRoleSelection(true);
+    setActiveTab('home');
+    setSubView('none');
   };
 
   // Admin Route Listener for /admin and #admin
@@ -209,6 +213,7 @@ export function App() {
       if (currentUser.role) {
         setSelectedRole(currentUser.role);
       }
+      setShowRoleSelection(false);
       setSubView('none');
       if (currentUser.role === 'supplier') {
         setActiveTab('supplier');
@@ -218,6 +223,7 @@ export function App() {
     } else {
       setSubView('none');
       setActiveTab('home');
+      setShowRoleSelection(true);
     }
   }, [currentUser]);
 
@@ -378,6 +384,171 @@ export function App() {
   const effectiveRole: UserRole = currentUser?.role || selectedRole || 'client';
   const isSupplierRole = effectiveRole === 'supplier';
 
+  const renderAdminView = () => {
+    if (isAdminAuthorized) {
+      return (
+        <AdminDashboardView
+          businesses={businesses}
+          listings={listings}
+          quoteRequests={quoteRequests}
+          onVerifyBusiness={handleVerifyBusiness}
+          onSignOutAdmin={handleAdminSignOut}
+        />
+      );
+    }
+    return (
+      <AdminSignInView
+        onSuccess={() => setActiveTab('admin')}
+        onReturnHome={() => {
+          setActiveTab('home');
+          if (window.location.pathname.toLowerCase().startsWith('/admin')) {
+            window.history.pushState({}, '', '/');
+          }
+        }}
+        initialError={
+          currentUser &&
+          currentUser.email?.toLowerCase() !== 'buildsafe247@gmail.com' &&
+          currentUser.role !== 'admin'
+            ? 'Access denied. This Google account is not authorized to access the Constrora admin portal.'
+            : null
+        }
+      />
+    );
+  };
+
+  const renderMainView = () => {
+    if (subView === 'supplier_onboarding') {
+      return (
+        <SupplierOnboardingView
+          onBackToRoleSelection={() => setShowRoleSelection(true)}
+          onComplete={handleSupplierOnboardingFinished}
+          onOpenAuthModal={() => openSignInModal()}
+        />
+      );
+    }
+    if (subView === 'client_onboarding') {
+      return (
+        <ClientOnboardingView
+          onComplete={handleClientOnboardingFinished}
+          onBackToRoleSelection={() => setShowRoleSelection(true)}
+        />
+      );
+    }
+    if (subView === 'detail' && selectedListing) {
+      return (
+        <ListingDetailView
+          listing={selectedListing}
+          onBack={() => setSubView('none')}
+          onViewBusiness={(bizId) => {
+            setSelectedBusinessId(bizId);
+            setSubView('business');
+          }}
+          onCompareToggle={handleToggleCompare}
+          isCompared={comparedListings.some((c) => c.listingId === selectedListing.listingId)}
+          onQuoteSent={handleSendQuoteRequest}
+        />
+      );
+    }
+    if (subView === 'business' && currentBusiness) {
+      return (
+        <BusinessDetailView
+          business={currentBusiness}
+          listings={listings}
+          onBack={() => setSubView('none')}
+          onSelectListing={handleSelectListing}
+          onCompareToggle={handleToggleCompare}
+          comparedListings={comparedListings}
+        />
+      );
+    }
+    if (subView === 'add_listing') {
+      return (
+        <AddListingView
+          businessId={currentBusiness.businessId}
+          businessName={currentBusiness.businessName}
+          onBack={() => setSubView('none')}
+          onPublish={handlePublishListing}
+        />
+      );
+    }
+
+    if (activeTab === 'admin') {
+      return renderAdminView();
+    }
+
+    if (activeTab === 'profile') {
+      return (
+        <ProfileView
+          onOpenAuthModal={() => openSignInModal()}
+          onOpenSignInModal={() => openSignInModal()}
+          onOpenSignUpModal={() => openSignUpModal()}
+          onNavigateTab={(tab) => {
+            setActiveTab(tab);
+            setSubView('none');
+          }}
+          quoteRequests={quoteRequests}
+        />
+      );
+    }
+
+    if (isSupplierRole) {
+      const initialSupplierTab = activeTab === 'quotes' ? 'quotes' : 'listings';
+      return (
+        <SupplierDashboardView
+          business={currentBusiness}
+          listings={listings}
+          initialTab={initialSupplierTab}
+          onAddListingClick={() => setSubView('add_listing')}
+          onUpdateAvailability={handleUpdateAvailability}
+          quoteRequests={quoteRequests}
+        />
+      );
+    }
+
+    // Client/Default tabs
+    if (activeTab === 'search') {
+      return (
+        <SearchView
+          listings={listings}
+          initialCategory={searchCategory}
+          initialQuery={searchQuery}
+          onSelectListing={handleSelectListing}
+          onCompareToggle={handleToggleCompare}
+          comparedListings={comparedListings}
+        />
+      );
+    }
+    if (activeTab === 'saved') {
+      return (
+        <SavedView
+          allListings={listings}
+          allBusinesses={businesses}
+          onSelectListing={handleSelectListing}
+          onSelectBusiness={handleSelectBusiness}
+          onCompareToggle={handleToggleCompare}
+          comparedListings={comparedListings}
+        />
+      );
+    }
+    if (activeTab === 'projects') {
+      return <ProjectsView onOpenProjectModal={() => setIsProjectModalOpen(true)} />;
+    }
+
+    // Default 'home'
+    return (
+      <HomeView
+        listings={listings}
+        onSelectListing={handleSelectListing}
+        onSelectCategory={handleSelectCategory}
+        onSearchSubmit={handleSearchSubmit}
+        onOpenProjectModal={() => setIsProjectModalOpen(true)}
+        onCompareToggle={handleToggleCompare}
+        comparedListings={comparedListings}
+        onNavigateToAdmin={() => setActiveTab('admin')}
+      />
+    );
+  };
+
   return (
     <div
       className={`min-h-screen flex flex-col font-['Plus_Jakarta_Sans',sans-serif] transition-colors ${
@@ -405,186 +576,7 @@ export function App() {
 
       {/* Main Page Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        {/* SubView Render Rules */}
-        {subView === 'supplier_onboarding' ? (
-          <SupplierOnboardingView
-            onBackToRoleSelection={() => setShowRoleSelection(true)}
-            onComplete={handleSupplierOnboardingFinished}
-            onOpenAuthModal={() => openSignInModal()}
-          />
-        ) : subView === 'client_onboarding' ? (
-          <ClientOnboardingView
-            onComplete={handleClientOnboardingFinished}
-            onBackToRoleSelection={() => setShowRoleSelection(true)}
-          />
-        ) : subView === 'detail' && selectedListing ? (
-          <ListingDetailView
-            listing={selectedListing}
-            onBack={() => setSubView('none')}
-            onViewBusiness={(bizId) => {
-              setSelectedBusinessId(bizId);
-              setSubView('business');
-            }}
-            onCompareToggle={handleToggleCompare}
-            isCompared={comparedListings.some((c) => c.listingId === selectedListing.listingId)}
-            onQuoteSent={handleSendQuoteRequest}
-          />
-        ) : subView === 'business' && currentBusiness ? (
-          <BusinessDetailView
-            business={currentBusiness}
-            listings={listings}
-            onBack={() => setSubView('none')}
-            onSelectListing={handleSelectListing}
-            onCompareToggle={handleToggleCompare}
-            comparedListings={comparedListings}
-          />
-        ) : subView === 'add_listing' ? (
-          <AddListingView
-            businessId={currentBusiness.businessId}
-            businessName={currentBusiness.businessName}
-            onBack={() => setSubView('none')}
-            onPublish={handlePublishListing}
-          />
-        ) : isSupplierRole ? (
-          /* STRICT SUPPLIER DASHBOARD: NO DISCOVER, ONLY HOMEPAGE (LISTINGS), REQUEST FOR QUOTES, AND PROFILE */
-          activeTab === 'quotes' ? (
-            <SupplierDashboardView
-              business={currentBusiness}
-              listings={listings}
-              initialTab="quotes"
-              onAddListingClick={() => setSubView('add_listing')}
-              onUpdateAvailability={handleUpdateAvailability}
-              quoteRequests={quoteRequests}
-            />
-          ) : activeTab === 'profile' ? (
-            <ProfileView
-              onOpenAuthModal={() => openSignInModal()}
-              onOpenSignInModal={() => openSignInModal()}
-              onOpenSignUpModal={() => openSignUpModal()}
-              onNavigateTab={(tab) => {
-                setActiveTab(tab);
-                setSubView('none');
-              }}
-              quoteRequests={quoteRequests}
-            />
-          ) : activeTab === 'admin' ? (
-            isAdminAuthorized ? (
-              <AdminDashboardView
-                businesses={businesses}
-                listings={listings}
-                quoteRequests={quoteRequests}
-                onVerifyBusiness={handleVerifyBusiness}
-                onSignOutAdmin={handleAdminSignOut}
-              />
-            ) : (
-              <AdminSignInView
-                onSuccess={() => setActiveTab('admin')}
-                onReturnHome={() => {
-                  setActiveTab('home');
-                  if (window.location.pathname.toLowerCase().startsWith('/admin')) {
-                    window.history.pushState({}, '', '/');
-                  }
-                }}
-                initialError={
-                  currentUser &&
-                  currentUser.email?.toLowerCase() !== 'buildsafe247@gmail.com' &&
-                  currentUser.role !== 'admin'
-                    ? 'Access denied. This Google account is not authorized to access the Constrora admin portal.'
-                    : null
-                }
-              />
-            )
-          ) : (
-            <SupplierDashboardView
-              business={currentBusiness}
-              listings={listings}
-              initialTab="listings"
-              onAddListingClick={() => setSubView('add_listing')}
-              onUpdateAvailability={handleUpdateAvailability}
-              quoteRequests={quoteRequests}
-            />
-          )
-        ) : activeTab === 'home' ? (
-          <HomeView
-            listings={listings}
-            onSelectListing={handleSelectListing}
-            onSelectCategory={handleSelectCategory}
-            onSearchSubmit={handleSearchSubmit}
-            onOpenProjectModal={() => setIsProjectModalOpen(true)}
-            onCompareToggle={handleToggleCompare}
-            comparedListings={comparedListings}
-            onNavigateToAdmin={() => setActiveTab('admin')}
-          />
-        ) : activeTab === 'search' ? (
-          <SearchView
-            listings={listings}
-            initialCategory={searchCategory}
-            initialQuery={searchQuery}
-            onSelectListing={handleSelectListing}
-            onCompareToggle={handleToggleCompare}
-            comparedListings={comparedListings}
-          />
-        ) : activeTab === 'saved' ? (
-          <SavedView
-            allListings={listings}
-            allBusinesses={businesses}
-            onSelectListing={handleSelectListing}
-            onSelectBusiness={handleSelectBusiness}
-            onCompareToggle={handleToggleCompare}
-            comparedListings={comparedListings}
-          />
-        ) : activeTab === 'projects' ? (
-          <ProjectsView onOpenProjectModal={() => setIsProjectModalOpen(true)} />
-        ) : activeTab === 'profile' ? (
-          <ProfileView
-            onOpenAuthModal={() => openSignInModal()}
-            onOpenSignInModal={() => openSignInModal()}
-            onOpenSignUpModal={() => openSignUpModal()}
-            onNavigateTab={(tab) => {
-              setActiveTab(tab);
-              setSubView('none');
-            }}
-            quoteRequests={quoteRequests}
-          />
-        ) : activeTab === 'admin' ? (
-          isAdminAuthorized ? (
-            <AdminDashboardView
-              businesses={businesses}
-              listings={listings}
-              quoteRequests={quoteRequests}
-              onVerifyBusiness={handleVerifyBusiness}
-              onSignOutAdmin={handleAdminSignOut}
-            />
-          ) : (
-            <AdminSignInView
-              onSuccess={() => setActiveTab('admin')}
-              onReturnHome={() => {
-                setActiveTab('home');
-                if (window.location.pathname.toLowerCase().startsWith('/admin')) {
-                  window.history.pushState({}, '', '/');
-                }
-              }}
-              initialError={
-                currentUser &&
-                currentUser.email?.toLowerCase() !== 'buildsafe247@gmail.com' &&
-                currentUser.role !== 'admin'
-                  ? 'Access denied. This Google account is not authorized to access the Constrora admin portal.'
-                  : null
-              }
-            />
-          )
-        ) : (
-          <HomeView
-            listings={listings}
-            onSelectListing={handleSelectListing}
-            onSelectCategory={handleSelectCategory}
-            onSearchSubmit={handleSearchSubmit}
-            onOpenProjectModal={() => setIsProjectModalOpen(true)}
-            onCompareToggle={handleToggleCompare}
-            comparedListings={comparedListings}
-            onNavigateToAdmin={() => setActiveTab('admin')}
-          />
-        )}
+        {renderMainView()}
       </main>
 
       {/* Mobile Bottom Navigation */}

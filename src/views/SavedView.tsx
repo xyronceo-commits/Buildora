@@ -56,7 +56,7 @@ export const SavedView: React.FC<SavedViewProps> = ({
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as 'all' | 'equipment' | 'material' | 'logistics' | 'business')}
               className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap cursor-pointer transition-all ${
                 activeTab === tab.id
                   ? 'bg-amber-500 text-black shadow'

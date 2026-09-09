@@ -30,14 +30,15 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useTheme, Theme } from '../context/ThemeContext';
 import { useProject } from '../context/ProjectContext';
-import { UserRole } from '../types';
+import { UserRole, QuoteRequest } from '../types';
+import { NavTab } from '../components/BottomNav';
 
 interface ProfileViewProps {
   onOpenAuthModal: () => void;
   onOpenSignInModal?: () => void;
   onOpenSignUpModal?: () => void;
-  onNavigateTab: (tab: any) => void;
-  quoteRequests?: any[];
+  onNavigateTab: (tab: NavTab) => void;
+  quoteRequests?: QuoteRequest[];
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({

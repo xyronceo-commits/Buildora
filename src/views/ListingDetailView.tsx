@@ -17,7 +17,7 @@ import {
   AlertCircle,
   Share2,
 } from 'lucide-react';
-import { Listing } from '../types';
+import { Listing, QuoteRequest } from '../types';
 import { useProject } from '../context/ProjectContext';
 import { useSaved } from '../context/SavedContext';
 import { formatDistance } from '../utils/distance';
@@ -30,7 +30,7 @@ interface ListingDetailViewProps {
   onViewBusiness: (businessId: string) => void;
   onCompareToggle: (listing: Listing) => void;
   isCompared: boolean;
-  onQuoteSent?: (quote: any) => void;
+  onQuoteSent?: (quote: QuoteRequest) => void;
 }
 
 export const ListingDetailView: React.FC<ListingDetailViewProps> = ({

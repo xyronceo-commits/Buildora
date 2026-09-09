@@ -164,7 +164,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   );
 
   // Item Handlers
-  const handleItemChange = (index: number, field: keyof QuoteLineItem, value: any) => {
+  const handleItemChange = (index: number, field: keyof QuoteLineItem, value: string | number) => {
     setItems((prev) => {
       const copy = [...prev];
       const item = { ...copy[index], [field]: value };

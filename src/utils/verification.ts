@@ -4,7 +4,10 @@ import { VerificationStatus } from '../types';
  * Single source of truth for normalizing business and supplier verification status values.
  * Handles strings like "VERIFIED", "verified", "Approved", "VERIFICATION_PENDING", "PENDING", true, etc.
  */
-export function normalizeVerificationStatus(status: any): VerificationStatus {
+export function normalizeVerificationStatus(status: unknown, isVerified?: boolean): VerificationStatus {
+  if (isVerified === true) {
+    return 'VERIFIED';
+  }
   if (status === null || status === undefined) {
     return 'LISTED';
   }

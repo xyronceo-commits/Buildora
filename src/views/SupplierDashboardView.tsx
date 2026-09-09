@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { collection, getDocs, onSnapshot, doc, updateDoc, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Business, Listing, QuoteRequest, SupplierQuote } from '../types';
+import { Business, Listing, QuoteRequest, SupplierQuote, AvailabilityStatus } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { VerificationBadge } from '../components/VerificationBadge';
 import { QuoteBuilderModal } from '../components/QuoteBuilderModal';
@@ -38,7 +38,7 @@ interface SupplierDashboardViewProps {
   initialTab?: 'listings' | 'requests' | 'quotes' | 'verification';
   quoteRequests?: QuoteRequest[];
   onAddListingClick: () => void;
-  onUpdateAvailability: (listingId: string, status: any) => void;
+  onUpdateAvailability: (listingId: string, status: AvailabilityStatus) => void;
 }
 
 export const SupplierDashboardView: React.FC<SupplierDashboardViewProps> = ({
