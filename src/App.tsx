@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, collectionGroup, onSnapshot, doc, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, collectionGroup, onSnapshot, doc, setDoc, updateDoc, query, where } from 'firebase/firestore';
 import { db, sanitizeForFirestore } from './lib/firebase';
 import { useAuth } from './context/AuthContext';
 import { useProject } from './context/ProjectContext';
@@ -141,18 +141,67 @@ export function App() {
     return () => unsub();
   }, []);
 
-  // Real-time Firestore Sync for Quote Requests
+  // Real-time Firestore Sync for Quote Requests using targeted rules-compliant queries
   useEffect(() => {
-    const unsub = onSnapshot(
-      collection(db, 'quoteRequests'),
-      (snap) => {
-        const list = snap.docs.map((d) => d.data() as QuoteRequest);
-        setQuoteRequests(list);
-      },
-      (err) => console.warn('Quote requests listener warning:', err)
+    if (!currentUser) {
+      setQuoteRequests([]);
+      return;
+    }
+
+    if (currentUser.role === 'admin') {
+      const unsub = onSnapshot(
+        collection(db, 'quoteRequests'),
+        (snap) => {
+          const list = snap.docs.map((d) => ({ ...d.data(), quoteRequestId: d.id } as QuoteRequest));
+          setQuoteRequests(list);
+        },
+        (err) => console.warn('Admin quote requests listener warning:', err)
+      );
+      return () => unsub();
+    }
+
+    const unsubs: (() => void)[] = [];
+    const requestsMap = new Map<string, QuoteRequest>();
+
+    const updateCombined = () => {
+      const list = Array.from(requestsMap.values()).sort((a, b) => {
+        const tA = new Date(a.createdAt || 0).getTime();
+        const tB = new Date(b.createdAt || 0).getTime();
+        return tB - tA;
+      });
+      setQuoteRequests(list);
+    };
+
+    // Client quote requests
+    const clientQuery = query(collection(db, 'quoteRequests'), where('clientId', '==', currentUser.uid));
+    unsubs.push(
+      onSnapshot(clientQuery, (snap) => {
+        snap.docs.forEach((d) => requestsMap.set(d.id, { ...d.data(), quoteRequestId: d.id } as QuoteRequest));
+        updateCombined();
+      }, (err) => console.warn('Client quote listener info:', err))
     );
-    return () => unsub();
-  }, []);
+
+    // Supplier owner quote requests
+    const supplierOwnerQuery = query(collection(db, 'quoteRequests'), where('supplierOwnerId', '==', currentUser.uid));
+    unsubs.push(
+      onSnapshot(supplierOwnerQuery, (snap) => {
+        snap.docs.forEach((d) => requestsMap.set(d.id, { ...d.data(), quoteRequestId: d.id } as QuoteRequest));
+        updateCombined();
+      }, (err) => console.warn('Supplier owner quote listener info:', err))
+    );
+
+    if (currentUser.businessId && currentUser.businessId !== 'biz_default') {
+      const supplierBizQuery = query(collection(db, 'quoteRequests'), where('supplierBusinessId', '==', currentUser.businessId));
+      unsubs.push(
+        onSnapshot(supplierBizQuery, (snap) => {
+          snap.docs.forEach((d) => requestsMap.set(d.id, { ...d.data(), quoteRequestId: d.id } as QuoteRequest));
+          updateCombined();
+        }, (err) => console.warn('Supplier biz quote listener info:', err))
+      );
+    }
+
+    return () => unsubs.forEach((u) => u());
+  }, [currentUser?.uid, currentUser?.role, currentUser?.businessId]);
 
   // Sync user state on auth change
   useEffect(() => {

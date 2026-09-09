@@ -24,7 +24,7 @@ import {
   Search,
   Filter,
 } from 'lucide-react';
-import { collection, getDocs, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, onSnapshot, doc, updateDoc, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Business, Listing, QuoteRequest, SupplierQuote } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -119,45 +119,109 @@ export const SupplierDashboardView: React.FC<SupplierDashboardViewProps> = ({
 
   const supplierListingIds = new Set(supplierListings.map((l) => l.listingId));
 
-  // Subscribe in real-time to Firestore quoteRequests
+  // Subscribe in real-time to Firestore quoteRequests using targeted queries to satisfy rules
   useEffect(() => {
-    const qRef = collection(db, 'quoteRequests');
-    const unsub = onSnapshot(
-      qRef,
-      (snapshot) => {
-        const docs = snapshot.docs.map((d) => ({
-          ...d.data(),
-          quoteRequestId: d.id,
-        })) as QuoteRequest[];
+    if (!currentUser?.uid) return;
 
-        const bizId = business?.businessId || currentUser?.businessId;
-        const filtered = docs.filter(
-          (q) =>
-            (bizId && (q.businessId === bizId || q.supplierBusinessId === bizId)) ||
-            (currentUser?.uid && (q.userId === currentUser.uid || q.clientId === currentUser.uid)) ||
-            (q.listingId && supplierListingIds.has(q.listingId))
+    const bizId = business?.businessId || currentUser?.businessId;
+    const unsubs: (() => void)[] = [];
+    const requestsMap = new Map<string, QuoteRequest>();
+
+    const updateCombined = () => {
+      const list = Array.from(requestsMap.values()).filter(
+        (q) =>
+          (bizId && (q.businessId === bizId || q.supplierBusinessId === bizId)) ||
+          (currentUser?.uid && (q.supplierOwnerId === currentUser.uid || q.userId === currentUser.uid || q.clientId === currentUser.uid)) ||
+          (q.listingId && supplierListingIds.has(q.listingId))
+      );
+
+      list.sort((a, b) => {
+        const tA = new Date(a.createdAt || 0).getTime();
+        const tB = new Date(b.createdAt || 0).getTime();
+        return tB - tA;
+      });
+
+      setRealtimeRequests(list);
+    };
+
+    if (currentUser.role === 'admin') {
+      const qRef = collection(db, 'quoteRequests');
+      const unsub = onSnapshot(
+        qRef,
+        (snapshot) => {
+          snapshot.docs.forEach((d) => {
+            requestsMap.set(d.id, { ...d.data(), quoteRequestId: d.id } as QuoteRequest);
+          });
+          updateCombined();
+        },
+        (err) => console.warn('Admin quote requests listener info:', err)
+      );
+      unsubs.push(unsub);
+    } else {
+      // 1. Query quote requests targeting supplier owner ID
+      const qSupplierOwner = query(
+        collection(db, 'quoteRequests'),
+        where('supplierOwnerId', '==', currentUser.uid)
+      );
+      unsubs.push(
+        onSnapshot(
+          qSupplierOwner,
+          (snap) => {
+            snap.docs.forEach((d) => {
+              requestsMap.set(d.id, { ...d.data(), quoteRequestId: d.id } as QuoteRequest);
+            });
+            updateCombined();
+          },
+          (err) => console.warn('Supplier owner quote query info:', err)
+        )
+      );
+
+      // 2. Query quote requests targeting client ID
+      const qClient = query(
+        collection(db, 'quoteRequests'),
+        where('clientId', '==', currentUser.uid)
+      );
+      unsubs.push(
+        onSnapshot(
+          qClient,
+          (snap) => {
+            snap.docs.forEach((d) => {
+              requestsMap.set(d.id, { ...d.data(), quoteRequestId: d.id } as QuoteRequest);
+            });
+            updateCombined();
+          },
+          (err) => console.warn('Client quote query info:', err)
+        )
+      );
+
+      // 3. Query quote requests targeting business ID if present
+      if (bizId && bizId !== 'biz_default') {
+        const qBiz = query(
+          collection(db, 'quoteRequests'),
+          where('supplierBusinessId', '==', bizId)
         );
-
-        filtered.sort((a, b) => {
-          const tA = new Date(a.createdAt || 0).getTime();
-          const tB = new Date(b.createdAt || 0).getTime();
-          return tB - tA;
-        });
-
-        setRealtimeRequests(filtered);
-      },
-      (err) => {
-        console.warn('Realtime quote requests listener info:', err);
+        unsubs.push(
+          onSnapshot(
+            qBiz,
+            (snap) => {
+              snap.docs.forEach((d) => {
+                requestsMap.set(d.id, { ...d.data(), quoteRequestId: d.id } as QuoteRequest);
+              });
+              updateCombined();
+            },
+            (err) => console.warn('Supplier business quote query info:', err)
+          )
+        );
       }
-    );
+    }
 
-    return () => unsub();
-  }, [business?.businessId, currentUser?.uid, currentUser?.businessId, supplierListings.length]);
+    return () => unsubs.forEach((u) => u());
+  }, [business?.businessId, currentUser?.uid, currentUser?.businessId, currentUser?.role, supplierListings.length]);
 
   const effectiveQuoteRequests = realtimeRequests.length > 0 ? realtimeRequests : passedQuoteRequests.filter(
     (q) =>
       (business?.businessId && (q.businessId === business.businessId || q.supplierBusinessId === business.businessId)) ||
-      (currentUser?.uid && q.userId === currentUser.uid) ||
+      (currentUser?.uid && (q.supplierOwnerId === currentUser.uid || q.userId === currentUser.uid || q.clientId === currentUser.uid)) ||
       (q.listingId && supplierListingIds.has(q.listingId))
   );
 

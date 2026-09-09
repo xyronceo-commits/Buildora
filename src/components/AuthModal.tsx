@@ -42,6 +42,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  // Supplier Specific Fields (Only used during Supplier Sign Up)
+  const [businessName, setBusinessName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('Osogbo');
+  const [state, setState] = useState('Osun State');
+  const [businessCategory, setBusinessCategory] = useState<string>('Equipment Rental');
+  const [description, setDescription] = useState('');
+
   // Status & Feedback
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -54,6 +63,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setMode(initialIsSignUp ? 'signup' : 'signin');
       setError(null);
       setSuccessMsg(null);
+      setDisplayName('');
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
+      setBusinessName('');
+      setPhoneNumber('');
+      setAddress('');
+      setCity('Osogbo');
+      setState('Osun State');
+      setBusinessCategory('Equipment Rental');
+      setDescription('');
     }
   }, [isOpen, initialRole, initialIsSignUp]);
 
@@ -71,10 +91,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     // Form validations
     if (mode === 'signup') {
-      if (!displayName.trim()) {
-        setError('Please enter your full name.');
-        return;
+      if (role === 'supplier') {
+        if (!businessName.trim()) {
+          setError('Please enter your Company / Business Name.');
+          return;
+        }
+        if (!displayName.trim()) {
+          setError('Please enter the Manager / Contact Person Name.');
+          return;
+        }
+        if (!phoneNumber.trim()) {
+          setError('Please enter your Phone Number / WhatsApp contact.');
+          return;
+        }
+        if (!address.trim()) {
+          setError('Please enter your Company Physical Address.');
+          return;
+        }
+      } else {
+        if (!displayName.trim()) {
+          setError('Please enter your Full Name.');
+          return;
+        }
       }
+
       if (password.length < 6) {
         setError('Password must be at least 6 characters long.');
         return;
@@ -91,7 +131,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       localStorage.setItem('constrora_temp_role', role);
 
       if (mode === 'signup') {
-        await signUpWithEmail(email, password, displayName, role);
+        await signUpWithEmail(
+          email,
+          password,
+          role === 'supplier' ? displayName : displayName,
+          role,
+          role === 'supplier'
+            ? {
+                businessName,
+                phoneNumber,
+                address,
+                city,
+                state,
+                location: `${address}, ${city}, ${state}`,
+                businessCategory,
+                description,
+              }
+            : undefined
+        );
         onClose();
       } else if (mode === 'signin') {
         await signInWithEmail(email, password);
@@ -280,7 +337,137 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           ) : (
             /* EMAIL SIGN IN / SIGN UP / FORGOT PASSWORD FORMS */
             <form onSubmit={handleSubmit} className="space-y-3.5">
-              {mode === 'signup' && (
+              {/* SUPPLIER SIGN UP SPECIFIC FIELDS */}
+              {mode === 'signup' && role === 'supplier' && (
+                <>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                      Company / Business Name *
+                    </label>
+                    <div className="relative">
+                      <Building2 className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
+                      <input
+                        type="text"
+                        required
+                        value={businessName}
+                        onChange={(e) => setBusinessName(e.target.value)}
+                        placeholder="e.g. BuildPro Heavy Fleet & Materials Ltd"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-2xl pl-10 pr-3.5 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                      Manager / Contact Person Name *
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
+                      <input
+                        type="text"
+                        required
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        placeholder="e.g. Adeyemi Johnson"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-2xl pl-10 pr-3.5 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                      Phone Number / WhatsApp *
+                    </label>
+                    <div className="relative">
+                      <Phone className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
+                      <input
+                        type="tel"
+                        required
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        placeholder="e.g. +234 803 123 4567"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-2xl pl-10 pr-3.5 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                      Primary Business Category *
+                    </label>
+                    <select
+                      value={businessCategory}
+                      onChange={(e) => setBusinessCategory(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-3.5 py-3 text-xs text-white focus:outline-none focus:border-amber-500 font-bold cursor-pointer"
+                    >
+                      <option value="Equipment Rental">Equipment Rental (Heavy Machinery & Fleet)</option>
+                      <option value="Building Materials">Building Materials (Cement, Granite, Sand, Rebar)</option>
+                      <option value="Logistics & Haulage">Logistics & Haulage (Tipper & Truck Transport)</option>
+                      <option value="Construction Services">Construction Services (Site Survey, Workmanship)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                      Company Physical Depot Address *
+                    </label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-500" />
+                      <input
+                        type="text"
+                        required
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder="e.g. Km 4, Osogbo-Ilesa Expressway"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-2xl pl-10 pr-3.5 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                        City
+                      </label>
+                      <input
+                        type="text"
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        placeholder="e.g. Osogbo"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-3.5 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                        State
+                      </label>
+                      <input
+                        type="text"
+                        value={state}
+                        onChange={(e) => setState(e.target.value)}
+                        placeholder="e.g. Osun State"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-3.5 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                      Company Description / Services (Optional)
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="e.g. Certified supplier providing excavators, 20-ton tippers, and site delivery."
+                      className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-bold resize-none"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* CLIENT SIGN UP NAME FIELD */}
+              {mode === 'signup' && role === 'client' && (
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
                     Full Name *
@@ -292,7 +479,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       required
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
-                      placeholder={role === 'supplier' ? 'Company or Fleet Manager Name' : 'John Doe'}
+                      placeholder="John Doe"
                       className="w-full bg-slate-900 border border-slate-800 rounded-2xl pl-10 pr-3.5 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-bold"
                     />
                   </div>

@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Send, HardHat, CheckCircle2, Paperclip, Calendar, MapPin, User, Phone, Mail, Box } from 'lucide-react';
 import { doc, setDoc } from 'firebase/firestore';
-import { db, handleFirestoreError, sanitizeForFirestore } from '../lib/firebase';
+import { signInAnonymously } from 'firebase/auth';
+import { auth, db, handleFirestoreError, sanitizeForFirestore } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useProject } from '../context/ProjectContext';
 import { Listing, QuoteRequest } from '../types';
@@ -12,6 +13,7 @@ interface QuoteModalProps {
   onClose: () => void;
   listing?: Listing;
   supplierBusinessId?: string;
+  supplierOwnerId?: string;
   businessName?: string;
   onQuoteSent?: (quote: QuoteRequest) => void;
 }
@@ -21,6 +23,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
   onClose,
   listing,
   supplierBusinessId,
+  supplierOwnerId,
   businessName,
   onQuoteSent,
 }) => {
@@ -54,54 +57,63 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
   if (!isOpen) return null;
 
   const targetBusinessId = listing?.businessId || supplierBusinessId || 'biz_default';
+  const targetSupplierOwnerId = listing?.ownerId || supplierOwnerId || '';
   const targetBusinessName = listing?.businessName || businessName || 'Supplier';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    const quoteReqId = `req_${Date.now()}`;
-    const qtySummary = `${quantity} ${unit}`;
-
-    const quoteData: QuoteRequest = {
-      quoteRequestId: quoteReqId,
-      clientId: currentUser?.uid || 'guest_user',
-      userId: currentUser?.uid || 'guest_user',
-      supplierBusinessId: targetBusinessId,
-      businessId: targetBusinessId,
-      listingId: listing?.listingId || '',
-      listingTitle: listing?.title || requestedItem,
-      clientName: clientName || 'Constrora Client',
-      userName: clientName || 'Constrora Client',
-      clientPhone,
-      userPhone: clientPhone,
-      clientEmail,
-      projectName,
-      projectLocation,
-      requiredDate,
-      items: [
-        {
-          listingId: listing?.listingId,
-          catalogItemId: listing?.catalogItemId,
-          name: requestedItem || listing?.title || 'Resource Request',
-          quantity,
-          unit,
-          specifications: listing?.category,
-        },
-      ],
-      itemName: requestedItem || listing?.title || 'Construction Resource',
-      quantity: qtySummary,
-      message,
-      attachments: attachmentUrl ? [attachmentUrl] : [],
-      status: 'NEW',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
     try {
-      if (currentUser) {
-        await setDoc(doc(db, 'quoteRequests', quoteReqId), sanitizeForFirestore(quoteData));
+      // Ensure Firebase Auth session exists so Firestore security rules allow creation
+      let authUser = auth.currentUser;
+      if (!authUser) {
+        const anonCred = await signInAnonymously(auth);
+        authUser = anonCred.user;
       }
+
+      const activeUid = authUser?.uid || currentUser?.uid || `user_${Date.now()}`;
+      const quoteReqId = `req_${Date.now()}`;
+      const qtySummary = `${quantity} ${unit}`;
+
+      const quoteData: QuoteRequest = {
+        quoteRequestId: quoteReqId,
+        clientId: activeUid,
+        userId: activeUid,
+        supplierBusinessId: targetBusinessId,
+        businessId: targetBusinessId,
+        supplierOwnerId: targetSupplierOwnerId,
+        listingId: listing?.listingId || '',
+        listingTitle: listing?.title || requestedItem,
+        clientName: clientName || currentUser?.displayName || 'Constrora Client',
+        userName: clientName || currentUser?.displayName || 'Constrora Client',
+        clientPhone: clientPhone || currentUser?.phoneNumber || '',
+        userPhone: clientPhone || currentUser?.phoneNumber || '',
+        clientEmail: clientEmail || currentUser?.email || '',
+        projectName: projectName || 'Site Project',
+        projectLocation,
+        requiredDate,
+        items: [
+          {
+            listingId: listing?.listingId,
+            catalogItemId: listing?.catalogItemId,
+            name: requestedItem || listing?.title || 'Resource Request',
+            quantity,
+            unit,
+            specifications: listing?.category,
+          },
+        ],
+        itemName: requestedItem || listing?.title || 'Construction Resource',
+        quantity: qtySummary,
+        message,
+        attachments: attachmentUrl ? [attachmentUrl] : [],
+        status: 'NEW',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      await setDoc(doc(db, 'quoteRequests', quoteReqId), sanitizeForFirestore(quoteData));
+
       if (onQuoteSent) {
         onQuoteSent(quoteData);
       }
@@ -111,10 +123,7 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
         onClose();
       }, 2000);
     } catch (err) {
-      console.warn('Firestore write warning:', err);
-      if (onQuoteSent) {
-        onQuoteSent(quoteData);
-      }
+      console.warn('Firestore quote write warning:', err);
       setSentSuccess(true);
       setTimeout(() => {
         setSentSuccess(false);

@@ -13,13 +13,15 @@ import {
   MessageSquare,
   Plus,
   CheckCircle2,
+  HardHat,
 } from 'lucide-react';
-import { Business, Listing, Review } from '../types';
+import { Business, Listing, Review, QuoteRequest } from '../types';
 import { useProject } from '../context/ProjectContext';
 import { useAuth } from '../context/AuthContext';
 import { formatDistance } from '../utils/distance';
 import { VerificationBadge } from '../components/VerificationBadge';
 import { ListingCard } from '../components/ListingCard';
+import { QuoteModal } from '../components/QuoteModal';
 
 interface BusinessDetailViewProps {
   business: Business;
@@ -71,6 +73,7 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState('Wrong information');
   const [reportSuccess, setReportSuccess] = useState(false);
+  const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
 
   const businessListings = listings.filter((l) => l.businessId === business.businessId);
   const distanceStr = formatDistance(activeProject.location, business.location);
@@ -179,10 +182,17 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
         {/* Contact Actions */}
         <div className="flex flex-wrap items-center gap-3 pt-2">
           <button
-            onClick={() => window.location.href = `tel:${business.phone}`}
+            onClick={() => setIsQuoteModalOpen(true)}
             className="flex items-center gap-2 bg-amber-500 text-black font-extrabold px-5 py-3 rounded-xl text-xs hover:bg-amber-400 cursor-pointer shadow-lg shadow-amber-500/10"
           >
-            <PhoneCall className="h-4 w-4" /> CALL SUPPLIER
+            <HardHat className="h-4 w-4" /> REQUEST DIRECT QUOTE
+          </button>
+
+          <button
+            onClick={() => window.location.href = `tel:${business.phone}`}
+            className="flex items-center gap-2 bg-slate-900 border border-slate-800 text-slate-200 font-extrabold px-5 py-3 rounded-xl text-xs hover:border-slate-700 cursor-pointer"
+          >
+            <PhoneCall className="h-4 w-4 text-amber-500" /> CALL SUPPLIER
           </button>
 
           <button
@@ -333,6 +343,14 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
           </div>
         </div>
       )}
+
+      <QuoteModal
+        isOpen={isQuoteModalOpen}
+        onClose={() => setIsQuoteModalOpen(false)}
+        supplierBusinessId={business.businessId}
+        supplierOwnerId={business.ownerId}
+        businessName={business.businessName}
+      />
     </div>
   );
 };

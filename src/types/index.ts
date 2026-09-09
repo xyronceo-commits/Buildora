@@ -188,6 +188,7 @@ export interface QuoteRequest {
   userId?: string;
   supplierBusinessId: string;
   businessId?: string;
+  supplierOwnerId?: string;
   listingId?: string;
   listingTitle?: string;
   clientName: string;

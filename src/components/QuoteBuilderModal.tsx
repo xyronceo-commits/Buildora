@@ -17,8 +17,11 @@ import {
   Phone,
   Mail,
   Box,
+  Share2,
+  ExternalLink,
+  Info,
 } from 'lucide-react';
-import html2canvas from 'html2canvas';
+import { toCanvas } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { doc, setDoc } from 'firebase/firestore';
 import { db, sanitizeForFirestore } from '../lib/firebase';
@@ -145,6 +148,12 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   const [exporting, setExporting] = useState<string | null>(null);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
 
+  // Share Fallback Instructional Modal State
+  const [isShareFallbackOpen, setIsShareFallbackOpen] = useState(false);
+  const [fallbackFileType, setFallbackFileType] = useState<'pdf' | 'png'>('pdf');
+  const [fallbackFileUrl, setFallbackFileUrl] = useState<string | null>(null);
+  const [fallbackFileName, setFallbackFileName] = useState<string>('');
+
   if (!isOpen) return null;
 
   // Calculate Subtotal & Grand Total
@@ -242,25 +251,48 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     }
   };
 
+  // Helper to cleanly capture document canvas using html-to-image (supports Tailwind v4 oklch & modern CSS)
+  const getDocumentCanvas = async (): Promise<HTMLCanvasElement | null> => {
+    let el = document.getElementById('quotation-document-capture');
+    if (!el) {
+      el = document.getElementById('quotation-document-preview');
+    }
+    if (!el) return null;
+
+    try {
+      return await toCanvas(el, {
+        quality: 0.98,
+        backgroundColor: '#ffffff',
+        pixelRatio: 2,
+        cacheBust: true,
+      });
+    } catch (err) {
+      console.warn('Primary toCanvas render info:', err);
+      return await toCanvas(el, {
+        quality: 0.95,
+        backgroundColor: '#ffffff',
+        pixelRatio: 1.5,
+      });
+    }
+  };
+
   // Export PDF Action
   const handleExportPDF = async () => {
     setExporting('pdf');
     try {
       await handleSaveQuote();
-      const el = document.getElementById('quotation-document-capture');
-      if (!el) return;
+      const canvas = await getDocumentCanvas();
+      if (!canvas) throw new Error('Document capture element not found');
 
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      const pdfWidth = 210;
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: pdfHeight > 297 ? [pdfWidth, pdfHeight] : 'a4',
+      });
 
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       const fileName = `CONSTRORA_Quotation_${quoteNumber.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`;
@@ -279,15 +311,8 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     setExporting('image');
     try {
       await handleSaveQuote();
-      const el = document.getElementById('quotation-document-capture');
-      if (!el) return;
-
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-      });
+      const canvas = await getDocumentCanvas();
+      if (!canvas) throw new Error('Document capture element not found');
 
       canvas.toBlob((blob) => {
         if (!blob) return;
@@ -308,145 +333,82 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     }
   };
 
-  // WhatsApp Share - PDF
-  const handleWhatsAppSharePDF = async () => {
-    setExporting('whatsapp-pdf');
+  // Unified Share Handler with navigator.canShare() check & UI Fallback Modal
+  const handleShareDocument = async (format: 'pdf' | 'png' = 'pdf') => {
+    setExporting(format === 'pdf' ? 'pdf-share' : 'image-share');
     try {
       await handleSaveQuote();
-      const el = document.getElementById('quotation-document-capture');
-      if (!el) return;
+      const canvas = await getDocumentCanvas();
+      if (!canvas) throw new Error('Document capture element not found');
 
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-
-      const fileName = `CONSTRORA_Quotation_${quoteNumber.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`;
-      const pdfBlob = pdf.output('blob');
-      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
-
-      const cleanPhone = normalizePhoneForWhatsApp(clientPhone);
+      const fileName = `CONSTRORA_Quotation_${quoteNumber.replace(/[^a-zA-Z0-9_-]/g, '_')}.${format}`;
       const waText = `Hello ${clientName},\n\nPlease find your official quotation for ${projectName}.\n\nQuote No: ${quoteNumber}\nGrand Total: ₦${grandTotal.toLocaleString()}\n\nThank you,\n${business.businessName}`;
 
-      let sharedNatively = false;
+      let fileObj: File;
+      let blobObj: Blob;
 
-      if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare) {
+      if (format === 'pdf') {
+        const imgData = canvas.toDataURL('image/png', 1.0);
+        const pdfWidth = 210;
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        const pdf = new jsPDF({
+          orientation: 'p',
+          unit: 'mm',
+          format: pdfHeight > 297 ? [pdfWidth, pdfHeight] : 'a4',
+        });
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        blobObj = pdf.output('blob');
+        fileObj = new File([blobObj], fileName, { type: 'application/pdf' });
+      } else {
+        blobObj = await new Promise<Blob>((resolve, reject) => {
+          canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Canvas blob failed'))), 'image/png');
+        });
+        fileObj = new File([blobObj], fileName, { type: 'image/png' });
+      }
+
+      // Check for navigator.canShare() native file support
+      const canNativeShareFiles =
+        typeof navigator !== 'undefined' &&
+        !!navigator.share &&
+        typeof navigator.canShare === 'function' &&
+        navigator.canShare({ files: [fileObj] });
+
+      if (canNativeShareFiles) {
         try {
-          if (navigator.canShare({ files: [pdfFile] })) {
-            await navigator.share({
-              files: [pdfFile],
-              title: `Quotation ${quoteNumber}`,
-              text: waText,
-            });
-            sharedNatively = true;
-            setShareFeedback('Quotation PDF shared via native share!');
-            return;
-          }
+          await navigator.share({
+            files: [fileObj],
+            title: `Quotation ${quoteNumber}`,
+            text: waText,
+          });
+          setShareFeedback(`Quotation ${format.toUpperCase()} shared successfully!`);
+          return;
         } catch (e: any) {
           if (e.name === 'AbortError') {
-            setShareFeedback('Share cancelled.');
+            setShareFeedback('Sharing cancelled.');
             return;
           }
-          console.log('Native share failed, proceeding with download fallback:', e);
+          console.log('Native file share failed, proceeding with download fallback:', e);
         }
       }
 
-      if (!sharedNatively) {
-        // Download Fallback + Open WhatsApp
-        pdf.save(fileName);
-        const waUrl = cleanPhone
-          ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waText + '\n\n(Attached quotation PDF is ready in your downloads)')}`
-          : `https://wa.me/?text=${encodeURIComponent(waText)}`;
+      // Fallback for browsers without native file sharing support:
+      // Trigger URL.createObjectURL download and open instructional modal
+      const downloadUrl = URL.createObjectURL(blobObj);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
 
-        window.open(waUrl, '_blank');
-        setShareFeedback(
-          `Quotation PDF downloaded to your device! Please attach the downloaded PDF in WhatsApp to send to ${clientName}.`
-        );
-      }
+      setFallbackFileType(format);
+      setFallbackFileUrl(downloadUrl);
+      setFallbackFileName(fileName);
+      setIsShareFallbackOpen(true);
+      setShareFeedback(`Quotation ${format.toUpperCase()} downloaded to device! Follow the instructions on screen to send.`);
     } catch (e) {
-      console.error('WhatsApp PDF share failed:', e);
-      alert('Could not generate PDF for WhatsApp.');
-    } finally {
-      setExporting(null);
-    }
-  };
-
-  // WhatsApp Share - Image
-  const handleWhatsAppShareImage = async () => {
-    setExporting('whatsapp-image');
-    try {
-      await handleSaveQuote();
-      const el = document.getElementById('quotation-document-capture');
-      if (!el) return;
-
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-      });
-
-      canvas.toBlob(async (blob) => {
-        if (!blob) return;
-        const fileName = `CONSTRORA_Quotation_${quoteNumber.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`;
-        const imgFile = new File([blob], fileName, { type: 'image/png' });
-
-        const cleanPhone = normalizePhoneForWhatsApp(clientPhone);
-        const waText = `Hello ${clientName},\n\nPlease find your official quotation for ${projectName}.\n\nQuote No: ${quoteNumber}\nGrand Total: ₦${grandTotal.toLocaleString()}\n\nThank you,\n${business.businessName}`;
-
-        let sharedNatively = false;
-
-        if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare) {
-          try {
-            if (navigator.canShare({ files: [imgFile] })) {
-              await navigator.share({
-                files: [imgFile],
-                title: `Quotation ${quoteNumber}`,
-                text: waText,
-              });
-              sharedNatively = true;
-              setShareFeedback('Quotation image shared via native share!');
-              return;
-            }
-          } catch (e: any) {
-            if (e.name === 'AbortError') {
-              setShareFeedback('Share cancelled.');
-              return;
-            }
-            console.log('Native share failed, proceeding with download fallback:', e);
-          }
-        }
-
-        if (!sharedNatively) {
-          // Download Fallback + Open WhatsApp
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = fileName;
-          a.click();
-          URL.revokeObjectURL(url);
-
-          const waUrl = cleanPhone
-            ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waText + '\n\n(Attached quotation image is ready in your downloads)')}`
-            : `https://wa.me/?text=${encodeURIComponent(waText)}`;
-
-          window.open(waUrl, '_blank');
-          setShareFeedback(
-            `Quotation image downloaded to your device! Please attach the downloaded image in WhatsApp to send to ${clientName}.`
-          );
-        }
-      }, 'image/png');
-    } catch (e) {
-      console.error('WhatsApp Image share failed:', e);
-      alert('Could not generate image for WhatsApp.');
+      console.error('Document sharing failed:', e);
+      alert('Could not prepare quotation for sharing. Please try again.');
     } finally {
       setExporting(null);
     }
@@ -455,15 +417,16 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
-        {/* Hidden offscreen container for reliable PDF/PNG rendering */}
+        {/* Capture container positioned behind modal overlay at (0,0) for fail-proof PDF/PNG rendering */}
         <div
           style={{
             position: 'fixed',
-            left: '-9999px',
-            top: '-9999px',
+            left: '0px',
+            top: '0px',
             width: '800px',
             pointerEvents: 'none',
             zIndex: -1,
+            backgroundColor: '#ffffff',
           }}
         >
           <QuotationDocument quote={currentQuoteObj} business={business} id="quotation-document-capture" />
@@ -902,7 +865,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                 type="button"
                 onClick={handleSaveQuote}
                 disabled={saving}
-                className="flex-1 sm:flex-none px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                className="flex-1 sm:flex-none px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
                 title="Save record to Firestore"
               >
                 <Save className="h-4 w-4 text-amber-400" />
@@ -911,24 +874,13 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
 
               <button
                 type="button"
-                onClick={handleWhatsAppSharePDF}
+                onClick={() => handleShareDocument('pdf')}
                 disabled={exporting !== null}
-                className="flex-1 sm:flex-none px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/20 uppercase"
-                title="Send quotation PDF via WhatsApp"
+                className="flex-1 sm:flex-none px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 uppercase"
+                title="Share quotation via native share sheet or download fallback"
               >
-                <MessageSquare className="h-4 w-4" />
-                <span>WhatsApp — PDF</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleWhatsAppShareImage}
-                disabled={exporting !== null}
-                className="flex-1 sm:flex-none px-3.5 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white font-black text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-700/20 uppercase"
-                title="Send quotation image via WhatsApp"
-              >
-                <ImageIcon className="h-4 w-4" />
-                <span>WhatsApp — Image</span>
+                <Share2 className="h-4 w-4" />
+                <span>{exporting === 'pdf-share' ? 'Sharing...' : 'Share Quotation'}</span>
               </button>
 
               <button
@@ -945,14 +897,108 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                 type="button"
                 onClick={handleShareAsImage}
                 disabled={exporting !== null}
-                className="flex-1 sm:flex-none px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 uppercase"
+                className="flex-1 sm:flex-none px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 uppercase"
               >
-                <Download className="h-4 w-4" />
-                <span>Download Image</span>
+                <ImageIcon className="h-4 w-4" />
+                <span>Download PNG</span>
               </button>
             </div>
           </div>
         </motion.div>
+
+        {/* Instructional Sharing Fallback Modal */}
+        <AnimatePresence>
+          {isShareFallbackOpen && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm">
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-slate-900 border border-slate-700 rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4"
+              >
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400">
+                      <Share2 className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-white">Share Quotation</h3>
+                      <p className="text-[10px] text-slate-400">Step-by-step sharing instructions</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsShareFallbackOpen(false)}
+                    className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div className="bg-emerald-950/40 border border-emerald-500/30 rounded-2xl p-3.5 flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
+                  <div className="text-xs text-emerald-200">
+                    <p className="font-bold">File downloaded to your device!</p>
+                    <p className="text-[11px] text-emerald-300/80 mt-0.5 font-mono break-all">{fallbackFileName}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2.5 text-xs text-slate-300">
+                  <p className="font-bold text-slate-200">How to send to {clientName}:</p>
+                  <ol className="space-y-2 pl-1">
+                    <li className="flex items-start gap-2.5">
+                      <span className="flex items-center justify-center h-5 w-5 rounded-full bg-slate-800 text-amber-400 font-bold text-[10px] shrink-0">1</span>
+                      <span>Your <strong>{fallbackFileType.toUpperCase()}</strong> file is now in your device's <strong>Downloads</strong> folder.</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <span className="flex items-center justify-center h-5 w-5 rounded-full bg-slate-800 text-amber-400 font-bold text-[10px] shrink-0">2</span>
+                      <span>Open WhatsApp, Email, Telegram, or any chat app.</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <span className="flex items-center justify-center h-5 w-5 rounded-full bg-slate-800 text-amber-400 font-bold text-[10px] shrink-0">3</span>
+                      <span>Attach the downloaded file from Downloads to send to <strong>{clientName}</strong>.</span>
+                    </li>
+                  </ol>
+                </div>
+
+                <div className="pt-2 flex flex-col gap-2">
+                  {clientPhone && (
+                    <a
+                      href={`https://wa.me/${normalizePhoneForWhatsApp(clientPhone)}?text=${encodeURIComponent(
+                        `Hello ${clientName},\n\nPlease find your official quotation for ${projectName}.\n\nQuote No: ${quoteNumber}\nGrand Total: ₦${grandTotal.toLocaleString()}\n\nThank you,\n${business.businessName}\n\n(Attached quotation ${fallbackFileType.toUpperCase()} is in my downloads)`
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 uppercase transition-all"
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                      <span>Open WhatsApp Chat ({clientPhone})</span>
+                      <ExternalLink className="h-3.5 w-3.5 opacity-70" />
+                    </a>
+                  )}
+
+                  <div className="flex items-center gap-2">
+                    {fallbackFileUrl && (
+                      <a
+                        href={fallbackFileUrl}
+                        download={fallbackFileName}
+                        className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors text-center"
+                      >
+                        <Download className="h-3.5 w-3.5 text-amber-400" />
+                        <span>Re-Download</span>
+                      </a>
+                    )}
+                    <button
+                      onClick={() => setIsShareFallbackOpen(false)}
+                      className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs rounded-xl transition-colors cursor-pointer"
+                    >
+                      Got It
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     </AnimatePresence>
   );

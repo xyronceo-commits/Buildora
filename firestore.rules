@@ -84,6 +84,7 @@ service cloud.firestore {
       allow read: if isSignedIn() && (
         resource.data.userId == request.auth.uid || 
         resource.data.clientId == request.auth.uid ||
+        resource.data.supplierOwnerId == request.auth.uid ||
         (resource.data.supplierBusinessId != null && get(/databases/$(database)/documents/businesses/$(resource.data.supplierBusinessId)).data.ownerId == request.auth.uid) ||
         (resource.data.businessId != null && get(/databases/$(database)/documents/businesses/$(resource.data.businessId)).data.ownerId == request.auth.uid) ||
         isAdmin()
@@ -95,6 +96,7 @@ service cloud.firestore {
       allow update, delete: if isSignedIn() && (
         resource.data.userId == request.auth.uid || 
         resource.data.clientId == request.auth.uid ||
+        resource.data.supplierOwnerId == request.auth.uid ||
         (resource.data.supplierBusinessId != null && get(/databases/$(database)/documents/businesses/$(resource.data.supplierBusinessId)).data.ownerId == request.auth.uid) ||
         (resource.data.businessId != null && get(/databases/$(database)/documents/businesses/$(resource.data.businessId)).data.ownerId == request.auth.uid) ||
         isAdmin()

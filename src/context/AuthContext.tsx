@@ -247,6 +247,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       location?: string;
       businessName?: string;
       businessCategory?: string;
+      address?: string;
+      city?: string;
+      state?: string;
+      description?: string;
     }
   ) => {
     setLoading(true);
@@ -288,19 +292,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await setDoc(doc(db, 'users', res.user.uid), sanitizedProfile);
 
       if (userRole === 'supplier' && bizId) {
+        const fullLocationAddress = extraDetails?.address
+          ? `${extraDetails.address}${extraDetails.city ? `, ${extraDetails.city}` : ''}${extraDetails.state ? `, ${extraDetails.state}` : ''}`
+          : extraDetails?.location || 'Osogbo, Osun State';
+
         const newBiz: Business = {
           businessId: bizId,
           ownerId: res.user.uid,
           businessName: extraDetails?.businessName || displayName || 'Supplier Enterprise',
           category: (extraDetails?.businessCategory as any) || 'Equipment Rental',
-          description: `Certified Supplier depot based in ${extraDetails?.location || 'Osogbo, Osun State'}.`,
+          description: extraDetails?.description || `Certified supplier depot providing ${extraDetails?.businessCategory || 'construction equipment and materials'} in ${fullLocationAddress}.`,
           phone: extraDetails?.phoneNumber || '+234 800 000 0000',
           whatsapp: extraDetails?.phoneNumber || '+234 800 000 0000',
           email,
           location: {
-            address: extraDetails?.location || 'Depot Address, Osogbo',
-            city: 'Osogbo',
-            state: 'Osun State',
+            address: extraDetails?.address || extraDetails?.location || 'Depot Address, Osogbo',
+            city: extraDetails?.city || 'Osogbo',
+            state: extraDetails?.state || 'Osun State',
             country: 'Nigeria',
             latitude: 7.7827,
             longitude: 4.5418,
