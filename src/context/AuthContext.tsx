@@ -144,10 +144,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           (docSnap) => {
             if (docSnap.exists()) {
               const profile = docSnap.data() as UserProfile;
-              if ((isExactAdmin || profile.email?.toLowerCase() === 'buildsafe247@gmail.com') && profile.role !== 'admin') {
+              const isAdminUser = profile.role === 'admin' || isExactAdmin || profile.email?.toLowerCase() === 'buildsafe247@gmail.com';
+              if (isAdminUser) {
                 profile.role = 'admin';
-                setDoc(userRef, { role: 'admin', updatedAt: new Date().toISOString() }, { merge: true }).catch(console.warn);
-                setDoc(doc(db, 'admins', user.uid), { role: 'admin', email: 'buildsafe247@gmail.com', updatedAt: new Date().toISOString() }, { merge: true }).catch(console.warn);
+                profile.emailVerified = true;
+                setDoc(userRef, { role: 'admin', emailVerified: true, updatedAt: new Date().toISOString() }, { merge: true }).catch(console.warn);
+                setDoc(doc(db, 'admins', user.uid), { role: 'admin', email: user.email || 'buildsafe247@gmail.com', updatedAt: new Date().toISOString() }, { merge: true }).catch(console.warn);
               }
               setCurrentUser(profile);
               localStorage.setItem('constrora_user_session', JSON.stringify(profile));
@@ -182,9 +184,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       const res = await signInWithEmailAndPassword(auth, email, pass);
-      if (email.toLowerCase() === 'buildsafe247@gmail.com') {
-        const userRef = doc(db, 'users', res.user.uid);
-        await setDoc(userRef, { role: 'admin', updatedAt: new Date().toISOString() }, { merge: true });
+      const isExactAdmin = email.toLowerCase() === 'buildsafe247@gmail.com';
+      const userRef = doc(db, 'users', res.user.uid);
+      if (isExactAdmin) {
+        await setDoc(userRef, { role: 'admin', emailVerified: true, updatedAt: new Date().toISOString() }, { merge: true });
+        await setDoc(doc(db, 'admins', res.user.uid), { role: 'admin', email: 'buildsafe247@gmail.com', updatedAt: new Date().toISOString() }, { merge: true });
       }
     } catch (error) {
       throw new Error(getReadableAuthError(error));
@@ -202,6 +206,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const sendVerificationEmail = async () => {
+    if (currentUser?.role === 'admin' || currentUser?.email?.toLowerCase() === 'buildsafe247@gmail.com') {
+      return; // Admins do not require email verification
+    }
     if (auth.currentUser) {
       try {
         await sendEmailVerification(auth.currentUser);
@@ -212,6 +219,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const checkEmailVerification = async (): Promise<boolean> => {
+    if (currentUser?.role === 'admin' || currentUser?.email?.toLowerCase() === 'buildsafe247@gmail.com') {
+      return true; // Admins do not require email verification
+    }
     if (auth.currentUser) {
       try {
         await reload(auth.currentUser);
@@ -243,29 +253,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await createUserWithEmailAndPassword(auth, email, pass);
       
-      try {
-        await sendEmailVerification(res.user);
-      } catch (e) {
-        console.warn('Initial sendEmailVerification error:', e);
-      }
-
       const isAdminEmail = email.toLowerCase() === 'buildsafe247@gmail.com';
       const userRole = roleOverride || (localStorage.getItem('constrora_temp_role') as UserRole) || 'client';
+      const isAdminRole = isAdminEmail || userRole === 'admin';
+
+      if (!isAdminRole) {
+        try {
+          await sendEmailVerification(res.user);
+        } catch (e) {
+          console.warn('Initial sendEmailVerification error:', e);
+        }
+      }
+
       const bizId = userRole === 'supplier' ? `biz_${res.user.uid.slice(0, 8)}` : undefined;
 
       const newProfile: UserProfile = {
         uid: res.user.uid,
-        displayName: displayName || (userRole === 'supplier' ? extraDetails?.businessName || 'Constrora Supplier' : 'Constrora Client'),
+        displayName: displayName || (isAdminRole ? 'Constrora Admin' : userRole === 'supplier' ? extraDetails?.businessName || 'Constrora Supplier' : 'Constrora Client'),
         email,
         phoneNumber: extraDetails?.phoneNumber,
-        role: isAdminEmail ? 'admin' : userRole,
+        role: isAdminRole ? 'admin' : userRole,
         onboardingCompleted: true,
         supplierOnboardingCompleted: userRole === 'supplier',
         supplierOnboardingStep: 6,
         clientOnboardingCompleted: userRole === 'client',
         activeProjectId: 'proj_osogbo_01',
         businessId: bizId,
-        emailVerified: res.user.emailVerified || false,
+        emailVerified: isAdminRole ? true : (res.user.emailVerified || false),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

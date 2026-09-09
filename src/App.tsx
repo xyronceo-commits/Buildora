@@ -423,6 +423,7 @@ export function App() {
               <AdminDashboardView
                 businesses={businesses}
                 listings={listings}
+                quoteRequests={quoteRequests}
                 onVerifyBusiness={handleVerifyBusiness}
                 onSignOutAdmin={handleAdminSignOut}
               />
@@ -501,6 +502,7 @@ export function App() {
             <AdminDashboardView
               businesses={businesses}
               listings={listings}
+              quoteRequests={quoteRequests}
               onVerifyBusiness={handleVerifyBusiness}
               onSignOutAdmin={handleAdminSignOut}
             />

@@ -9,9 +9,9 @@ export const EmailVerificationBanner: React.FC = () => {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
 
-  // Do not show banner for unauthenticated users or verified users
+  // Do not show banner for unauthenticated users, verified users, or admins
   useEffect(() => {
-    if (!currentUser || currentUser.emailVerified) return;
+    if (!currentUser || currentUser.emailVerified || currentUser.role === 'admin' || currentUser.email?.toLowerCase() === 'buildsafe247@gmail.com') return;
 
     const silentCheck = async () => {
       try {
@@ -35,7 +35,7 @@ export const EmailVerificationBanner: React.FC = () => {
     };
   }, [currentUser, checkEmailVerification]);
 
-  if (!currentUser || currentUser.emailVerified) {
+  if (!currentUser || currentUser.emailVerified || currentUser.role === 'admin' || currentUser.email?.toLowerCase() === 'buildsafe247@gmail.com') {
     return null;
   }
 
