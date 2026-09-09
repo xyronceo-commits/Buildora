@@ -12,17 +12,15 @@ export const QuotationDocument: React.FC<QuotationDocumentProps> = ({ quote, bus
   return (
     <div
       id={id}
-      className="bg-white text-slate-900 p-8 sm:p-10 rounded-2xl shadow-2xl border border-slate-200 font-['Plus_Jakarta_Sans',sans-serif] max-w-3xl mx-auto space-y-6 select-text print:shadow-none print:border-none"
+      className="bg-white text-slate-900 p-8 sm:p-10 rounded-2xl shadow-xl border border-slate-200 font-['Plus_Jakarta_Sans',sans-serif] max-w-3xl mx-auto space-y-6 select-text print:shadow-none print:border-none"
     >
       {/* Top Header & Branding */}
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4 border-b-2 border-slate-900 pb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <img
-              src="/constrora-logo.svg"
-              alt="CONSTRORA Logo"
-              className="h-8 w-8 rounded-lg object-contain shadow-sm"
-            />
+            <div className="h-9 w-9 rounded-xl bg-slate-900 text-amber-500 flex items-center justify-center font-black text-sm shrink-0">
+              <HardHat className="h-5 w-5" />
+            </div>
             <span className="font-['Cabinet_Grotesk'] text-2xl font-black text-slate-900 tracking-tight">
               CONSTR<span className="text-amber-500">ORA</span>
             </span>
@@ -38,8 +36,8 @@ export const QuotationDocument: React.FC<QuotationDocumentProps> = ({ quote, bus
           </div>
           <div className="text-xs space-y-0.5 text-slate-600 font-semibold">
             <div><span className="text-slate-400 font-normal">QUOTE NO:</span> <strong className="text-slate-900 font-extrabold">{quote.quoteNumber}</strong></div>
-            <div><span className="text-slate-400 font-normal">DATE:</span> {new Date(quote.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
-            <div><span className="text-slate-400 font-normal">VALID UNTIL:</span> <span className="text-amber-600 font-bold">{new Date(quote.validUntil).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span></div>
+            <div><span className="text-slate-400 font-normal">DATE:</span> {new Date(quote.createdAt || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+            <div><span className="text-slate-400 font-normal">VALID UNTIL:</span> <span className="text-amber-600 font-bold">{new Date(quote.validUntil || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span></div>
           </div>
         </div>
       </div>
@@ -58,10 +56,12 @@ export const QuotationDocument: React.FC<QuotationDocumentProps> = ({ quote, bus
             <Phone className="h-3.5 w-3.5 text-slate-400 shrink-0" />
             <span>{business.phone || business.whatsapp || quote.clientPhone}</span>
           </div>
-          <div className="text-slate-600 flex items-center gap-1.5">
-            <Mail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-            <span>{business.email}</span>
-          </div>
+          {business.email && (
+            <div className="text-slate-600 flex items-center gap-1.5">
+              <Mail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+              <span>{business.email}</span>
+            </div>
+          )}
           {business.website && (
             <div className="text-slate-600 flex items-center gap-1.5">
               <Globe className="h-3.5 w-3.5 text-slate-400 shrink-0" />
@@ -112,8 +112,8 @@ export const QuotationDocument: React.FC<QuotationDocumentProps> = ({ quote, bus
                 <td className="py-3 px-3.5 text-slate-600 text-[11px]">{it.description || '—'}</td>
                 <td className="py-3 px-3.5 text-center font-bold">{it.quantity}</td>
                 <td className="py-3 px-3.5 text-center text-slate-600">{it.unit}</td>
-                <td className="py-3 px-3.5 text-right font-mono">₦{Number(it.unitPrice).toLocaleString()}</td>
-                <td className="py-3 px-3.5 text-right font-mono font-bold text-slate-900">₦{Number(it.total).toLocaleString()}</td>
+                <td className="py-3 px-3.5 text-right font-mono">₦{Number(it.unitPrice || 0).toLocaleString()}</td>
+                <td className="py-3 px-3.5 text-right font-mono font-bold text-slate-900">₦{Number(it.total || 0).toLocaleString()}</td>
               </tr>
             ))}
           </tbody>

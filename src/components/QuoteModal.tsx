@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Send, HardHat, CheckCircle2, Paperclip, Calendar, MapPin, User, Phone, Mail, Box } from 'lucide-react';
-import { addDoc, collection } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { db, handleFirestoreError, sanitizeForFirestore } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useProject } from '../context/ProjectContext';
 import { Listing, QuoteRequest } from '../types';
@@ -93,14 +93,14 @@ export const QuoteModal: React.FC<QuoteModalProps> = ({
       quantity: qtySummary,
       message,
       attachments: attachmentUrl ? [attachmentUrl] : [],
-      status: 'sent',
+      status: 'NEW',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
     try {
       if (currentUser) {
-        await addDoc(collection(db, 'quoteRequests'), quoteData);
+        await setDoc(doc(db, 'quoteRequests', quoteReqId), sanitizeForFirestore(quoteData));
       }
       if (onQuoteSent) {
         onQuoteSent(quoteData);

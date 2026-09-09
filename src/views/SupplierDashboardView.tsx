@@ -24,7 +24,7 @@ import {
   Search,
   Filter,
 } from 'lucide-react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Business, Listing, QuoteRequest, SupplierQuote } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -109,6 +109,9 @@ export const SupplierDashboardView: React.FC<SupplierDashboardViewProps> = ({
     }
   }, [initialTab]);
 
+  // Real-time Quote Requests State
+  const [realtimeRequests, setRealtimeRequests] = useState<QuoteRequest[]>([]);
+
   // Strictly filter listings belonging to the logged in user or supplier account
   const supplierListings = listings.filter(
     (l) => (currentUser?.uid && l.ownerId === currentUser.uid) || (currentUser?.businessId && l.businessId === currentUser.businessId)
@@ -116,12 +119,49 @@ export const SupplierDashboardView: React.FC<SupplierDashboardViewProps> = ({
 
   const supplierListingIds = new Set(supplierListings.map((l) => l.listingId));
 
-  const quoteRequests = passedQuoteRequests.filter(
+  // Subscribe in real-time to Firestore quoteRequests
+  useEffect(() => {
+    const qRef = collection(db, 'quoteRequests');
+    const unsub = onSnapshot(
+      qRef,
+      (snapshot) => {
+        const docs = snapshot.docs.map((d) => ({
+          ...d.data(),
+          quoteRequestId: d.id,
+        })) as QuoteRequest[];
+
+        const bizId = business?.businessId || currentUser?.businessId;
+        const filtered = docs.filter(
+          (q) =>
+            (bizId && (q.businessId === bizId || q.supplierBusinessId === bizId)) ||
+            (currentUser?.uid && (q.userId === currentUser.uid || q.clientId === currentUser.uid)) ||
+            (q.listingId && supplierListingIds.has(q.listingId))
+        );
+
+        filtered.sort((a, b) => {
+          const tA = new Date(a.createdAt || 0).getTime();
+          const tB = new Date(b.createdAt || 0).getTime();
+          return tB - tA;
+        });
+
+        setRealtimeRequests(filtered);
+      },
+      (err) => {
+        console.warn('Realtime quote requests listener info:', err);
+      }
+    );
+
+    return () => unsub();
+  }, [business?.businessId, currentUser?.uid, currentUser?.businessId, supplierListings.length]);
+
+  const effectiveQuoteRequests = realtimeRequests.length > 0 ? realtimeRequests : passedQuoteRequests.filter(
     (q) =>
       (business?.businessId && (q.businessId === business.businessId || q.supplierBusinessId === business.businessId)) ||
       (currentUser?.uid && q.userId === currentUser.uid) ||
       (q.listingId && supplierListingIds.has(q.listingId))
   );
+
+  const newRequestsCount = effectiveQuoteRequests.filter((q) => q.status === 'NEW' || q.status === 'sent').length;
 
   const availableListingsCount = supplierListings.filter((l) => l.availability?.status === 'AVAILABLE').length;
   const rentedListingsCount = supplierListings.filter((l) => l.availability?.status !== 'AVAILABLE').length;
@@ -134,9 +174,21 @@ export const SupplierDashboardView: React.FC<SupplierDashboardViewProps> = ({
   });
 
   // Handlers
-  const handleOpenRequestDetail = (req: QuoteRequest) => {
+  const handleOpenRequestDetail = async (req: QuoteRequest) => {
     setSelectedRequest(req);
     setIsRequestDetailOpen(true);
+
+    if (req.status === 'NEW' || req.status === 'sent') {
+      try {
+        const reqRef = doc(db, 'quoteRequests', req.quoteRequestId);
+        await updateDoc(reqRef, {
+          status: 'VIEWED',
+          updatedAt: new Date().toISOString(),
+        });
+      } catch (e) {
+        console.warn('Could not update request status to VIEWED:', e);
+      }
+    }
   };
 
   const handleStartQuoteFromRequest = (req: QuoteRequest) => {
@@ -222,7 +274,7 @@ export const SupplierDashboardView: React.FC<SupplierDashboardViewProps> = ({
           </div>
           <div className="bg-slate-900 p-3 rounded-2xl border border-slate-800 text-center">
             <div className="text-slate-400 text-[10px] uppercase font-bold">Quote Inquiries</div>
-            <div className="text-lg font-black text-amber-400 mt-0.5">{quoteRequests.length}</div>
+            <div className="text-lg font-black text-amber-400 mt-0.5">{effectiveQuoteRequests.length}</div>
           </div>
           <div className="bg-slate-900 p-3 rounded-2xl border border-slate-800 text-center">
             <div className="text-slate-400 text-[10px] uppercase font-bold">Generated Quotes</div>
@@ -246,7 +298,14 @@ export const SupplierDashboardView: React.FC<SupplierDashboardViewProps> = ({
               activeTab === 'requests' ? 'bg-amber-500 text-black font-black' : 'bg-slate-900 text-slate-400 hover:text-white'
             }`}
           >
-            QUOTE REQUESTS ({quoteRequests.length})
+            QUOTE REQUESTS
+            {newRequestsCount > 0 ? (
+              <span className="bg-amber-500 text-black text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
+                {newRequestsCount} NEW
+              </span>
+            ) : (
+              <span className="text-slate-400 text-[10px] font-bold">({effectiveQuoteRequests.length})</span>
+            )}
           </button>
           <button
             onClick={() => setActiveTab('quotes')}
@@ -348,7 +407,7 @@ export const SupplierDashboardView: React.FC<SupplierDashboardViewProps> = ({
       {/* Tab 2: Quote Requests Inbox */}
       {activeTab === 'requests' && (
         <div className="space-y-4">
-          {quoteRequests.length === 0 ? (
+          {effectiveQuoteRequests.length === 0 ? (
             <div className="rounded-3xl bg-[#121418] border border-slate-800 p-8 text-center space-y-3">
               <div className="mx-auto h-12 w-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400">
                 <Inbox className="h-6 w-6" />
@@ -356,59 +415,73 @@ export const SupplierDashboardView: React.FC<SupplierDashboardViewProps> = ({
               <div className="space-y-1">
                 <h3 className="text-base font-bold text-white">No Quote Requests Received Yet</h3>
                 <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                  When contractors send quote inquiries for your machinery or material listings, they will appear here.
+                  When contractors send quote inquiries for your machinery or material listings, they will appear here in real time.
                 </p>
               </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {quoteRequests.map((req) => (
-                <div key={req.quoteRequestId} className="rounded-2xl bg-[#121418] border border-amber-500/30 p-5 space-y-3 text-xs shadow-xl flex flex-col justify-between">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-                      <span className="bg-amber-500 text-black font-black px-2 py-0.5 rounded text-[10px] uppercase">
-                        QUOTE INQUIRY
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-mono">
-                        {new Date(req.createdAt).toLocaleDateString()}
-                      </span>
+              {effectiveQuoteRequests.map((req) => {
+                const isNew = req.status === 'NEW' || req.status === 'sent';
+                return (
+                  <div key={req.quoteRequestId} className={`rounded-2xl bg-[#121418] border p-5 space-y-3 text-xs shadow-xl flex flex-col justify-between transition-all ${isNew ? 'border-amber-500 shadow-amber-500/5' : 'border-slate-800'}`}>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="bg-slate-800 text-slate-300 font-extrabold px-2 py-0.5 rounded text-[10px] uppercase">
+                            QUOTE INQUIRY
+                          </span>
+                          {isNew ? (
+                            <span className="bg-amber-500 text-black font-black px-2 py-0.5 rounded text-[10px] uppercase tracking-wider animate-pulse">
+                              NEW
+                            </span>
+                          ) : (
+                            <span className="bg-slate-800/80 text-slate-400 font-bold px-2 py-0.5 rounded text-[10px] uppercase">
+                              VIEWED
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {req.createdAt ? new Date(req.createdAt).toLocaleDateString() : 'Recent'}
+                        </span>
+                      </div>
+
+                      <div>
+                        <h4 className="font-extrabold text-white text-base">{req.clientName || req.userName}</h4>
+                        <p className="text-slate-400 text-xs">{req.projectName}</p>
+                      </div>
+
+                      <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
+                        <div className="text-xs text-slate-300">Item: <strong className="text-amber-400 font-bold">{req.itemName || req.listingTitle}</strong></div>
+                        <div className="text-xs text-slate-300">Quantity: <strong className="text-white font-bold">{req.quantity}</strong></div>
+                        <div className="text-xs text-slate-400 truncate">Site: {typeof req.projectLocation === 'string' ? req.projectLocation : `${req.projectLocation.city}, ${req.projectLocation.state}`}</div>
+                      </div>
+
+                      {req.message && (
+                        <p className="text-slate-300 italic text-[11px] line-clamp-2 bg-slate-950 p-2.5 rounded-lg border border-slate-850">
+                          "{req.message}"
+                        </p>
+                      )}
                     </div>
 
-                    <div>
-                      <h4 className="font-extrabold text-white text-base">{req.clientName || req.userName}</h4>
-                      <p className="text-slate-400 text-xs">{req.projectName}</p>
-                    </div>
+                    <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+                      <button
+                        onClick={() => handleOpenRequestDetail(req)}
+                        className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-extrabold rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 uppercase"
+                      >
+                        <Eye className="h-4 w-4" /> VIEW REQUEST
+                      </button>
 
-                    <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
-                      <div className="text-xs text-slate-300">Item: <strong className="text-amber-400 font-bold">{req.itemName || req.listingTitle}</strong></div>
-                      <div className="text-xs text-slate-300">Quantity: <strong className="text-white font-bold">{req.quantity}</strong></div>
-                      <div className="text-xs text-slate-400 truncate">Site: {typeof req.projectLocation === 'string' ? req.projectLocation : `${req.projectLocation.city}, ${req.projectLocation.state}`}</div>
+                      <button
+                        onClick={() => handleStartQuoteFromRequest(req)}
+                        className="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-extrabold rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 uppercase shadow-md shadow-amber-500/10"
+                      >
+                        <FileText className="h-4 w-4" /> GENERATE QUOTE
+                      </button>
                     </div>
-
-                    {req.message && (
-                      <p className="text-slate-300 italic text-[11px] line-clamp-2 bg-slate-950 p-2.5 rounded-lg border border-slate-850">
-                        "{req.message}"
-                      </p>
-                    )}
                   </div>
-
-                  <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
-                    <button
-                      onClick={() => handleOpenRequestDetail(req)}
-                      className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-extrabold rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 uppercase"
-                    >
-                      <Eye className="h-4 w-4" /> VIEW REQUEST
-                    </button>
-
-                    <button
-                      onClick={() => handleStartQuoteFromRequest(req)}
-                      className="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-extrabold rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 uppercase shadow-md shadow-amber-500/10"
-                    >
-                      <FileText className="h-4 w-4" /> GENERATE QUOTE
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

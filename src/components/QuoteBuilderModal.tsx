@@ -5,16 +5,12 @@ import {
   Plus,
   Trash2,
   FileText,
-  Share2,
   Download,
-  Send,
   Eye,
   CheckCircle2,
   Save,
-  HardHat,
   MessageSquare,
   Image as ImageIcon,
-  DollarSign,
   Calendar,
   User,
   MapPin,
@@ -25,10 +21,11 @@ import {
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { doc, setDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, sanitizeForFirestore } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { Business, QuoteRequest, SupplierQuote, QuoteLineItem } from '../types';
 import { QuotationDocument } from './QuotationDocument';
+import { normalizePhoneForWhatsApp } from '../utils/phone';
 
 interface QuoteBuilderModalProps {
   isOpen: boolean;
@@ -48,7 +45,6 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   onQuoteSaved,
 }) => {
   const { currentUser } = useAuth();
-  const documentRef = useRef<HTMLDivElement>(null);
 
   // Auto-generate quote number
   const defaultQuoteNum = useRef(
@@ -65,7 +61,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     existingQuote?.clientEmail || quoteRequest?.clientEmail || ''
   );
   const [projectName, setProjectName] = useState(
-    existingQuote?.projectName || quoteRequest?.projectName || '3 Bedroom Duplex'
+    existingQuote?.projectName || quoteRequest?.projectName || 'Site Construction Project'
   );
   const [projectLocation, setProjectLocation] = useState(
     existingQuote?.projectLocation || quoteRequest?.projectLocation || 'Osogbo, Osun State'
@@ -132,7 +128,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
 
   // Additional Charges
   const [discount, setDiscount] = useState<number>(existingQuote?.discount || 0);
-  const [deliveryFee, setDeliveryFee] = useState<number>(existingQuote?.deliveryFee || 100000);
+  const [deliveryFee, setDeliveryFee] = useState<number>(existingQuote?.deliveryFee || 50000);
   const [labourFee, setLabourFee] = useState<number>(existingQuote?.labourFee || 0);
   const [otherCharges, setOtherCharges] = useState<number>(existingQuote?.otherCharges || 0);
   const [tax, setTax] = useState<number>(existingQuote?.tax || 0);
@@ -227,9 +223,9 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   const handleSaveQuote = async (): Promise<SupplierQuote> => {
     setSaving(true);
     try {
-      if (currentUser) {
+      if (currentUser && business.businessId) {
         const quoteRef = doc(db, 'businesses', business.businessId, 'quotes', currentQuoteObj.quoteId);
-        await setDoc(quoteRef, currentQuoteObj, { merge: true });
+        await setDoc(quoteRef, sanitizeForFirestore(currentQuoteObj), { merge: true });
       }
       if (onQuoteSaved) {
         onQuoteSaved(currentQuoteObj);
@@ -251,13 +247,14 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     setExporting('pdf');
     try {
       await handleSaveQuote();
-      const el = document.getElementById('quotation-document');
+      const el = document.getElementById('quotation-document-capture');
       if (!el) return;
 
       const canvas = await html2canvas(el, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
+        logging: false,
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -266,7 +263,8 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${quoteNumber}_Quotation_${clientName.replace(/\s+/g, '_')}.pdf`);
+      const fileName = `CONSTRORA_Quotation_${quoteNumber.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`;
+      pdf.save(fileName);
       setShareFeedback('PDF Quotation downloaded successfully!');
     } catch (err) {
       console.error('PDF export failed:', err);
@@ -276,44 +274,28 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     }
   };
 
-  // Share as Image Action
+  // Share/Download PNG Image Action
   const handleShareAsImage = async () => {
     setExporting('image');
     try {
       await handleSaveQuote();
-      const el = document.getElementById('quotation-document');
+      const el = document.getElementById('quotation-document-capture');
       if (!el) return;
 
       const canvas = await html2canvas(el, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
+        logging: false,
       });
 
-      canvas.toBlob(async (blob) => {
+      canvas.toBlob((blob) => {
         if (!blob) return;
-        const file = new File([blob], `${quoteNumber}_Quotation.png`, { type: 'image/png' });
-
-        // Try native share sheet if supported
-        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({
-              files: [file],
-              title: `Quotation ${quoteNumber}`,
-              text: `Quotation ${quoteNumber} for ${projectName} from ${business.businessName}`,
-            });
-            setShareFeedback('Quotation image shared via system sheet!');
-            return;
-          } catch (e) {
-            console.log('User cancelled share or share failed:', e);
-          }
-        }
-
-        // Fallback: direct download
+        const fileName = `CONSTRORA_Quotation_${quoteNumber.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`;
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${quoteNumber}_Quotation.png`;
+        a.download = fileName;
         a.click();
         URL.revokeObjectURL(url);
         setShareFeedback('Quotation image downloaded to device!');
@@ -326,28 +308,145 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
     }
   };
 
-  // WhatsApp Share Workflow (Section 15)
-  const handleWhatsAppShare = async () => {
-    setExporting('whatsapp');
+  // WhatsApp Share - PDF
+  const handleWhatsAppSharePDF = async () => {
+    setExporting('whatsapp-pdf');
     try {
       await handleSaveQuote();
+      const el = document.getElementById('quotation-document-capture');
+      if (!el) return;
 
-      // Clean phone number for WhatsApp
-      let cleanPhone = clientPhone.replace(/[^0-9]/g, '');
-      if (cleanPhone.startsWith('0')) {
-        cleanPhone = '234' + cleanPhone.substring(1);
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+      const fileName = `CONSTRORA_Quotation_${quoteNumber.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`;
+      const pdfBlob = pdf.output('blob');
+      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+      const cleanPhone = normalizePhoneForWhatsApp(clientPhone);
+      const waText = `Hello ${clientName},\n\nPlease find your official quotation for ${projectName}.\n\nQuote No: ${quoteNumber}\nGrand Total: ₦${grandTotal.toLocaleString()}\n\nThank you,\n${business.businessName}`;
+
+      let sharedNatively = false;
+
+      if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare) {
+        try {
+          if (navigator.canShare({ files: [pdfFile] })) {
+            await navigator.share({
+              files: [pdfFile],
+              title: `Quotation ${quoteNumber}`,
+              text: waText,
+            });
+            sharedNatively = true;
+            setShareFeedback('Quotation PDF shared via native share!');
+            return;
+          }
+        } catch (e: any) {
+          if (e.name === 'AbortError') {
+            setShareFeedback('Share cancelled.');
+            return;
+          }
+          console.log('Native share failed, proceeding with download fallback:', e);
+        }
       }
 
-      const waText = `Hello ${clientName},\n\nPlease find your quotation for ${projectName}.\n\nQuote: ${quoteNumber}\nTotal: ₦${grandTotal.toLocaleString()}\n\nThank you,\n${business.businessName}`;
+      if (!sharedNatively) {
+        // Download Fallback + Open WhatsApp
+        pdf.save(fileName);
+        const waUrl = cleanPhone
+          ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waText + '\n\n(Attached quotation PDF is ready in your downloads)')}`
+          : `https://wa.me/?text=${encodeURIComponent(waText)}`;
 
-      const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waText)}`;
-
-      // Open WhatsApp prefilled message
-      window.open(waUrl, '_blank');
-
-      setShareFeedback('Quote ready to share on WhatsApp.');
+        window.open(waUrl, '_blank');
+        setShareFeedback(
+          `Quotation PDF downloaded to your device! Please attach the downloaded PDF in WhatsApp to send to ${clientName}.`
+        );
+      }
     } catch (e) {
-      console.error('WhatsApp workflow failed:', e);
+      console.error('WhatsApp PDF share failed:', e);
+      alert('Could not generate PDF for WhatsApp.');
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  // WhatsApp Share - Image
+  const handleWhatsAppShareImage = async () => {
+    setExporting('whatsapp-image');
+    try {
+      await handleSaveQuote();
+      const el = document.getElementById('quotation-document-capture');
+      if (!el) return;
+
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        const fileName = `CONSTRORA_Quotation_${quoteNumber.replace(/[^a-zA-Z0-9_-]/g, '_')}.png`;
+        const imgFile = new File([blob], fileName, { type: 'image/png' });
+
+        const cleanPhone = normalizePhoneForWhatsApp(clientPhone);
+        const waText = `Hello ${clientName},\n\nPlease find your official quotation for ${projectName}.\n\nQuote No: ${quoteNumber}\nGrand Total: ₦${grandTotal.toLocaleString()}\n\nThank you,\n${business.businessName}`;
+
+        let sharedNatively = false;
+
+        if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare) {
+          try {
+            if (navigator.canShare({ files: [imgFile] })) {
+              await navigator.share({
+                files: [imgFile],
+                title: `Quotation ${quoteNumber}`,
+                text: waText,
+              });
+              sharedNatively = true;
+              setShareFeedback('Quotation image shared via native share!');
+              return;
+            }
+          } catch (e: any) {
+            if (e.name === 'AbortError') {
+              setShareFeedback('Share cancelled.');
+              return;
+            }
+            console.log('Native share failed, proceeding with download fallback:', e);
+          }
+        }
+
+        if (!sharedNatively) {
+          // Download Fallback + Open WhatsApp
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileName;
+          a.click();
+          URL.revokeObjectURL(url);
+
+          const waUrl = cleanPhone
+            ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waText + '\n\n(Attached quotation image is ready in your downloads)')}`
+            : `https://wa.me/?text=${encodeURIComponent(waText)}`;
+
+          window.open(waUrl, '_blank');
+          setShareFeedback(
+            `Quotation image downloaded to your device! Please attach the downloaded image in WhatsApp to send to ${clientName}.`
+          );
+        }
+      }, 'image/png');
+    } catch (e) {
+      console.error('WhatsApp Image share failed:', e);
+      alert('Could not generate image for WhatsApp.');
     } finally {
       setExporting(null);
     }
@@ -356,6 +455,20 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+        {/* Hidden offscreen container for reliable PDF/PNG rendering */}
+        <div
+          style={{
+            position: 'fixed',
+            left: '-9999px',
+            top: '-9999px',
+            width: '800px',
+            pointerEvents: 'none',
+            zIndex: -1,
+          }}
+        >
+          <QuotationDocument quote={currentQuoteObj} business={business} id="quotation-document-capture" />
+        </div>
+
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -522,7 +635,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
 
                     <div className="sm:col-span-2">
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                        Project Site Location *
+                        Project Location *
                       </label>
                       <input
                         type="text"
@@ -535,158 +648,190 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                   </div>
                 </div>
 
-                {/* Line Items Editor */}
+                {/* Line Items Table */}
                 <div className="bg-slate-900/80 border border-slate-800 p-4 sm:p-5 rounded-2xl space-y-4">
                   <div className="flex items-center justify-between">
-                    <div className="text-xs font-black text-amber-500 uppercase tracking-wider">ITEMIZED LINE ITEMS</div>
+                    <div className="text-xs font-black text-amber-500 uppercase tracking-wider">
+                      ITEMIZED RESOURCES & SERVICES
+                    </div>
                     <button
                       type="button"
                       onClick={handleAddItem}
-                      className="px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 font-extrabold text-xs rounded-xl hover:bg-amber-500 hover:text-black transition-all cursor-pointer flex items-center gap-1.5 uppercase"
+                      className="px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 text-xs font-bold rounded-xl transition-all flex items-center gap-1 cursor-pointer"
                     >
-                      <Plus className="h-3.5 w-3.5" /> ADD ITEM
+                      <Plus className="h-3.5 w-3.5" /> Add Line Item
                     </button>
                   </div>
 
                   <div className="space-y-3">
-                    {items.map((item, idx) => (
+                    {items.map((item, index) => (
                       <div
-                        key={item.itemId || idx}
-                        className="p-3.5 bg-slate-950 border border-slate-800 rounded-2xl space-y-3 text-xs"
+                        key={item.itemId || index}
+                        className="p-3 bg-slate-950 border border-slate-800/80 rounded-2xl space-y-3"
                       >
-                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center">
-                          <div className="sm:col-span-4">
-                            <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Item / Resource Name</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                          <div className="sm:col-span-2">
+                            <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">
+                              Item / Resource Name
+                            </label>
                             <input
                               type="text"
                               value={item.item}
-                              onChange={(e) => handleItemChange(idx, 'item', e.target.value)}
-                              placeholder="e.g. CAT 320 Excavator"
-                              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 font-bold"
+                              onChange={(e) => handleItemChange(index, 'item', e.target.value)}
+                              className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 font-bold"
                             />
                           </div>
 
-                          <div className="sm:col-span-4">
-                            <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Description / Spec</label>
-                            <input
-                              type="text"
-                              value={item.description}
-                              onChange={(e) => handleItemChange(idx, 'description', e.target.value)}
-                              placeholder="e.g. Operating weight 22 tons, operator included"
-                              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-amber-500"
-                            />
-                          </div>
-
-                          <div className="sm:col-span-1">
-                            <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Qty</label>
+                          <div>
+                            <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">
+                              Quantity
+                            </label>
                             <input
                               type="number"
                               min="1"
                               value={item.quantity}
-                              onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
-                              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white text-center font-bold focus:outline-none focus:border-amber-500"
+                              onChange={(e) => handleItemChange(index, 'quantity', Number(e.target.value))}
+                              className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 font-mono font-bold"
                             />
                           </div>
 
-                          <div className="sm:col-span-1">
-                            <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Unit</label>
+                          <div>
+                            <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">
+                              Unit (e.g. Bags, Trips, Days)
+                            </label>
                             <input
                               type="text"
                               value={item.unit}
-                              onChange={(e) => handleItemChange(idx, 'unit', e.target.value)}
-                              placeholder="Days, Bags"
-                              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-300 text-center focus:outline-none focus:border-amber-500"
+                              onChange={(e) => handleItemChange(index, 'unit', e.target.value)}
+                              className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-center">
+                          <div className="sm:col-span-2">
+                            <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">
+                              Description / Specification
+                            </label>
+                            <input
+                              type="text"
+                              value={item.description || ''}
+                              onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                              placeholder="e.g. Grade 42.5N, 20-ton tipper delivery"
+                              className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-amber-500"
                             />
                           </div>
 
-                          <div className="sm:col-span-2 flex items-center gap-2">
+                          <div className="flex items-center gap-2">
                             <div className="flex-1">
-                              <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Unit Price (₦)</label>
+                              <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">
+                                Unit Price (₦)
+                              </label>
                               <input
                                 type="number"
                                 min="0"
                                 value={item.unitPrice}
-                                onChange={(e) => handleItemChange(idx, 'unitPrice', e.target.value)}
-                                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-amber-400 font-mono font-bold focus:outline-none focus:border-amber-500"
+                                onChange={(e) => handleItemChange(index, 'unitPrice', Number(e.target.value))}
+                                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-amber-400 font-mono font-bold focus:outline-none focus:border-amber-500"
                               />
                             </div>
+
+                            <div className="shrink-0 text-right min-w-[90px]">
+                              <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">
+                                Total (₦)
+                              </label>
+                              <div className="text-xs font-mono font-extrabold text-white py-1.5">
+                                ₦{(Number(item.total) || 0).toLocaleString()}
+                              </div>
+                            </div>
+
                             <button
                               type="button"
-                              onClick={() => handleRemoveItem(idx)}
-                              className="mt-4 p-1.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
-                              title="Delete Item"
+                              onClick={() => handleRemoveItem(index)}
+                              className="text-slate-500 hover:text-red-400 p-2 rounded-lg hover:bg-red-500/10 transition-colors mt-3"
+                              title="Remove Item"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
-                        </div>
-
-                        <div className="flex justify-end text-[11px] font-mono text-slate-400 border-t border-slate-900 pt-1.5">
-                          Line Total: <span className="text-white font-bold ml-1">₦{Number(item.total).toLocaleString()}</span>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Additional Costs & Totals */}
+                {/* Additional Fees & Calculation Summary */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {/* Additional Costs Inputs */}
-                  <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl space-y-3">
-                    <div className="text-xs font-black text-amber-500 uppercase tracking-wider">ADDITIONAL FEES & DISCOUNTS</div>
-                    <div className="grid grid-cols-2 gap-2.5 text-xs">
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Discount (₦)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={discount}
-                          onChange={(e) => setDiscount(Number(e.target.value) || 0)}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-emerald-400 font-mono font-bold focus:outline-none focus:border-amber-500"
-                        />
-                      </div>
+                  {/* Fee Inputs */}
+                  <div className="bg-slate-900/80 border border-slate-800 p-4 sm:p-5 rounded-2xl space-y-3">
+                    <div className="text-xs font-black text-amber-500 uppercase tracking-wider">
+                      LOGISTICS, LABOUR & TAX ADJUSTMENTS
+                    </div>
 
+                    <div className="grid grid-cols-2 gap-3 text-xs">
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Delivery Fee (₦)</label>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
+                          Delivery / Haulage Fee (₦)
+                        </label>
                         <input
                           type="number"
                           min="0"
                           value={deliveryFee}
-                          onChange={(e) => setDeliveryFee(Number(e.target.value) || 0)}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono font-bold focus:outline-none focus:border-amber-500"
+                          onChange={(e) => setDeliveryFee(Number(e.target.value))}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-amber-500 font-bold"
                         />
                       </div>
 
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Operator / Labour Fee (₦)</label>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
+                          Labour / Operator Fee (₦)
+                        </label>
                         <input
                           type="number"
                           min="0"
                           value={labourFee}
-                          onChange={(e) => setLabourFee(Number(e.target.value) || 0)}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono font-bold focus:outline-none focus:border-amber-500"
+                          onChange={(e) => setLabourFee(Number(e.target.value))}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-amber-500 font-bold"
                         />
                       </div>
 
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Tax / VAT (₦)</label>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
+                          Discount Offered (₦)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={discount}
+                          onChange={(e) => setDiscount(Number(e.target.value))}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-emerald-400 focus:outline-none focus:border-amber-500 font-bold"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
+                          Tax / VAT (₦)
+                        </label>
                         <input
                           type="number"
                           min="0"
                           value={tax}
-                          onChange={(e) => setTax(Number(e.target.value) || 0)}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono font-bold focus:outline-none focus:border-amber-500"
+                          onChange={(e) => setTax(Number(e.target.value))}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-amber-500 font-bold"
                         />
                       </div>
                     </div>
                   </div>
 
-                  {/* Calculations Summary Card */}
-                  <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl space-y-2 text-xs font-semibold flex flex-col justify-between">
-                    <div className="text-xs font-black text-amber-500 uppercase tracking-wider">FINANCIAL SUMMARY</div>
-                    <div className="space-y-1.5 pt-1">
+                  {/* Summary Box */}
+                  <div className="bg-slate-900/80 border border-slate-800 p-4 sm:p-5 rounded-2xl flex flex-col justify-between space-y-3">
+                    <div className="text-xs font-black text-amber-500 uppercase tracking-wider">
+                      QUOTATION FINANCIAL SUMMARY
+                    </div>
+
+                    <div className="space-y-1.5 text-xs font-semibold">
                       <div className="flex justify-between text-slate-400">
-                        <span>Subtotal:</span>
+                        <span>Items Subtotal:</span>
                         <span className="font-mono text-white font-bold">₦{subtotal.toLocaleString()}</span>
                       </div>
                       {discount > 0 && (
@@ -715,9 +860,9 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                       )}
                     </div>
 
-                    <div className="p-3 bg-amber-500 text-black rounded-xl flex items-center justify-between font-black text-base shadow-lg shadow-amber-500/10 mt-2">
+                    <div className="p-3.5 bg-amber-500 text-black rounded-xl flex items-center justify-between font-black text-base shadow-lg shadow-amber-500/10 mt-2">
                       <span>GRAND TOTAL</span>
-                      <span className="font-mono text-lg">₦{grandTotal.toLocaleString()}</span>
+                      <span className="font-mono text-xl">₦{grandTotal.toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -739,7 +884,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
             ) : (
               /* Quotation Document Preview Mode */
               <div className="py-2">
-                <QuotationDocument quote={currentQuoteObj} business={business} id="quotation-document" />
+                <QuotationDocument quote={currentQuoteObj} business={business} id="quotation-document-preview" />
               </div>
             )}
           </div>
@@ -748,16 +893,17 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
           <div className="border-t border-slate-800 pt-4 mt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="text-xs font-bold text-slate-300 w-full sm:w-auto flex items-center justify-between sm:justify-start gap-3">
               <span>GRAND TOTAL:</span>
-              <span className="text-amber-400 font-mono text-lg font-black">₦{grandTotal.toLocaleString()}</span>
+              <span className="text-amber-400 font-mono text-xl font-black">₦{grandTotal.toLocaleString()}</span>
             </div>
 
-            {/* Sharing & Export Buttons */}
+            {/* Sharing & Export Action Buttons */}
             <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={handleSaveQuote}
                 disabled={saving}
-                className="flex-1 sm:flex-none px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                className="flex-1 sm:flex-none px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                title="Save record to Firestore"
               >
                 <Save className="h-4 w-4 text-amber-400" />
                 <span>{saving ? 'Saving...' : 'Save Record'}</span>
@@ -765,32 +911,44 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
 
               <button
                 type="button"
-                onClick={handleWhatsAppShare}
+                onClick={handleWhatsAppSharePDF}
                 disabled={exporting !== null}
-                className="flex-1 sm:flex-none px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/20 uppercase"
+                className="flex-1 sm:flex-none px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/20 uppercase"
+                title="Send quotation PDF via WhatsApp"
               >
                 <MessageSquare className="h-4 w-4" />
-                <span>WhatsApp</span>
+                <span>WhatsApp — PDF</span>
               </button>
 
               <button
                 type="button"
-                onClick={handleShareAsImage}
+                onClick={handleWhatsAppShareImage}
                 disabled={exporting !== null}
-                className="flex-1 sm:flex-none px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 uppercase"
+                className="flex-1 sm:flex-none px-3.5 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white font-black text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-700/20 uppercase"
+                title="Send quotation image via WhatsApp"
               >
                 <ImageIcon className="h-4 w-4" />
-                <span>Share Image</span>
+                <span>WhatsApp — Image</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleExportPDF}
                 disabled={exporting !== null}
-                className="flex-1 sm:flex-none px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20 uppercase"
+                className="flex-1 sm:flex-none px-3.5 py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20 uppercase"
               >
                 <Download className="h-4 w-4" />
-                <span>{exporting === 'pdf' ? 'Generating PDF...' : 'EXPORT PDF'}</span>
+                <span>{exporting === 'pdf' ? 'PDF...' : 'Download PDF'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleShareAsImage}
+                disabled={exporting !== null}
+                className="flex-1 sm:flex-none px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 uppercase"
+              >
+                <Download className="h-4 w-4" />
+                <span>Download Image</span>
               </button>
             </div>
           </div>

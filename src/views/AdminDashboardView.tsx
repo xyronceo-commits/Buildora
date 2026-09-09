@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ShieldCheck, Check, X, Building2, Package, Wrench, AlertTriangle, Users, LogOut, CheckCircle2 } from 'lucide-react';
 import { Business, Listing } from '../types';
 import { VerificationBadge } from '../components/VerificationBadge';
+import { normalizeVerificationStatus } from '../utils/verification';
 import { useAuth } from '../context/AuthContext';
 
 interface AdminDashboardViewProps {
@@ -20,7 +21,9 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   const { currentUser, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<'verifications' | 'suppliers' | 'listings' | 'audit'>('verifications');
 
-  const pendingBusinesses = businesses.filter((b) => b.verificationStatus === 'VERIFICATION_PENDING');
+  const pendingBusinesses = businesses.filter(
+    (b) => normalizeVerificationStatus(b.verificationStatus, b.isVerified) === 'VERIFICATION_PENDING'
+  );
 
   const handleSignOutClick = async () => {
     try {

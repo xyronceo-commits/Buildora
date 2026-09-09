@@ -1,17 +1,20 @@
 import React from 'react';
 import { ShieldCheck, Clock, ShieldAlert, Building } from 'lucide-react';
 import { VerificationStatus } from '../types';
+import { normalizeVerificationStatus } from '../utils/verification';
 
 interface VerificationBadgeProps {
-  status?: VerificationStatus;
+  status?: VerificationStatus | string | boolean | null;
   size?: 'sm' | 'md';
 }
 
 export const VerificationBadge: React.FC<VerificationBadgeProps> = ({
-  status = 'LISTED',
+  status,
   size = 'sm',
 }) => {
-  if (status === 'VERIFIED') {
+  const normStatus = normalizeVerificationStatus(status);
+
+  if (normStatus === 'VERIFIED') {
     return (
       <span
         className={`inline-flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-extrabold rounded ${
@@ -24,7 +27,7 @@ export const VerificationBadge: React.FC<VerificationBadgeProps> = ({
     );
   }
 
-  if (status === 'VERIFICATION_PENDING') {
+  if (normStatus === 'VERIFICATION_PENDING') {
     return (
       <span
         className={`inline-flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold rounded ${
@@ -37,7 +40,7 @@ export const VerificationBadge: React.FC<VerificationBadgeProps> = ({
     );
   }
 
-  if (status === 'REJECTED') {
+  if (normStatus === 'REJECTED') {
     return (
       <span
         className={`inline-flex items-center gap-1 bg-red-500/10 border border-red-500/30 text-red-400 font-bold rounded ${
