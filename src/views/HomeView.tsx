@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Wrench, Package, Truck, Building2, ArrowRight, HardHat, ShieldCheck, Bookmark, Sparkles } from 'lucide-react';
+import { Search, MapPin, Wrench, Package, Truck, Building2, ArrowRight, HardHat, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { useProject } from '../context/ProjectContext';
-import { useAuth } from '../context/AuthContext';
-import { useSaved } from '../context/SavedContext';
 import { Listing } from '../types';
 import { ListingCard } from '../components/ListingCard';
 
@@ -18,12 +16,12 @@ interface HomeViewProps {
 }
 
 const SEARCH_PLACEHOLDERS = [
-  'Search equipment, materials, logistics...',
-  'Search Dangote Cement 50kg...',
+  'Search cement (e.g. Dangote 50kg)...',
   'Search CAT 320 Excavator...',
   'Search 350L Concrete Mixer...',
   'Search 10 Ton Tipper Haulage...',
   'Search 9-inch Vibrated Blocks...',
+  'Search Granite / Sharp Sand...',
 ];
 
 export const HomeView: React.FC<HomeViewProps> = ({
@@ -37,27 +35,16 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onNavigateToAdmin,
 }) => {
   const { activeProject } = useProject();
-  const { currentUser } = useAuth();
-  const { savedIds } = useSaved();
   const [searchQuery, setSearchQuery] = useState('');
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
-  // Rotate placeholder
+  // Rotate placeholder every 2.5 seconds
   useEffect(() => {
     const timer = setInterval(() => {
       setPlaceholderIndex((prev) => (prev + 1) % SEARCH_PLACEHOLDERS.length);
-    }, 2800);
+    }, 2500);
     return () => clearInterval(timer);
   }, []);
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
-  };
-
-  const userName = currentUser?.displayName || currentUser?.companyName || 'Builder';
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,143 +56,139 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const categories = [
     {
       id: 'CONSTRUCTION MATERIALS',
-      title: 'Materials',
-      subtitle: 'Cement, Blocks, Steel, Sand',
+      title: 'CONSTRUCTION MATERIALS',
+      subtitle: 'Cement, Blocks, Sand, Granite, Rebar, Steel',
       icon: Package,
+      badge: 'Supplies',
+      color: 'border-blue-500/40 text-blue-400 bg-blue-500/10',
     },
     {
       id: 'CONSTRUCTION EQUIPMENT',
-      title: 'Equipment',
-      subtitle: 'Excavators, Mixers, Cranes',
+      title: 'EQUIPMENT & RENTALS',
+      subtitle: 'Excavators, Mixers, Compactors, Power, Cranes',
       icon: Wrench,
+      badge: 'Fleet Yard',
+      color: 'border-amber-500/40 text-amber-400 bg-amber-500/10',
     },
     {
       id: 'CONSTRUCTION LOGISTICS',
-      title: 'Logistics',
-      subtitle: 'Tippers, Lowbeds, Haulage',
+      title: 'LOGISTICS & HAULAGE',
+      subtitle: '10T/20T Tippers, Lowbeds, Haulage Logistics',
       icon: Truck,
+      badge: 'Transport',
+      color: 'border-emerald-500/40 text-emerald-400 bg-emerald-500/10',
     },
     {
       id: 'CONSTRUCTION BUSINESSES',
-      title: 'Businesses',
-      subtitle: 'Depots, Yards, Suppliers',
+      title: 'VERIFIED SUPPLIERS',
+      subtitle: 'Material Depots, Rental Yards, Subcontractors',
       icon: Building2,
+      badge: 'Certified',
+      color: 'border-amber-500/40 text-amber-500 bg-amber-500/10',
     },
   ];
 
-  // Filter saved listings if any
-  const savedListings = listings.filter((l) => savedIds.includes(l.listingId));
-
   return (
-    <div className="space-y-8 pb-20">
-      {/* Header & Hero Search Section */}
-      <div className="relative rounded-2xl bg-[#111318] border border-slate-800 p-6 sm:p-10 space-y-6">
-        {/* Top Greeting Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
-          <div className="space-y-1">
-            <div className="text-xs font-bold text-orange-500 uppercase tracking-widest flex items-center gap-1.5">
+    <div className="space-y-10 pb-20">
+      {/* Industrial Hero Banner Section */}
+      <div className="relative rounded-3xl bg-[#121418] dark:bg-[#121418] light:bg-white border-2 border-slate-800 dark:border-slate-800 light:border-slate-200 p-6 sm:p-12 overflow-hidden shadow-2xl transition-colors bg-grid-industrial">
+        <div className="relative z-10 max-w-3xl space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="inline-flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-1 text-xs font-black text-amber-500 border border-amber-500/30 uppercase tracking-widest">
               <HardHat className="h-4 w-4" />
-              <span>CONSTRORA DISCOVERY</span>
+              <span>PROJECT SITE RESOURCE DISCOVERY</span>
             </div>
-            <h2 className="text-sm sm:text-base font-semibold text-slate-300">
-              {getGreeting()}, <span className="text-white font-bold">{userName}</span>
-            </h2>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onOpenProjectModal}
-              className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all"
-            >
-              <MapPin className="h-3.5 w-3.5 text-orange-500" />
-              <span>Site: <strong className="text-white">{activeProject.name}</strong></span>
-            </button>
 
             {onNavigateToAdmin && (
               <button
                 type="button"
                 onClick={onNavigateToAdmin}
-                className="inline-flex items-center gap-1 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/40 px-3 py-1.5 text-xs font-black uppercase tracking-wider transition-all cursor-pointer hover:border-amber-500/80 shadow-md shadow-amber-500/5"
               >
-                <ShieldCheck className="h-3.5 w-3.5 text-orange-500" />
-                <span>ADMIN</span>
+                <ShieldCheck className="h-4 w-4 text-amber-500" />
+                <span>ADMIN PORTAL</span>
               </button>
             )}
           </div>
-        </div>
 
-        {/* Hero Question */}
-        <div className="space-y-2">
-          <h1 className="font-['Cabinet_Grotesk',sans-serif] text-3xl sm:text-5xl font-black text-white leading-tight tracking-tight uppercase">
-            WHAT DO YOU NEED TO <span className="text-orange-500">BUILD?</span>
+          <h1 className="font-['Cabinet_Grotesk'] text-4xl sm:text-6xl font-black text-white dark:text-white light:text-slate-900 leading-tight uppercase tracking-tight">
+            WHAT DO YOU NEED TO <span className="text-amber-500">BUILD?</span>
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 font-medium">
-            Find what you need to build — heavy equipment rentals, materials, and tipper transport near your site.
+
+          <p className="text-sm sm:text-base text-slate-300 dark:text-slate-300 light:text-slate-700 font-medium leading-relaxed">
+            Find actual construction materials, heavy machinery rentals, tipper transport, and verified suppliers around your active construction site.
           </p>
-        </div>
 
-        {/* Large Search Bar */}
-        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2.5 pt-1">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]}
-              className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-12 pr-4 py-3.5 text-sm font-semibold text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 transition-colors"
-            />
+          {/* Main Search Bar with Rotating Placeholder */}
+          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2 pt-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-4 h-5 w-5 text-slate-500" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]}
+                className="w-full bg-slate-900 dark:bg-slate-900 light:bg-slate-100 border-2 border-slate-800 dark:border-slate-800 light:border-slate-300 rounded-2xl pl-12 pr-4 py-4 text-sm font-bold text-white dark:text-white light:text-slate-900 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors shadow-inner"
+              />
+            </div>
+            <button
+              type="submit"
+              className="bg-amber-500 text-black font-black px-8 py-4 rounded-2xl text-sm hover:bg-amber-400 transition-all cursor-pointer shadow-lg shadow-amber-500/20 uppercase tracking-wider shrink-0"
+            >
+              SEARCH NOW
+            </button>
+          </form>
+
+          {/* Quick Search Chips */}
+          <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-400 pt-1">
+            <span className="text-slate-500 uppercase tracking-wider">POPULAR SEARCHES:</span>
+            {['CAT 320 Excavator', 'Dangote Cement', 'Concrete Mixer', '10 Ton Tipper', '9-Inch Blocks'].map(
+              (term, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => onSearchSubmit(term)}
+                  className="bg-slate-900 dark:bg-slate-900 light:bg-slate-100 hover:bg-amber-500/10 text-slate-300 dark:text-slate-300 light:text-slate-700 px-3 py-1.5 rounded-xl border border-slate-800 dark:border-slate-800 light:border-slate-300 hover:border-amber-500/50 transition-colors cursor-pointer"
+                >
+                  {term}
+                </button>
+              )
+            )}
           </div>
-          <button
-            type="submit"
-            className="bg-orange-500 text-black font-black px-7 py-3.5 rounded-xl text-xs hover:bg-orange-400 transition-all cursor-pointer uppercase tracking-wider shrink-0"
-          >
-            SEARCH NOW
-          </button>
-        </form>
-
-        {/* Quick Search Chips */}
-        <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-400 pt-1">
-          <span className="text-slate-500 font-bold uppercase tracking-wider text-[11px]">Popular:</span>
-          {['CAT 320 Excavator', 'Dangote Cement', 'Concrete Mixer', '10 Ton Tipper', '9-Inch Blocks'].map(
-            (term, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => onSearchSubmit(term)}
-                className="bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-orange-400 px-3 py-1 rounded-lg border border-slate-800 hover:border-orange-500/40 text-xs font-medium transition-colors cursor-pointer"
-              >
-                {term}
-              </button>
-            )
-          )}
         </div>
       </div>
 
-      {/* Category Shortcuts */}
-      <div className="space-y-3">
-        <h2 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest px-1">
-          Category Shortcuts
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* Construction Core Categories */}
+      <div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {categories.map((cat) => {
             const IconComponent = cat.icon;
             return (
               <button
                 key={cat.id}
                 onClick={() => onSelectCategory(cat.id)}
-                className="group p-4 rounded-xl bg-[#111318] border border-slate-800 hover:border-orange-500/80 transition-all text-left flex items-center gap-3.5 cursor-pointer shadow-sm"
+                className="group p-6 rounded-2xl bg-[#121418] dark:bg-[#121418] light:bg-white border-2 border-slate-800 dark:border-slate-800 light:border-slate-200 hover:border-amber-500 transition-all text-left flex flex-col justify-between space-y-4 cursor-pointer shadow-lg hover:shadow-2xl"
               >
-                <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-orange-500 group-hover:bg-orange-500 group-hover:text-black transition-colors shrink-0">
-                  <IconComponent className="h-5 w-5" />
+                <div className="flex items-center justify-between">
+                  <div className={`p-3 rounded-xl border-2 ${cat.color}`}>
+                    <IconComponent className="h-6 w-6" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded border border-amber-500/30">
+                    {cat.badge}
+                  </span>
                 </div>
-                <div className="min-w-0">
-                  <h3 className="font-['Cabinet_Grotesk',sans-serif] text-sm font-black text-white group-hover:text-orange-400 transition-colors truncate">
+
+                <div>
+                  <h3 className="font-['Cabinet_Grotesk'] text-lg font-black text-white dark:text-white light:text-slate-900 group-hover:text-amber-500 transition-colors uppercase">
                     {cat.title}
                   </h3>
-                  <p className="text-[11px] text-slate-400 font-medium truncate">
+                  <p className="text-xs text-slate-400 dark:text-slate-400 light:text-slate-600 font-medium mt-1">
                     {cat.subtitle}
                   </p>
+                </div>
+
+                <div className="flex items-center gap-1.5 text-xs font-black text-amber-500 pt-2 uppercase tracking-wider">
+                  <span>EXPLORE CATEGORY</span>
+                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1.5 transition-transform" />
                 </div>
               </button>
             );
@@ -213,29 +196,32 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
       </div>
 
-      {/* Near Your Project Section */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between gap-3 px-1">
+      {/* Available Near Your Construction Site */}
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h2 className="font-['Cabinet_Grotesk',sans-serif] text-xl sm:text-2xl font-black text-white uppercase tracking-tight flex items-center gap-2">
-              <span>NEAR YOUR PROJECT</span>
+            <h2 className="font-['Cabinet_Grotesk'] text-2xl sm:text-3xl font-black text-white dark:text-white light:text-slate-900 uppercase tracking-tight flex items-center gap-3">
+              <span>AVAILABLE AROUND SITE</span>
+              <span className="text-xs bg-amber-500/10 text-amber-500 font-black px-3 py-1 rounded-lg border border-amber-500/30">
+                📍 {activeProject.location.city}
+              </span>
             </h2>
-            <p className="text-xs text-slate-400 font-medium">
-              Available resources near {activeProject.name} ({activeProject.location.city})
+            <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-400 light:text-slate-600 font-medium mt-1">
+              Actual machinery, raw materials, and haulage logistics available near {activeProject.name}.
             </p>
           </div>
 
           <button
             onClick={() => onSelectCategory('ALL')}
-            className="text-xs font-bold text-orange-400 hover:text-orange-300 flex items-center gap-1 uppercase tracking-wider shrink-0 cursor-pointer"
+            className="text-xs font-black text-amber-500 hover:text-amber-400 flex items-center gap-1 uppercase tracking-wider shrink-0"
           >
-            <span>SEE ALL ({listings.length})</span>
-            <ArrowRight className="h-3.5 w-3.5" />
+            <span>VIEW ALL ({listings.length} LISTINGS)</span>
+            <ArrowRight className="h-4 w-4" />
           </button>
         </div>
 
         {listings.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {listings.map((item) => (
               <ListingCard
                 key={item.listingId}
@@ -247,39 +233,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
             ))}
           </div>
         ) : (
-          <div className="rounded-2xl bg-[#111318] border border-slate-800 p-10 text-center space-y-3">
-            <MapPin className="h-10 w-10 text-orange-500 mx-auto" />
-            <h3 className="font-bold text-white text-base uppercase">No Resources Found Near Your Site</h3>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto font-medium">
-              Adjust your project location or clear search filters to discover available resources.
+          <div className="rounded-2xl bg-[#121418] border-2 border-slate-800 p-12 text-center space-y-4">
+            <MapPin className="h-12 w-12 text-amber-500 mx-auto" />
+            <h3 className="font-black text-white text-lg uppercase">NO LISTINGS FOUND NEAR THIS SITE</h3>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              Expand your site radius or change your active project location.
             </p>
           </div>
         )}
       </div>
-
-      {/* Saved Resources Entry Point */}
-      {savedListings.length > 0 && (
-        <div className="rounded-xl bg-[#111318] border border-slate-800 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-orange-500/10 border border-orange-500/30 text-orange-400">
-              <Bookmark className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-white">Your Saved Binder</h3>
-              <p className="text-xs text-slate-400">
-                You have {savedListings.length} saved {savedListings.length === 1 ? 'resource' : 'resources'} ready for project comparison.
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => onSelectCategory('SAVED')}
-            className="text-xs font-extrabold text-black bg-orange-500 hover:bg-orange-400 px-4 py-2 rounded-xl transition-all cursor-pointer uppercase tracking-wider shrink-0"
-          >
-            View Binder
-          </button>
-        </div>
-      )}
     </div>
   );
 };
-
