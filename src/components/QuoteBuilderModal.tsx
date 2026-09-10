@@ -205,8 +205,8 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   const currentQuoteObj: SupplierQuote = {
     quoteId: existingQuote?.quoteId || `quote_doc_${Date.now()}`,
     quoteRequestId: quoteRequest?.quoteRequestId || existingQuote?.quoteRequestId || '',
-    businessId: business.businessId,
-    businessName: business.businessName,
+    businessId: business?.businessId || 'biz_default',
+    businessName: business?.businessName || 'Supplier Business',
     clientName,
     clientPhone,
     clientEmail,
@@ -232,7 +232,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   const handleSaveQuote = async (): Promise<SupplierQuote> => {
     setSaving(true);
     try {
-      if (currentUser && business.businessId) {
+      if (currentUser && business?.businessId) {
         const quoteRef = doc(db, 'businesses', business.businessId, 'quotes', currentQuoteObj.quoteId);
         await setDoc(quoteRef, sanitizeForFirestore(currentQuoteObj), { merge: true });
       }

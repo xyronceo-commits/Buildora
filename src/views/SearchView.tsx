@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, Filter, Map, List, X, ShieldCheck, MapPin, SlidersHorizontal, ArrowUpDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, Map, List, SlidersHorizontal, ArrowLeft } from 'lucide-react';
 import { Listing, FilterState } from '../types';
 import { ListingCard } from '../components/ListingCard';
 import { MapView } from '../components/MapView';
@@ -10,6 +10,7 @@ interface SearchViewProps {
   listings: Listing[];
   initialCategory?: string;
   initialQuery?: string;
+  onBack?: () => void;
   onSelectListing: (listing: Listing) => void;
   onCompareToggle: (listing: Listing) => void;
   comparedListings: Listing[];
@@ -19,6 +20,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
   listings,
   initialCategory = 'ALL',
   initialQuery = '',
+  onBack,
   onSelectListing,
   onCompareToggle,
   comparedListings,
@@ -42,7 +44,13 @@ export const SearchView: React.FC<SearchViewProps> = ({
     sortBy: 'nearest',
   });
 
-  // Filtering Logic
+  // Sync initial props
+  useEffect(() => {
+    setSearchQuery(initialQuery);
+    setFilters((prev) => ({ ...prev, category: initialCategory, query: initialQuery }));
+  }, [initialQuery, initialCategory]);
+
+  // Enhanced Filtering Logic for Exact Resource Discovery
   const filteredListings = listings
     .filter((item) => {
       // Category filter
@@ -52,14 +60,27 @@ export const SearchView: React.FC<SearchViewProps> = ({
         if (filters.category === 'CONSTRUCTION LOGISTICS' && item.type !== 'logistics') return false;
       }
 
-      // Query search
+      // Exact Query Search (checking title, category, subcategory, brand, model, manufacturer, specs, business name)
       if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchesTitle = item.title.toLowerCase().includes(q);
-        const matchesCategory = item.category.toLowerCase().includes(q);
-        const matchesBrand = item.brand?.toLowerCase().includes(q) || item.manufacturer?.toLowerCase().includes(q) || item.model?.toLowerCase().includes(q);
-        const matchesBusiness = item.businessName?.toLowerCase().includes(q);
-        if (!matchesTitle && !matchesCategory && !matchesBrand && !matchesBusiness) return false;
+        const q = searchQuery.toLowerCase().trim();
+        const matchesTitle = item.title ? item.title.toLowerCase().includes(q) : false;
+        const matchesCategory =
+          (item.category ? item.category.toLowerCase().includes(q) : false) ||
+          (item.subcategory ? item.subcategory.toLowerCase().includes(q) : false);
+        const matchesBrand =
+          Boolean(item.brand && item.brand.toLowerCase().includes(q)) ||
+          Boolean(item.manufacturer && item.manufacturer.toLowerCase().includes(q)) ||
+          Boolean(item.model && item.model.toLowerCase().includes(q)) ||
+          Boolean(item.modelNumber && item.modelNumber.toLowerCase().includes(q));
+        const matchesBusiness = item.businessName ? item.businessName.toLowerCase().includes(q) : false;
+
+        // Specs values match
+        const specsValues = item.specifications ? Object.values(item.specifications).join(' ').toLowerCase() : '';
+        const matchesSpecs = specsValues ? specsValues.includes(q) : false;
+
+        if (!matchesTitle && !matchesCategory && !matchesBrand && !matchesBusiness && !matchesSpecs) {
+          return false;
+        }
       }
 
       // Distance filter
@@ -75,7 +96,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
       if (filters.verifiedOnly && item.businessVerification !== 'VERIFIED') return false;
 
       // Availability filter
-      if (filters.availableOnly && item.availability.status !== 'AVAILABLE') return false;
+      if (filters.availableOnly && item.availability?.status !== 'AVAILABLE') return false;
 
       // Delivery filter
       if (filters.deliveryOnly && !item.delivery?.available) return false;
@@ -83,8 +104,18 @@ export const SearchView: React.FC<SearchViewProps> = ({
       return true;
     })
     .sort((a, b) => {
-      const distA = calculateDistanceKm(activeProject.location.latitude, activeProject.location.longitude, a.location.latitude, a.location.longitude);
-      const distB = calculateDistanceKm(activeProject.location.latitude, activeProject.location.longitude, b.location.latitude, b.location.longitude);
+      const distA = calculateDistanceKm(
+        activeProject.location.latitude,
+        activeProject.location.longitude,
+        a.location.latitude,
+        a.location.longitude
+      );
+      const distB = calculateDistanceKm(
+        activeProject.location.latitude,
+        activeProject.location.longitude,
+        b.location.latitude,
+        b.location.longitude
+      );
 
       if (filters.sortBy === 'nearest') {
         return distA - distB;
@@ -107,21 +138,31 @@ export const SearchView: React.FC<SearchViewProps> = ({
 
   return (
     <div className="space-y-6 pb-20">
-      {/* Search Bar Header */}
+      {/* Search Header */}
       <div className="rounded-2xl bg-[#121418] border border-slate-800 p-4 space-y-4">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back
+          </button>
+        )}
+
         <div className="flex flex-col sm:flex-row items-center gap-3">
+          {/* Main Search Input */}
           <div className="relative flex-1 w-full">
             <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-500" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search equipment, cement, tippers, suppliers..."
-              className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+              placeholder="Search equipment (CAT 320), materials (Dangote Cement), logistics (10T Tipper)..."
+              className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-3 py-2.5 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
             />
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
             {/* View Mode Switcher */}
             <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
               <button
@@ -130,7 +171,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
                   viewMode === 'list' ? 'bg-amber-500 text-black' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <List className="h-4 w-4" /> LIST
+                <List className="h-3.5 w-3.5" /> List
               </button>
               <button
                 onClick={() => setViewMode('map')}
@@ -138,7 +179,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
                   viewMode === 'map' ? 'bg-amber-500 text-black' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <Map className="h-4 w-4" /> MAP
+                <Map className="h-3.5 w-3.5" /> Map
               </button>
             </div>
 
@@ -151,23 +192,23 @@ export const SearchView: React.FC<SearchViewProps> = ({
                   : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'
               }`}
             >
-              <Filter className="h-4 w-4" /> FILTERS
+              <Filter className="h-3.5 w-3.5" /> Filters
             </button>
           </div>
         </div>
 
-        {/* Category Chips */}
+        {/* Category Shortcuts */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
           {[
-            { label: 'ALL RESOURCES', value: 'ALL' },
-            { label: 'EQUIPMENT', value: 'CONSTRUCTION EQUIPMENT' },
-            { label: 'MATERIALS', value: 'CONSTRUCTION MATERIALS' },
-            { label: 'LOGISTICS', value: 'CONSTRUCTION LOGISTICS' },
+            { label: 'All Resources', value: 'ALL' },
+            { label: 'Equipment', value: 'CONSTRUCTION EQUIPMENT' },
+            { label: 'Materials', value: 'CONSTRUCTION MATERIALS' },
+            { label: 'Logistics', value: 'CONSTRUCTION LOGISTICS' },
           ].map((cat) => (
             <button
               key={cat.value}
               onClick={() => setFilters({ ...filters, category: cat.value })}
-              className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap cursor-pointer transition-all ${
+              className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap cursor-pointer transition-all text-xs ${
                 filters.category === cat.value
                   ? 'bg-amber-500 text-black shadow'
                   : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'
@@ -179,12 +220,12 @@ export const SearchView: React.FC<SearchViewProps> = ({
         </div>
       </div>
 
-      {/* Expanded Filter Panel */}
+      {/* Expanded Filter Controls Panel */}
       {showFilters && (
-        <div className="rounded-2xl bg-[#121418] border border-amber-500/30 p-5 space-y-4 text-xs">
+        <div className="rounded-2xl bg-[#121418] border border-amber-500/30 p-4 space-y-4 text-xs">
           <div className="flex items-center justify-between border-b border-slate-800 pb-2">
             <h4 className="font-bold text-amber-400 flex items-center gap-1.5">
-              <SlidersHorizontal className="h-4 w-4" /> DISCOVERY FILTERS
+              <SlidersHorizontal className="h-4 w-4" /> Filter Resources
             </h4>
             <button
               onClick={() =>
@@ -276,8 +317,8 @@ export const SearchView: React.FC<SearchViewProps> = ({
         </div>
       )}
 
-      {/* Results Header */}
-      <div className="flex items-center justify-between text-xs text-slate-400">
+      {/* Results Header Summary */}
+      <div className="flex items-center justify-between text-xs text-slate-400 px-1">
         <div>
           Showing <strong className="text-white">{filteredListings.length}</strong> resources around{' '}
           <strong className="text-amber-400">{activeProject.name}</strong> ({activeProject.location.city})
@@ -287,7 +328,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
       {/* Results Display */}
       {viewMode === 'list' ? (
         filteredListings.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredListings.map((item) => (
               <ListingCard
                 key={item.listingId}
@@ -301,9 +342,9 @@ export const SearchView: React.FC<SearchViewProps> = ({
         ) : (
           <div className="rounded-2xl bg-[#121418] border border-slate-800 p-12 text-center space-y-3">
             <Search className="h-10 w-10 text-amber-500 mx-auto" />
-            <h3 className="font-bold text-white text-base">NOTHING FOUND NEAR YOUR PROJECT</h3>
+            <h3 className="font-bold text-white text-base">No construction resources found</h3>
             <p className="text-xs text-slate-400 max-w-sm mx-auto">
-              Try expanding your distance filter, clearing keywords, or changing project location.
+              Try a different search or adjust your filters.
             </p>
           </div>
         )
@@ -313,3 +354,4 @@ export const SearchView: React.FC<SearchViewProps> = ({
     </div>
   );
 };
+

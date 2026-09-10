@@ -91,7 +91,7 @@ export const SupplierDashboardView: React.FC<SupplierDashboardViewProps> = ({
       }
     };
     fetchQuotesFromFirestore();
-  }, [business.businessId]);
+  }, [business?.businessId]);
 
   useEffect(() => {
     if (business?.businessId) {
@@ -99,7 +99,7 @@ export const SupplierDashboardView: React.FC<SupplierDashboardViewProps> = ({
         localStorage.setItem(`constrora_quotes_${business.businessId}`, JSON.stringify(generatedQuotes));
       } catch (e) {}
     }
-  }, [generatedQuotes, business.businessId]);
+  }, [generatedQuotes, business?.businessId]);
 
   React.useEffect(() => {
     if (initialTab) {
@@ -292,20 +292,20 @@ export const SupplierDashboardView: React.FC<SupplierDashboardViewProps> = ({
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <VerificationBadge status={business.verificationStatus} size="sm" />
+              <VerificationBadge status={business?.verificationStatus || 'PENDING'} size="sm" />
               <span className="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded font-black uppercase tracking-wider">
                 SUPPLIER PORTAL
               </span>
             </div>
             <h1 className="font-['Cabinet_Grotesk'] text-2xl sm:text-3xl font-black text-white">
-              {business.businessName || currentUser?.displayName || 'Supplier Business'}
+              {business?.businessName || currentUser?.displayName || 'Supplier Business'}
             </h1>
             <p className="text-xs text-amber-400 font-extrabold uppercase tracking-wider mt-0.5">
               Equipment Rental & Material Supplier
             </p>
             <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium mt-2">
               <MapPin className="h-4 w-4 text-amber-500 shrink-0" />
-              <span>Address: <strong className="text-white">{business.location?.address || 'Industrial Zone'}, {business.location?.city || 'Osogbo'}, {business.location?.state || 'Osun State'}</strong></span>
+              <span>Address: <strong className="text-white">{business?.location?.address || 'Industrial Zone'}, {business?.location?.city || 'Osogbo'}, {business?.location?.state || 'Osun State'}</strong></span>
             </div>
           </div>
 
@@ -677,7 +677,7 @@ export const SupplierDashboardView: React.FC<SupplierDashboardViewProps> = ({
           <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800 space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-bold text-slate-400">Current Status:</span>
-              <VerificationBadge status={business.verificationStatus} size="md" />
+              <VerificationBadge status={business?.verificationStatus || 'PENDING'} size="md" />
             </div>
             <p className="text-slate-400 text-[11px]">
               Verified suppliers receive the green ✓ VERIFIED badge across search results and comparison cards.

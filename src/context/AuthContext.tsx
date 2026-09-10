@@ -110,8 +110,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (!snap.exists()) {
             // New user document initialization
             const tempRole = (localStorage.getItem('constrora_temp_role') as UserRole) || 'client';
-            const tempStepStr = localStorage.getItem('constrora_supplier_onboarding_step');
-            const tempStep = tempStepStr ? parseInt(tempStepStr, 10) : 1;
 
             const newProfile: UserProfile = {
               uid: user.uid,
@@ -119,7 +117,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               email: user.email || '',
               photoURL: user.photoURL || undefined,
               phoneNumber: user.phoneNumber || undefined,
-              role: isExactAdmin ? 'admin' : tempRole,
+              role: tempRole,
               onboardingCompleted: true,
               supplierOnboardingCompleted: true,
               supplierOnboardingStep: 6,
@@ -130,25 +128,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
             const sanitized = sanitizeForFirestore(newProfile);
             await setDoc(userRef, sanitized);
-            if (isExactAdmin) {
-              await setDoc(doc(db, 'admins', user.uid), { role: 'admin', email: 'buildsafe247@gmail.com', updatedAt: new Date().toISOString() }, { merge: true });
-            }
           }
         } catch (error) {
           console.warn('Error verifying or creating initial Firestore user document:', error);
         }
 
+        if (isExactAdmin) {
+          fetch('/api/admin/bootstrap', { method: 'POST' }).catch(() => {});
+        }
+
         // Real-time listener for user profile document in Firestore
         unsubscribeSnapshot = onSnapshot(
           userRef,
-          (docSnap) => {
+          async (docSnap) => {
             if (docSnap.exists()) {
               const profile = docSnap.data() as UserProfile;
-              if (isExactAdmin) {
-                profile.role = 'admin';
-                profile.emailVerified = true;
-                setDoc(userRef, { role: 'admin', emailVerified: true, updatedAt: new Date().toISOString() }, { merge: true }).catch(console.warn);
-                setDoc(doc(db, 'admins', user.uid), { role: 'admin', email: user.email || 'buildsafe247@gmail.com', updatedAt: new Date().toISOString() }, { merge: true }).catch(console.warn);
+              try {
+                const adminDocRef = doc(db, 'admins', user.uid);
+                const adminSnap = await getDoc(adminDocRef);
+                if (adminSnap.exists() || profile.role === 'admin') {
+                  profile.role = 'admin';
+                  profile.emailVerified = true;
+                }
+              } catch (adminErr) {
+                console.warn('Admin authorization status lookup info:', adminErr);
               }
               setCurrentUser(profile);
               localStorage.setItem('constrora_user_session', JSON.stringify(profile));
@@ -182,12 +185,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signInWithEmail = async (email: string, pass: string) => {
     setLoading(true);
     try {
-      const res = await signInWithEmailAndPassword(auth, email, pass);
+      await signInWithEmailAndPassword(auth, email, pass);
       const isExactAdmin = email.toLowerCase() === 'buildsafe247@gmail.com';
-      const userRef = doc(db, 'users', res.user.uid);
       if (isExactAdmin) {
-        await setDoc(userRef, { role: 'admin', emailVerified: true, updatedAt: new Date().toISOString() }, { merge: true });
-        await setDoc(doc(db, 'admins', res.user.uid), { role: 'admin', email: 'buildsafe247@gmail.com', updatedAt: new Date().toISOString() }, { merge: true });
+        fetch('/api/admin/bootstrap', { method: 'POST' }).catch(() => {});
       }
     } catch (error) {
       throw new Error(getReadableAuthError(error));
@@ -256,12 +257,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await createUserWithEmailAndPassword(auth, email, pass);
       
-      const isAdminEmail = email.toLowerCase() === 'buildsafe247@gmail.com';
+      const isExactAdmin = email.toLowerCase() === 'buildsafe247@gmail.com';
       const requestedRole = roleOverride || (localStorage.getItem('constrora_temp_role') as UserRole) || 'client';
-      const userRole: UserRole = (requestedRole === 'admin' && !isAdminEmail) ? 'client' : requestedRole;
-      const isAdminRole = isAdminEmail;
+      const userRole: UserRole = (requestedRole === 'admin') ? 'client' : requestedRole;
 
-      if (!isAdminRole) {
+      if (!isExactAdmin) {
         try {
           await sendEmailVerification(res.user);
         } catch (e) {
@@ -269,21 +269,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
+      if (isExactAdmin) {
+        fetch('/api/admin/bootstrap', { method: 'POST' }).catch(() => {});
+      }
+
       const bizId = userRole === 'supplier' ? `biz_${res.user.uid.slice(0, 8)}` : undefined;
 
       const newProfile: UserProfile = {
         uid: res.user.uid,
-        displayName: displayName || (isAdminRole ? 'Constrora Admin' : userRole === 'supplier' ? extraDetails?.businessName || 'Constrora Supplier' : 'Constrora Client'),
+        displayName: displayName || (userRole === 'supplier' ? extraDetails?.businessName || 'Constrora Supplier' : 'Constrora Client'),
         email,
         phoneNumber: extraDetails?.phoneNumber,
-        role: isAdminRole ? 'admin' : userRole,
+        role: userRole,
         onboardingCompleted: true,
         supplierOnboardingCompleted: userRole === 'supplier',
         supplierOnboardingStep: 6,
         clientOnboardingCompleted: userRole === 'client',
         activeProjectId: 'proj_osogbo_01',
         businessId: bizId,
-        emailVerified: isAdminRole ? true : (res.user.emailVerified || false),
+        emailVerified: isExactAdmin ? true : (res.user.emailVerified || false),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -531,21 +535,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const authenticatedEmail = user.email?.toLowerCase() || '';
 
       const isExactAdmin = authenticatedEmail === 'buildsafe247@gmail.com';
+      if (isExactAdmin) {
+        await fetch('/api/admin/bootstrap', { method: 'POST' }).catch(() => {});
+      }
+
       const adminDocRef = doc(db, 'admins', user.uid);
-      const adminSnap = await getDoc(adminDocRef);
-      const isAdminDoc = adminSnap.exists();
+      let isAdminDoc = false;
+      try {
+        const adminSnap = await getDoc(adminDocRef);
+        isAdminDoc = adminSnap.exists();
+      } catch (e) {
+        console.warn('Google admin doc read info:', e);
+      }
 
       if (!isExactAdmin && !isAdminDoc) {
         await firebaseSignOut(auth);
         throw new Error('Access denied. This Google account is not an authorized administrator.');
       }
 
-      // Register and set authorized admin profile for Google auth via admin portal
       const userRef = doc(db, 'users', user.uid);
-      const snap = await getDoc(userRef);
+      let snapData: Partial<UserProfile> = {};
+      try {
+        const snap = await getDoc(userRef);
+        if (snap.exists()) {
+          snapData = snap.data() as UserProfile;
+        }
+      } catch (e) {
+        console.warn('Google admin user doc read info:', e);
+      }
+
       const adminProfile: UserProfile = {
         uid: user.uid,
-        displayName: user.displayName || 'Constrora Admin',
+        displayName: user.displayName || snapData.displayName || 'Constrora Admin',
         email: authenticatedEmail || user.email || 'buildsafe247@gmail.com',
         photoURL: user.photoURL || undefined,
         role: 'admin',
@@ -554,14 +575,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         supplierOnboardingStep: 6,
         clientOnboardingCompleted: true,
         activeProjectId: 'proj_osogbo_01',
-        createdAt: snap.exists() ? snap.data().createdAt || new Date().toISOString() : new Date().toISOString(),
+        createdAt: snapData.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      const sanitized = sanitizeForFirestore(adminProfile);
-      await setDoc(userRef, sanitized, { merge: true });
-      if (isExactAdmin) {
-        await setDoc(adminDocRef, { role: 'admin', email: authenticatedEmail, updatedAt: new Date().toISOString() }, { merge: true });
-      }
+
       setCurrentUser(adminProfile);
       localStorage.setItem('constrora_user_session', JSON.stringify(adminProfile));
     } catch (error: unknown) {

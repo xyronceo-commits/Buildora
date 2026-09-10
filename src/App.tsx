@@ -464,8 +464,8 @@ export function App() {
     if (subView === 'add_listing') {
       return (
         <AddListingView
-          businessId={currentBusiness.businessId}
-          businessName={currentBusiness.businessName}
+          businessId={currentBusiness?.businessId || `biz_${Date.now()}`}
+          businessName={currentBusiness?.businessName || currentUser?.displayName || 'My Business'}
           onBack={() => setSubView('none')}
           onPublish={handlePublishListing}
         />
@@ -512,6 +512,10 @@ export function App() {
           listings={listings}
           initialCategory={searchCategory}
           initialQuery={searchQuery}
+          onBack={() => {
+            setActiveTab('home');
+            setSearchQuery('');
+          }}
           onSelectListing={handleSelectListing}
           onCompareToggle={handleToggleCompare}
           comparedListings={comparedListings}

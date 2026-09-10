@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Wrench, Package, Truck, Building2, ArrowRight, HardHat, CheckCircle2, ShieldCheck } from 'lucide-react';
+import {
+  Search,
+  MapPin,
+  Wrench,
+  Package,
+  Truck,
+  Building2,
+  ArrowRight,
+  ShieldCheck,
+  Bookmark,
+  Layers,
+} from 'lucide-react';
 import { useProject } from '../context/ProjectContext';
+import { useAuth } from '../context/AuthContext';
+import { useSaved } from '../context/SavedContext';
 import { Listing } from '../types';
 import { ListingCard } from '../components/ListingCard';
 
@@ -16,8 +29,8 @@ interface HomeViewProps {
 }
 
 const SEARCH_PLACEHOLDERS = [
-  'Search cement (e.g. Dangote 50kg)...',
   'Search CAT 320 Excavator...',
+  'Search Dangote Cement 50kg...',
   'Search 350L Concrete Mixer...',
   'Search 10 Ton Tipper Haulage...',
   'Search 9-inch Vibrated Blocks...',
@@ -35,14 +48,31 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onNavigateToAdmin,
 }) => {
   const { activeProject } = useProject();
+  const { currentUser } = useAuth();
+  const { savedItems } = useSaved();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
-  // Rotate placeholder every 2.5 seconds
+  // Dynamic Greeting based on time of day
+  const getGreetingTime = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const userName = currentUser?.displayName
+    ? currentUser.displayName.split(' ')[0]
+    : currentUser?.email
+    ? currentUser.email.split('@')[0]
+    : 'Builder';
+
+  // Rotate placeholder
   useEffect(() => {
     const timer = setInterval(() => {
       setPlaceholderIndex((prev) => (prev + 1) % SEARCH_PLACEHOLDERS.length);
-    }, 2500);
+    }, 3000);
     return () => clearInterval(timer);
   }, []);
 
@@ -56,158 +86,158 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const categories = [
     {
       id: 'CONSTRUCTION MATERIALS',
-      title: 'CONSTRUCTION MATERIALS',
-      subtitle: 'Cement, Blocks, Sand, Granite, Rebar, Steel',
+      title: 'Materials',
+      subtitle: 'Cement, rebar, blocks, aggregates',
       icon: Package,
-      badge: 'Supplies',
-      color: 'border-blue-500/40 text-blue-400 bg-blue-500/10',
     },
     {
       id: 'CONSTRUCTION EQUIPMENT',
-      title: 'EQUIPMENT & RENTALS',
-      subtitle: 'Excavators, Mixers, Compactors, Power, Cranes',
+      title: 'Equipment',
+      subtitle: 'Excavators, mixers, power, compaction',
       icon: Wrench,
-      badge: 'Fleet Yard',
-      color: 'border-amber-500/40 text-amber-400 bg-amber-500/10',
     },
     {
       id: 'CONSTRUCTION LOGISTICS',
-      title: 'LOGISTICS & HAULAGE',
-      subtitle: '10T/20T Tippers, Lowbeds, Haulage Logistics',
+      title: 'Logistics',
+      subtitle: 'Tippers, lowbeds, haulage services',
       icon: Truck,
-      badge: 'Transport',
-      color: 'border-emerald-500/40 text-emerald-400 bg-emerald-500/10',
     },
     {
       id: 'CONSTRUCTION BUSINESSES',
-      title: 'VERIFIED SUPPLIERS',
-      subtitle: 'Material Depots, Rental Yards, Subcontractors',
+      title: 'Businesses',
+      subtitle: 'Material depots, rental yards',
       icon: Building2,
-      badge: 'Certified',
-      color: 'border-amber-500/40 text-amber-500 bg-amber-500/10',
     },
   ];
 
-  return (
-    <div className="space-y-10 pb-20">
-      {/* Industrial Hero Banner Section */}
-      <div className="relative rounded-3xl bg-[#121418] dark:bg-[#121418] light:bg-white border-2 border-slate-800 dark:border-slate-800 light:border-slate-200 p-6 sm:p-12 overflow-hidden shadow-2xl transition-colors bg-grid-industrial">
-        <div className="relative z-10 max-w-3xl space-y-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="inline-flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-1 text-xs font-black text-amber-500 border border-amber-500/30 uppercase tracking-widest">
-              <HardHat className="h-4 w-4" />
-              <span>PROJECT SITE RESOURCE DISCOVERY</span>
-            </div>
+  // Filter listings near active project (up to 6 for home display)
+  const nearbyListings = listings.slice(0, 6);
 
-            {onNavigateToAdmin && (
-              <button
-                type="button"
-                onClick={onNavigateToAdmin}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/40 px-3 py-1.5 text-xs font-black uppercase tracking-wider transition-all cursor-pointer hover:border-amber-500/80 shadow-md shadow-amber-500/5"
-              >
-                <ShieldCheck className="h-4 w-4 text-amber-500" />
-                <span>ADMIN PORTAL</span>
-              </button>
-            )}
+  // Filter saved listings if any
+  const savedListings = listings.filter((l) => savedItems?.some((s) => s.referenceId === l.listingId)).slice(0, 3);
+
+  return (
+    <div className="space-y-8 pb-20">
+      {/* Client Discovery Header */}
+      <div className="rounded-3xl bg-[#121418] border border-slate-800 p-6 sm:p-10 space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-black uppercase tracking-widest text-amber-500 bg-amber-500/10 px-3 py-1 rounded-lg border border-amber-500/20">
+              CONSTRORA DISCOVERY
+            </span>
           </div>
 
-          <h1 className="font-['Cabinet_Grotesk'] text-4xl sm:text-6xl font-black text-white dark:text-white light:text-slate-900 leading-tight uppercase tracking-tight">
+          {onNavigateToAdmin && (
+            <button
+              type="button"
+              onClick={onNavigateToAdmin}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 px-3 py-1.5 text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer"
+            >
+              <ShieldCheck className="h-4 w-4 text-amber-500" />
+              <span>ADMIN PORTAL</span>
+            </button>
+          )}
+        </div>
+
+        {/* User Greeting & Question */}
+        <div className="space-y-1">
+          <p className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider">
+            {getGreetingTime()}, {userName}
+          </p>
+          <h1 className="font-['Cabinet_Grotesk'] text-3xl sm:text-5xl font-black text-white leading-tight uppercase tracking-tight">
             WHAT DO YOU NEED TO <span className="text-amber-500">BUILD?</span>
           </h1>
-
-          <p className="text-sm sm:text-base text-slate-300 dark:text-slate-300 light:text-slate-700 font-medium leading-relaxed">
-            Find actual construction materials, heavy machinery rentals, tipper transport, and verified suppliers around your active construction site.
+          <p className="text-xs sm:text-sm text-slate-400 font-medium">
+            Find what you need to build — heavy equipment, materials & transport near{' '}
+            <strong className="text-white">{activeProject.name}</strong> ({activeProject.location.city}).
           </p>
+        </div>
 
-          {/* Main Search Bar with Rotating Placeholder */}
-          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2 pt-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-4 h-5 w-5 text-slate-500" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]}
-                className="w-full bg-slate-900 dark:bg-slate-900 light:bg-slate-100 border-2 border-slate-800 dark:border-slate-800 light:border-slate-300 rounded-2xl pl-12 pr-4 py-4 text-sm font-bold text-white dark:text-white light:text-slate-900 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors shadow-inner"
-              />
-            </div>
-            <button
-              type="submit"
-              className="bg-amber-500 text-black font-black px-8 py-4 rounded-2xl text-sm hover:bg-amber-400 transition-all cursor-pointer shadow-lg shadow-amber-500/20 uppercase tracking-wider shrink-0"
-            >
-              SEARCH NOW
-            </button>
-          </form>
-
-          {/* Quick Search Chips */}
-          <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-400 pt-1">
-            <span className="text-slate-500 uppercase tracking-wider">POPULAR SEARCHES:</span>
-            {['CAT 320 Excavator', 'Dangote Cement', 'Concrete Mixer', '10 Ton Tipper', '9-Inch Blocks'].map(
-              (term, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => onSearchSubmit(term)}
-                  className="bg-slate-900 dark:bg-slate-900 light:bg-slate-100 hover:bg-amber-500/10 text-slate-300 dark:text-slate-300 light:text-slate-700 px-3 py-1.5 rounded-xl border border-slate-800 dark:border-slate-800 light:border-slate-300 hover:border-amber-500/50 transition-colors cursor-pointer"
-                >
-                  {term}
-                </button>
-              )
-            )}
+        {/* Search Field */}
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2 pt-1">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-4 h-5 w-5 text-slate-500" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]}
+              className="w-full bg-slate-900 border border-slate-800 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+            />
           </div>
+          <button
+            type="submit"
+            className="bg-amber-500 hover:bg-amber-400 text-black font-black px-8 py-3.5 rounded-2xl text-xs sm:text-sm transition-all cursor-pointer uppercase tracking-wider shrink-0"
+          >
+            Search Resources
+          </button>
+        </form>
+
+        {/* Popular Search Chips */}
+        <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-400 pt-1">
+          <span className="text-slate-500 text-[11px] uppercase tracking-wider">POPULAR:</span>
+          {['CAT 320 Excavator', 'Dangote Cement 50kg', '350L Concrete Mixer', '10 Ton Tipper'].map(
+            (term, idx) => (
+              <button
+                key={idx}
+                onClick={() => onSearchSubmit(term)}
+                className="bg-slate-900 hover:bg-amber-500/10 text-slate-300 px-3 py-1 rounded-xl border border-slate-800 hover:border-amber-500/40 text-[11px] font-semibold transition-colors cursor-pointer"
+              >
+                {term}
+              </button>
+            )
+          )}
         </div>
       </div>
 
-      {/* Construction Core Categories */}
-      <div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Category Shortcuts */}
+      <div className="space-y-3">
+        <h2 className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">
+          Resource Categories
+        </h2>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {categories.map((cat) => {
             const IconComponent = cat.icon;
             return (
               <button
                 key={cat.id}
                 onClick={() => onSelectCategory(cat.id)}
-                className="group p-6 rounded-2xl bg-[#121418] dark:bg-[#121418] light:bg-white border-2 border-slate-800 dark:border-slate-800 light:border-slate-200 hover:border-amber-500 transition-all text-left flex flex-col justify-between space-y-4 cursor-pointer shadow-lg hover:shadow-2xl"
+                className="group p-4 rounded-2xl bg-[#121418] border border-slate-800 hover:border-amber-500/80 transition-all text-left flex items-center justify-between cursor-pointer"
               >
-                <div className="flex items-center justify-between">
-                  <div className={`p-3 rounded-xl border-2 ${cat.color}`}>
-                    <IconComponent className="h-6 w-6" />
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-amber-500 shrink-0 group-hover:border-amber-500/40 transition-colors">
+                    <IconComponent className="h-5 w-5" />
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded border border-amber-500/30">
-                    {cat.badge}
-                  </span>
+                  <div className="min-w-0">
+                    <h3 className="font-['Cabinet_Grotesk'] text-sm font-black text-white group-hover:text-amber-500 transition-colors truncate">
+                      {cat.title}
+                    </h3>
+                    <p className="text-[11px] text-slate-400 truncate">
+                      {cat.subtitle}
+                    </p>
+                  </div>
                 </div>
 
-                <div>
-                  <h3 className="font-['Cabinet_Grotesk'] text-lg font-black text-white dark:text-white light:text-slate-900 group-hover:text-amber-500 transition-colors uppercase">
-                    {cat.title}
-                  </h3>
-                  <p className="text-xs text-slate-400 dark:text-slate-400 light:text-slate-600 font-medium mt-1">
-                    {cat.subtitle}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-1.5 text-xs font-black text-amber-500 pt-2 uppercase tracking-wider">
-                  <span>EXPLORE CATEGORY</span>
-                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1.5 transition-transform" />
-                </div>
+                <ArrowRight className="h-4 w-4 text-slate-600 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Available Near Your Construction Site */}
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* Near Your Project */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between px-1">
           <div>
-            <h2 className="font-['Cabinet_Grotesk'] text-2xl sm:text-3xl font-black text-white dark:text-white light:text-slate-900 uppercase tracking-tight flex items-center gap-3">
-              <span>AVAILABLE AROUND SITE</span>
-              <span className="text-xs bg-amber-500/10 text-amber-500 font-black px-3 py-1 rounded-lg border border-amber-500/30">
+            <h2 className="font-['Cabinet_Grotesk'] text-xl sm:text-2xl font-black text-white uppercase tracking-tight flex items-center gap-2">
+              <span>Near Your Project</span>
+              <span className="text-xs bg-amber-500/10 text-amber-400 font-bold px-2.5 py-0.5 rounded-lg border border-amber-500/20">
                 📍 {activeProject.location.city}
               </span>
             </h2>
-            <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-400 light:text-slate-600 font-medium mt-1">
-              Actual machinery, raw materials, and haulage logistics available near {activeProject.name}.
+            <p className="text-xs text-slate-400 font-medium mt-0.5">
+              Available equipment, materials & transport near {activeProject.name}
             </p>
           </div>
 
@@ -215,14 +245,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
             onClick={() => onSelectCategory('ALL')}
             className="text-xs font-black text-amber-500 hover:text-amber-400 flex items-center gap-1 uppercase tracking-wider shrink-0"
           >
-            <span>VIEW ALL ({listings.length} LISTINGS)</span>
+            <span>See all ({listings.length})</span>
             <ArrowRight className="h-4 w-4" />
           </button>
         </div>
 
-        {listings.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {listings.map((item) => (
+        {nearbyListings.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {nearbyListings.map((item) => (
               <ListingCard
                 key={item.listingId}
                 listing={item}
@@ -233,15 +263,54 @@ export const HomeView: React.FC<HomeViewProps> = ({
             ))}
           </div>
         ) : (
-          <div className="rounded-2xl bg-[#121418] border-2 border-slate-800 p-12 text-center space-y-4">
-            <MapPin className="h-12 w-12 text-amber-500 mx-auto" />
-            <h3 className="font-black text-white text-lg uppercase">NO LISTINGS FOUND NEAR THIS SITE</h3>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto">
-              Expand your site radius or change your active project location.
+          <div className="rounded-2xl bg-[#121418] border border-slate-800 p-10 text-center space-y-3">
+            <MapPin className="h-10 w-10 text-amber-500 mx-auto" />
+            <h3 className="font-black text-white text-sm uppercase">No construction resources found</h3>
+            <p className="text-xs text-slate-400 max-w-xs mx-auto">
+              Try a different search or adjust your active project location.
             </p>
           </div>
         )}
       </div>
+
+      {/* Saved Section Entry Point if User has saved items */}
+      {savedListings.length > 0 && (
+        <div className="space-y-4 pt-4 border-t border-slate-800/80">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="font-['Cabinet_Grotesk'] text-lg font-black text-white uppercase tracking-tight flex items-center gap-2">
+              <Bookmark className="h-4 w-4 text-amber-500" />
+              <span>Saved Resources</span>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {savedListings.map((item) => (
+              <div
+                key={item.listingId}
+                onClick={() => onSelectListing(item)}
+                className="p-3.5 rounded-2xl bg-[#121418] border border-slate-800 hover:border-amber-500/60 transition-colors cursor-pointer flex items-center gap-3"
+              >
+                <div className="h-12 w-12 rounded-xl bg-slate-900 overflow-hidden shrink-0 border border-slate-800">
+                  {item.photos && item.photos[0] ? (
+                    <img src={item.photos[0]} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center text-slate-600">
+                      <Layers className="h-5 w-5" />
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-xs font-black text-white truncate">{item.title}</h4>
+                  <p className="text-[10px] font-bold text-amber-400 mt-0.5">
+                    {item.rental?.dailyPrice ? `₦${item.rental.dailyPrice.toLocaleString()}/day` : item.price ? `₦${item.price.toLocaleString()}` : 'Contact'}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+

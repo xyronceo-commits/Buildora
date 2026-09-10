@@ -43,10 +43,12 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
   const { activeProject } = useProject();
   const { currentUser } = useAuth();
 
+  const businessId = business?.businessId || 'biz_default';
+
   const [reviews, setReviews] = useState<Review[]>([
     {
       reviewId: 'rev_1',
-      businessId: business.businessId,
+      businessId,
       userId: 'usr_1',
       userName: 'Engr. Tunde Bakare',
       rating: 5,
@@ -57,7 +59,7 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
     },
     {
       reviewId: 'rev_2',
-      businessId: business.businessId,
+      businessId,
       userId: 'usr_2',
       userName: 'Chief K. Adeleke',
       rating: 5,
@@ -74,6 +76,14 @@ export const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({
   const [reportReason, setReportReason] = useState('Wrong information');
   const [reportSuccess, setReportSuccess] = useState(false);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
+
+  if (!business) {
+    return (
+      <div className="p-8 text-center text-slate-400 bg-[#121418] rounded-3xl border border-slate-800">
+        Supplier business profile not found.
+      </div>
+    );
+  }
 
   const businessListings = listings.filter((l) => l.businessId === business.businessId);
   const distanceStr = formatDistance(activeProject.location, business.location);

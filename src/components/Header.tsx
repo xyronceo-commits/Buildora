@@ -219,15 +219,17 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Prominent Admin Control Icon Button */}
-          <button
-            onClick={handleShieldClick}
-            className="flex items-center gap-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shadow-sm shadow-amber-500/5 hover:border-amber-500/60"
-            title="Access Constrora Admin Control Portal"
-          >
-            <ShieldCheck className="h-4 w-4 text-amber-500 shrink-0" />
-            <span className="hidden sm:inline text-[11px] uppercase tracking-wider font-black">ADMIN</span>
-          </button>
+          {/* Admin Control Icon Button (Visible only at Landing & Admin pages) */}
+          {(activeTab === 'home' || activeTab === 'admin') && (
+            <button
+              onClick={handleShieldClick}
+              className="flex items-center gap-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shadow-sm shadow-amber-500/5 hover:border-amber-500/60"
+              title="Access Constrora Admin Control Portal"
+            >
+              <ShieldCheck className="h-4 w-4 text-amber-500 shrink-0" />
+              <span className="hidden sm:inline text-[11px] uppercase tracking-wider font-black">ADMIN</span>
+            </button>
+          )}
         </div>
       </div>
 
