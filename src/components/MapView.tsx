@@ -14,7 +14,7 @@ export const MapView: React.FC<MapViewProps> = ({ listings, onSelectListing }) =
   const [selectedListing, setSelectedListing] = useState<Listing | null>(listings[0] || null);
 
   return (
-    <div className="relative w-full h-[550px] rounded-2xl bg-[#0F1115] border border-slate-800 overflow-hidden shadow-2xl flex flex-col justify-between p-4">
+    <div className="relative w-full h-[550px] rounded-2xl bg-[#F7F7F5] dark:bg-[#0F1115] border border-[#E5E5E5] dark:border-slate-800 overflow-hidden shadow-sm flex flex-col justify-between p-4">
       {/* Map Graphic Canvas / Background */}
       <div className="absolute inset-0 opacity-20 pointer-events-none">
         <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
@@ -31,13 +31,13 @@ export const MapView: React.FC<MapViewProps> = ({ listings, onSelectListing }) =
       </div>
 
       {/* Map Top Status Bar */}
-      <div className="relative z-10 flex items-center justify-between bg-[#121418]/90 backdrop-blur-md p-3 rounded-xl border border-slate-800 text-xs">
-        <div className="flex items-center gap-2 text-amber-400 font-bold">
-          <Compass className="h-4 w-4 animate-spin-slow" />
+      <div className="relative z-10 flex items-center justify-between bg-white/95 dark:bg-[#121418]/90 backdrop-blur-md p-3 rounded-xl border border-[#E5E5E5] dark:border-slate-800 text-xs">
+        <div className="flex items-center gap-2 text-[#B45309] dark:text-[#FBBF24] font-bold">
+          <Compass className="h-4 w-4 animate-spin-slow text-[#F59E0B]" />
           <span>PROJECT LOCATION RADIAL DISCOVERY</span>
         </div>
 
-        <div className="text-slate-300 font-medium">
+        <div className="text-[#374151] dark:text-slate-300 font-medium">
           📍 {activeProject.name} · {activeProject.location.city} ({listings.length} resources found)
         </div>
       </div>
@@ -46,10 +46,10 @@ export const MapView: React.FC<MapViewProps> = ({ listings, onSelectListing }) =
       <div className="relative z-10 my-auto flex flex-col items-center justify-center">
         {/* Project Target Pin */}
         <div className="relative mb-8 flex flex-col items-center animate-bounce">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500 text-black font-extrabold shadow-xl shadow-amber-500/30 border-2 border-white">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FBBF24] text-[#111111] font-black shadow-lg border-2 border-white dark:border-slate-900">
             <HardHat className="h-6 w-6" />
           </div>
-          <span className="mt-1 bg-amber-500 text-black text-[10px] font-black px-2 py-0.5 rounded shadow uppercase">
+          <span className="mt-1 bg-[#FBBF24] text-[#111111] text-[10px] font-black px-2 py-0.5 rounded shadow uppercase">
             SITE: {activeProject.name}
           </span>
         </div>
@@ -66,13 +66,13 @@ export const MapView: React.FC<MapViewProps> = ({ listings, onSelectListing }) =
                 onClick={() => setSelectedListing(item)}
                 className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-2.5 ${
                   isSelected
-                    ? 'bg-amber-500 text-black border-white shadow-xl scale-105 font-bold'
-                    : 'bg-[#121418]/90 text-white border-slate-800 hover:border-amber-500/50'
+                    ? 'bg-[#FBBF24] text-[#111111] border-white dark:border-slate-900 shadow-md scale-105 font-bold'
+                    : 'bg-white/95 dark:bg-[#121418]/90 text-[#111111] dark:text-white border-[#E5E5E5] dark:border-slate-800 hover:border-[#FBBF24]'
                 }`}
               >
                 <div
                   className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${
-                    isSelected ? 'bg-black text-amber-400' : 'bg-slate-800 text-amber-400'
+                    isSelected ? 'bg-[#111111] text-[#FBBF24]' : 'bg-slate-100 dark:bg-slate-800 text-[#F59E0B]'
                   }`}
                 >
                   {item.type === 'equipment' ? (
@@ -85,7 +85,7 @@ export const MapView: React.FC<MapViewProps> = ({ listings, onSelectListing }) =
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-bold truncate">{item.title}</div>
-                  <div className={`text-[10px] ${isSelected ? 'text-black/80 font-bold' : 'text-slate-400'}`}>
+                  <div className={`text-[10px] ${isSelected ? 'text-[#111111]/80 font-bold' : 'text-[#6B7280] dark:text-slate-400'}`}>
                     📍 {distanceStr}
                   </div>
                 </div>
@@ -97,7 +97,7 @@ export const MapView: React.FC<MapViewProps> = ({ listings, onSelectListing }) =
 
       {/* Selected Listing Bottom Preview Card */}
       {selectedListing && (
-        <div className="relative z-10 bg-[#121418] border border-slate-800 p-3.5 rounded-2xl flex items-center justify-between gap-3 shadow-2xl">
+        <div className="relative z-10 bg-white dark:bg-[#121418] border border-[#E5E5E5] dark:border-slate-800 p-3.5 rounded-2xl flex items-center justify-between gap-3 shadow-md">
           <div className="flex items-center gap-3 min-w-0">
             <img
               src={selectedListing.photos[0]}
@@ -106,11 +106,11 @@ export const MapView: React.FC<MapViewProps> = ({ listings, onSelectListing }) =
               referrerPolicy="no-referrer"
             />
             <div className="min-w-0">
-              <h4 className="text-xs font-bold text-white truncate">{selectedListing.title}</h4>
-              <p className="text-[11px] text-amber-400 font-semibold">
+              <h4 className="text-xs font-bold text-[#111111] dark:text-white truncate">{selectedListing.title}</h4>
+              <p className="text-[11px] text-[#B45309] dark:text-[#FBBF24] font-bold">
                 {selectedListing.rental?.dailyPrice ? `₦${selectedListing.rental.dailyPrice.toLocaleString()}/day` : selectedListing.price ? `₦${selectedListing.price.toLocaleString()}/${selectedListing.priceUnit}` : 'Contact for Price'}
               </p>
-              <p className="text-[10px] text-slate-400">
+              <p className="text-[10px] text-[#6B7280] dark:text-slate-400">
                 Supplier: {selectedListing.businessName} · 📍 {formatDistance(activeProject.location, selectedListing.location)}
               </p>
             </div>
@@ -118,7 +118,7 @@ export const MapView: React.FC<MapViewProps> = ({ listings, onSelectListing }) =
 
           <button
             onClick={() => onSelectListing(selectedListing)}
-            className="flex items-center gap-1.5 bg-amber-500 text-black font-extrabold px-3.5 py-2 rounded-xl text-xs hover:bg-amber-400 transition-all cursor-pointer shrink-0"
+            className="flex items-center gap-1.5 bg-[#FBBF24] text-[#111111] font-black px-3.5 py-2 rounded-xl text-xs hover:bg-[#F59E0B] transition-all cursor-pointer shrink-0 shadow-sm"
           >
             <Eye className="h-4 w-4" /> INSPECT
           </button>

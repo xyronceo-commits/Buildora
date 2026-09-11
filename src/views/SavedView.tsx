@@ -34,14 +34,14 @@ export const SavedView: React.FC<SavedViewProps> = ({
 
   return (
     <div className="space-y-6 pb-20">
-      <div className="rounded-2xl bg-[#121418] border border-slate-800 p-6 space-y-4">
-        <div className="flex items-center gap-2 text-amber-500">
-          <Bookmark className="h-6 w-6" />
-          <h1 className="font-['Cabinet_Grotesk'] text-2xl font-extrabold text-white">
+      <div className="rounded-2xl bg-white dark:bg-[#121418] border border-[#E5E5E5] dark:border-slate-800 p-6 space-y-4 shadow-2xs">
+        <div className="flex items-center gap-2 text-[#B45309] dark:text-[#FBBF24]">
+          <Bookmark className="h-6 w-6 text-[#F59E0B]" />
+          <h1 className="font-['Cabinet_Grotesk'] text-2xl font-extrabold text-[#111111] dark:text-white">
             PROJECT SAVED BINDER ({savedItems.length})
           </h1>
         </div>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-[#6B7280] dark:text-slate-400">
           Keep your shortlisted heavy equipment models, material suppliers, tippers and businesses in one place.
         </p>
 
@@ -59,8 +59,8 @@ export const SavedView: React.FC<SavedViewProps> = ({
               onClick={() => setActiveTab(tab.id as 'all' | 'equipment' | 'material' | 'logistics' | 'business')}
               className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap cursor-pointer transition-all ${
                 activeTab === tab.id
-                  ? 'bg-amber-500 text-black shadow'
-                  : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'
+                  ? 'bg-[#FBBF24] text-[#111111] shadow-sm'
+                  : 'bg-[#F7F7F5] dark:bg-slate-900 text-[#6B7280] dark:text-slate-400 border border-[#E5E5E5] dark:border-slate-800 hover:text-[#111111] dark:hover:text-white'
               }`}
             >
               {tab.label}
@@ -70,10 +70,10 @@ export const SavedView: React.FC<SavedViewProps> = ({
       </div>
 
       {savedItems.length === 0 ? (
-        <div className="rounded-2xl bg-[#121418] border border-slate-800 p-12 text-center space-y-3">
-          <Bookmark className="h-10 w-10 text-amber-500 mx-auto opacity-50" />
-          <h3 className="font-bold text-white text-base">NOTHING SAVED YET</h3>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto">
+        <div className="rounded-2xl bg-white dark:bg-[#121418] border border-[#E5E5E5] dark:border-slate-800 p-12 text-center space-y-3 shadow-2xs">
+          <Bookmark className="h-10 w-10 text-[#F59E0B] mx-auto opacity-50" />
+          <h3 className="font-bold text-[#111111] dark:text-white text-base">NOTHING SAVED YET</h3>
+          <p className="text-xs text-[#6B7280] dark:text-slate-400 max-w-sm mx-auto">
             Bookmark equipment rentals, cement depots or tipper trucks while searching to organize your project choices.
           </p>
         </div>

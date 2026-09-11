@@ -89,10 +89,10 @@ export const ListingDetailView: React.FC<ListingDetailViewProps> = ({
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-24">
       {/* Navigation Header */}
-      <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+      <div className="flex items-center justify-between border-b border-[#E5E5E5] dark:border-[#374151] pb-4">
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-slate-300 hover:text-amber-500 bg-slate-900 border border-slate-800 px-3.5 py-2 rounded-xl transition-all cursor-pointer"
+          className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-[#111111] dark:text-white hover:text-[#F59E0B] bg-white dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] hover:border-[#FBBF24] px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
         >
           <ArrowLeft className="h-4 w-4" /> Back to Search
         </button>
@@ -100,10 +100,10 @@ export const ListingDetailView: React.FC<ListingDetailViewProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={() => onCompareToggle(listing)}
-            className={`px-3 py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-2 rounded-xl border text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 shadow-xs ${
               isCompared
-                ? 'bg-amber-500/20 border-amber-500 text-amber-400'
-                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                ? 'bg-[#FBBF24] border-[#FBBF24] text-[#111111]'
+                : 'bg-white dark:bg-[#1F2937] border-[#E5E5E5] dark:border-[#374151] text-[#6B7280] dark:text-[#9CA3AF] hover:text-[#111111] dark:hover:text-white hover:border-[#FBBF24]'
             }`}
           >
             <Scale className="h-4 w-4" />
@@ -117,10 +117,10 @@ export const ListingDetailView: React.FC<ListingDetailViewProps> = ({
                 listing.listingId
               )
             }
-            className={`px-3 py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-2 rounded-xl border text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 shadow-xs ${
               saved
-                ? 'bg-amber-500 text-black border-amber-500 font-extrabold'
-                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                ? 'bg-[#FBBF24] text-[#111111] border-[#FBBF24]'
+                : 'bg-white dark:bg-[#1F2937] border-[#E5E5E5] dark:border-[#374151] text-[#6B7280] dark:text-[#9CA3AF] hover:text-[#111111] dark:hover:text-white hover:border-[#FBBF24]'
             }`}
           >
             <Bookmark className="h-4 w-4" />
@@ -134,8 +134,8 @@ export const ListingDetailView: React.FC<ListingDetailViewProps> = ({
         {/* Left Column (8 cols): Gallery, Title, Specs */}
         <div className="lg:col-span-8 space-y-6">
           {/* Photo Gallery Header */}
-          <div className="rounded-3xl bg-[#121418] border border-slate-800 p-3 space-y-3 shadow-xl">
-            <div className="relative h-72 sm:h-96 w-full rounded-2xl bg-slate-900 overflow-hidden border border-slate-800">
+          <div className="rounded-3xl bg-white dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] p-3 space-y-3 shadow-xs">
+            <div className="relative h-72 sm:h-96 w-full rounded-2xl bg-[#F7F7F5] dark:bg-[#111111] overflow-hidden border border-[#E5E5E5] dark:border-[#374151]">
               {selectedPhoto || (photos.length > 0 && photos[0]) ? (
                 <img
                   src={selectedPhoto || photos[0]}
@@ -144,15 +144,15 @@ export const ListingDetailView: React.FC<ListingDetailViewProps> = ({
                   referrerPolicy="no-referrer"
                 />
               ) : (
-                <div className="h-full w-full flex flex-col items-center justify-center bg-slate-900 text-slate-600 p-4 text-center">
+                <div className="h-full w-full flex flex-col items-center justify-center bg-[#F7F7F5] dark:bg-[#111111] text-[#6B7280] p-4 text-center">
                   {listing.type === 'equipment' ? (
-                    <Wrench className="h-16 w-16 text-slate-700 mb-2" />
+                    <Wrench className="h-16 w-16 text-[#6B7280] dark:text-[#9CA3AF] mb-2" />
                   ) : listing.type === 'material' ? (
-                    <Package className="h-16 w-16 text-slate-700 mb-2" />
+                    <Package className="h-16 w-16 text-[#6B7280] dark:text-[#9CA3AF] mb-2" />
                   ) : (
-                    <Truck className="h-16 w-16 text-slate-700 mb-2" />
+                    <Truck className="h-16 w-16 text-[#6B7280] dark:text-[#9CA3AF] mb-2" />
                   )}
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#6B7280] dark:text-[#9CA3AF]">
                     No Photo Uploaded
                   </span>
                 </div>
@@ -160,11 +160,11 @@ export const ListingDetailView: React.FC<ListingDetailViewProps> = ({
 
               <div className="absolute top-4 left-4">
                 {listing.availability.status === 'AVAILABLE' ? (
-                  <span className="inline-flex items-center gap-1.5 bg-emerald-500 text-black text-xs font-black px-3 py-1 rounded-lg uppercase tracking-wider shadow">
-                    <span className="h-2 w-2 rounded-full bg-black animate-pulse" /> AVAILABLE NOW
+                  <span className="inline-flex items-center gap-1.5 bg-[#FBBF24] text-[#111111] text-xs font-black px-3 py-1 rounded-lg uppercase tracking-wider shadow-sm">
+                    <span className="h-2 w-2 rounded-full bg-[#111111] animate-pulse" /> AVAILABLE NOW
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 bg-amber-500 text-black text-xs font-black px-3 py-1 rounded-lg uppercase tracking-wider shadow">
+                  <span className="inline-flex items-center gap-1.5 bg-[#F7F7F5] dark:bg-[#1F2937] text-[#111111] dark:text-white border border-[#E5E5E5] dark:border-[#374151] text-xs font-black px-3 py-1 rounded-lg uppercase tracking-wider shadow-sm">
                     {listing.availability.status}
                   </span>
                 )}
@@ -178,7 +178,7 @@ export const ListingDetailView: React.FC<ListingDetailViewProps> = ({
                     key={i}
                     onClick={() => setSelectedPhoto(photo)}
                     className={`h-16 w-20 rounded-xl overflow-hidden border-2 shrink-0 cursor-pointer transition-all ${
-                      (selectedPhoto || photos[0]) === photo ? 'border-amber-500 scale-105' : 'border-slate-800 opacity-60 hover:opacity-100'
+                      (selectedPhoto || photos[0]) === photo ? 'border-[#FBBF24] scale-105' : 'border-[#E5E5E5] dark:border-[#374151] opacity-60 hover:opacity-100'
                     }`}
                   >
                     <img src={photo} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
@@ -189,31 +189,31 @@ export const ListingDetailView: React.FC<ListingDetailViewProps> = ({
           </div>
 
           {/* Core Info Panel */}
-          <div className="rounded-3xl bg-[#121418] border border-slate-800 p-6 space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-slate-400">
-              <span className="uppercase tracking-widest text-amber-500 bg-amber-500/10 px-3 py-1 rounded-lg border border-amber-500/20">
+          <div className="rounded-3xl bg-white dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] p-6 space-y-4 shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-[#6B7280] dark:text-[#9CA3AF]">
+              <span className="uppercase tracking-widest text-[#111111] dark:text-[#FBBF24] bg-[#FBBF24]/20 px-3 py-1 rounded-lg border border-[#FBBF24]/40 font-black">
                 {listing.type.toUpperCase()} • {listing.category}
               </span>
-              <span className="text-slate-500 font-mono text-[11px]">ID: {listing.listingId}</span>
+              <span className="text-[#6B7280] dark:text-[#9CA3AF] font-mono text-[11px]">ID: {listing.listingId}</span>
             </div>
 
-            <h1 className="font-['Cabinet_Grotesk'] text-2xl sm:text-4xl font-black text-white leading-tight">
+            <h1 className="font-['Cabinet_Grotesk'] text-2xl sm:text-4xl font-black text-[#111111] dark:text-white leading-tight">
               {listing.title}
             </h1>
 
-            <div className="flex items-baseline gap-2 pt-2 border-t border-slate-800">
-              <span className="text-3xl font-black text-amber-400">{priceObj.price}</span>
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+            <div className="flex items-baseline gap-2 pt-2 border-t border-[#E5E5E5] dark:border-[#374151]">
+              <span className="text-3xl font-black text-[#111111] dark:text-[#FBBF24]">{priceObj.price}</span>
+              <span className="text-xs font-black text-[#6B7280] dark:text-[#9CA3AF] uppercase tracking-wider">
                 PER {priceObj.unit}
               </span>
             </div>
 
             {listing.description && (
               <div className="pt-2">
-                <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-1">
+                <h3 className="text-xs font-black uppercase tracking-wider text-[#6B7280] dark:text-[#9CA3AF] mb-1">
                   Resource Description
                 </h3>
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
+                <p className="text-xs sm:text-sm text-[#1F2937] dark:text-[#F3F4F6] leading-relaxed font-normal">
                   {listing.description}
                 </p>
               </div>
@@ -222,9 +222,9 @@ export const ListingDetailView: React.FC<ListingDetailViewProps> = ({
 
           {/* Specifications Table */}
           {listing.specifications && (
-            <div className="rounded-3xl bg-[#121418] border border-slate-800 p-6 space-y-4">
-              <h3 className="font-['Cabinet_Grotesk'] text-lg font-black text-white uppercase tracking-tight flex items-center gap-2">
-                <Wrench className="h-5 w-5 text-amber-500" /> Technical Specifications
+            <div className="rounded-3xl bg-white dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] p-6 space-y-4 shadow-xs">
+              <h3 className="font-['Cabinet_Grotesk'] text-lg font-black text-[#111111] dark:text-white uppercase tracking-tight flex items-center gap-2">
+                <Wrench className="h-5 w-5 text-[#F59E0B]" /> Technical Specifications
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
@@ -232,33 +232,33 @@ export const ListingDetailView: React.FC<ListingDetailViewProps> = ({
                   if (!val) return null;
                   const formattedKey = key.replace(/([A-Z])/g, ' $1').toUpperCase();
                   return (
-                    <div key={key} className="bg-slate-900 p-3 rounded-2xl border border-slate-800 flex justify-between items-center">
-                      <span className="text-slate-400 font-bold uppercase tracking-wider text-[11px]">
+                    <div key={key} className="bg-[#F7F7F5] dark:bg-[#111111] p-3 rounded-2xl border border-[#E5E5E5] dark:border-[#374151] flex justify-between items-center">
+                      <span className="text-[#6B7280] dark:text-[#9CA3AF] font-bold uppercase tracking-wider text-[11px]">
                         {formattedKey}
                       </span>
-                      <span className="text-white font-black">{String(val)}</span>
+                      <span className="text-[#111111] dark:text-white font-black">{String(val)}</span>
                     </div>
                   );
                 })}
 
                 {listing.brand && (
-                  <div className="bg-slate-900 p-3 rounded-2xl border border-slate-800 flex justify-between items-center">
-                    <span className="text-slate-400 font-bold uppercase tracking-wider text-[11px]">BRAND</span>
-                    <span className="text-white font-black">{listing.brand}</span>
+                  <div className="bg-[#F7F7F5] dark:bg-[#111111] p-3 rounded-2xl border border-[#E5E5E5] dark:border-[#374151] flex justify-between items-center">
+                    <span className="text-[#6B7280] dark:text-[#9CA3AF] font-bold uppercase tracking-wider text-[11px]">BRAND</span>
+                    <span className="text-[#111111] dark:text-white font-black">{listing.brand}</span>
                   </div>
                 )}
 
                 {listing.condition && (
-                  <div className="bg-slate-900 p-3 rounded-2xl border border-slate-800 flex justify-between items-center">
-                    <span className="text-slate-400 font-bold uppercase tracking-wider text-[11px]">CONDITION</span>
-                    <span className="text-white font-black">{listing.condition}</span>
+                  <div className="bg-[#F7F7F5] dark:bg-[#111111] p-3 rounded-2xl border border-[#E5E5E5] dark:border-[#374151] flex justify-between items-center">
+                    <span className="text-[#6B7280] dark:text-[#9CA3AF] font-bold uppercase tracking-wider text-[11px]">CONDITION</span>
+                    <span className="text-[#111111] dark:text-white font-black">{listing.condition}</span>
                   </div>
                 )}
 
                 {listing.rental?.minimumPeriod && (
-                  <div className="bg-slate-900 p-3 rounded-2xl border border-slate-800 flex justify-between items-center">
-                    <span className="text-slate-400 font-bold uppercase tracking-wider text-[11px]">MINIMUM HIRE</span>
-                    <span className="text-white font-black">{listing.rental.minimumPeriod} DAYS</span>
+                  <div className="bg-[#F7F7F5] dark:bg-[#111111] p-3 rounded-2xl border border-[#E5E5E5] dark:border-[#374151] flex justify-between items-center">
+                    <span className="text-[#6B7280] dark:text-[#9CA3AF] font-bold uppercase tracking-wider text-[11px]">MINIMUM HIRE</span>
+                    <span className="text-[#111111] dark:text-white font-black">{listing.rental.minimumPeriod} DAYS</span>
                   </div>
                 )}
               </div>
@@ -268,22 +268,22 @@ export const ListingDetailView: React.FC<ListingDetailViewProps> = ({
 
         {/* Right Column (4 cols): Supplier Card & Actions */}
         <div className="lg:col-span-4 space-y-6">
-          <div className="rounded-3xl bg-[#121418] border border-slate-800 p-6 space-y-5 shadow-xl">
-            <div className="space-y-2 border-b border-slate-800 pb-4">
+          <div className="rounded-3xl bg-white dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] p-6 space-y-5 shadow-xs">
+            <div className="space-y-2 border-b border-[#E5E5E5] dark:border-[#374151] pb-4">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">SUPPLIER DETAILS</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#6B7280] dark:text-[#9CA3AF]">SUPPLIER DETAILS</span>
                 <VerificationBadge status={listing.businessVerification} size="md" />
               </div>
 
               <button
                 onClick={() => onViewBusiness(listing.businessId)}
-                className="font-['Cabinet_Grotesk'] text-xl font-black text-white hover:text-amber-500 text-left transition-colors"
+                className="font-['Cabinet_Grotesk'] text-xl font-black text-[#111111] dark:text-white hover:text-[#F59E0B] text-left transition-colors cursor-pointer"
               >
                 {listing.businessName}
               </button>
 
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-semibold">
-                <MapPin className="h-4 w-4 text-amber-500 shrink-0" />
+              <div className="flex items-center gap-1.5 text-xs text-[#6B7280] dark:text-[#9CA3AF] font-semibold">
+                <MapPin className="h-4 w-4 text-[#F59E0B] shrink-0" />
                 <span>{distanceStr} from active project site</span>
               </div>
             </div>
@@ -292,7 +292,7 @@ export const ListingDetailView: React.FC<ListingDetailViewProps> = ({
             <div className="space-y-3 pt-1">
               <button
                 onClick={() => setIsQuoteModalOpen(true)}
-                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black py-3.5 px-4 text-xs font-black uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-amber-500/20"
+                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#FBBF24] hover:bg-[#F59E0B] text-[#111111] py-3.5 px-4 text-xs font-black uppercase tracking-wider transition-all cursor-pointer shadow-xs"
               >
                 <Send className="h-4 w-4" /> Request Formal Quote
               </button>
@@ -300,24 +300,24 @@ export const ListingDetailView: React.FC<ListingDetailViewProps> = ({
               {listing.contactPhone && (
                 <button
                   onClick={handleCall}
-                  className="w-full flex items-center justify-center gap-2 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white border border-slate-800 py-3 px-4 text-xs font-black uppercase tracking-wider transition-all cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 rounded-2xl bg-white dark:bg-[#1F2937] hover:bg-slate-50 dark:hover:bg-slate-800 text-[#111111] dark:text-white border border-[#111111] dark:border-[#374151] py-3 px-4 text-xs font-black uppercase tracking-wider transition-all cursor-pointer shadow-xs"
                 >
-                  <PhoneCall className="h-4 w-4 text-emerald-400" /> Call Supplier ({listing.contactPhone})
+                  <PhoneCall className="h-4 w-4 text-[#F59E0B]" /> Call Supplier ({listing.contactPhone})
                 </button>
               )}
 
               <button
                 onClick={handleWhatsApp}
-                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white py-3 px-4 text-xs font-black uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-emerald-600/20"
+                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#111111] dark:bg-[#1F2937] hover:bg-black dark:hover:bg-[#111111] text-white py-3 px-4 text-xs font-black uppercase tracking-wider transition-all cursor-pointer border border-[#111111] dark:border-[#374151] shadow-xs"
               >
-                <MessageSquare className="h-4 w-4" /> WhatsApp Supplier
+                <MessageSquare className="h-4 w-4 text-[#FBBF24]" /> WhatsApp Supplier
               </button>
 
               <button
                 onClick={handleDirections}
-                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 py-3 px-4 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#F7F7F5] dark:bg-[#111111] hover:bg-slate-200 dark:hover:bg-slate-800 text-[#111111] dark:text-slate-200 border border-[#E5E5E5] dark:border-[#374151] py-3 px-4 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
               >
-                <Navigation className="h-4 w-4 text-amber-500" /> Directions to Yard
+                <Navigation className="h-4 w-4 text-[#F59E0B]" /> Directions to Yard
               </button>
             </div>
           </div>

@@ -436,29 +436,29 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
-          className="relative w-full max-w-5xl my-4 sm:my-8 rounded-3xl bg-[#121418] border border-slate-800 p-4 sm:p-8 shadow-2xl text-white flex flex-col max-h-[92vh]"
+          className="relative w-full max-w-5xl my-4 sm:my-8 rounded-3xl bg-white dark:bg-[#121418] border border-[#E5E5E5] dark:border-slate-800 p-4 sm:p-8 shadow-2xl text-[#111111] dark:text-white flex flex-col max-h-[92vh]"
         >
           {/* Header Bar */}
-          <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+          <div className="flex items-center justify-between border-b border-[#E5E5E5] dark:border-slate-800 pb-4 mb-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500">
+              <div className="h-10 w-10 rounded-2xl bg-[#FBBF24]/15 border border-[#FBBF24]/30 flex items-center justify-center text-[#B45309] dark:text-[#FBBF24]">
                 <FileText className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="font-['Cabinet_Grotesk'] text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+                <h2 className="font-['Cabinet_Grotesk'] text-xl sm:text-2xl font-black text-[#111111] dark:text-white flex items-center gap-2">
                   CONSTRORA QUOTATION BUILDER
                 </h2>
-                <p className="text-xs text-slate-400">Professional Supplier Quote Generator & Export Tool</p>
+                <p className="text-xs text-[#6B7280] dark:text-slate-400">Professional Supplier Quote Generator & Export Tool</p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
               {/* Tab Switcher */}
-              <div className="bg-slate-900 border border-slate-800 p-1 rounded-xl flex items-center text-xs font-bold">
+              <div className="bg-[#F7F7F5] dark:bg-slate-900 border border-[#E5E5E5] dark:border-slate-800 p-1 rounded-xl flex items-center text-xs font-bold">
                 <button
                   onClick={() => setActiveTab('editor')}
                   className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                    activeTab === 'editor' ? 'bg-amber-500 text-black font-extrabold' : 'text-slate-400 hover:text-white'
+                    activeTab === 'editor' ? 'bg-[#FBBF24] text-[#111111] font-extrabold' : 'text-[#6B7280] dark:text-slate-400 hover:text-[#111111] dark:hover:text-white'
                   }`}
                 >
                   Edit Quotation
@@ -466,7 +466,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                 <button
                   onClick={() => setActiveTab('preview')}
                   className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
-                    activeTab === 'preview' ? 'bg-amber-500 text-black font-extrabold' : 'text-slate-400 hover:text-white'
+                    activeTab === 'preview' ? 'bg-[#FBBF24] text-[#111111] font-extrabold' : 'text-[#6B7280] dark:text-slate-400 hover:text-[#111111] dark:hover:text-white'
                   }`}
                 >
                   <Eye className="h-3.5 w-3.5" /> Preview Document
@@ -475,7 +475,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
 
               <button
                 onClick={onClose}
-                className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition-colors"
+                className="text-[#6B7280] hover:text-[#111111] dark:text-slate-400 dark:hover:text-white p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -484,12 +484,12 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
 
           {/* Feedback banner */}
           {shareFeedback && (
-            <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs font-bold flex items-center justify-between">
+            <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4" />
                 <span>{shareFeedback}</span>
               </div>
-              <button onClick={() => setShareFeedback(null)} className="text-emerald-300 hover:text-white">
+              <button onClick={() => setShareFeedback(null)} className="text-emerald-700 dark:text-emerald-300 hover:opacity-75 cursor-pointer">
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -500,53 +500,53 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
             {activeTab === 'editor' ? (
               <div className="space-y-6">
                 {/* Quote Info Grid */}
-                <div className="bg-slate-900/80 border border-slate-800 p-4 sm:p-5 rounded-2xl space-y-4">
-                  <div className="text-xs font-black text-amber-500 uppercase tracking-wider">QUOTE INFORMATION</div>
+                <div className="bg-[#F7F7F5] dark:bg-slate-900/80 border border-[#E5E5E5] dark:border-slate-800 p-4 sm:p-5 rounded-2xl space-y-4">
+                  <div className="text-xs font-black text-[#B45309] dark:text-[#FBBF24] uppercase tracking-wider">QUOTE INFORMATION</div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                      <label className="text-[10px] font-bold text-[#6B7280] dark:text-slate-400 uppercase tracking-wider block mb-1">
                         Quote Number
                       </label>
                       <input
                         type="text"
                         value={quoteNumber}
                         onChange={(e) => setQuoteNumber(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-amber-400 font-bold focus:outline-none focus:border-amber-500"
+                        className="w-full bg-white dark:bg-slate-950 border border-[#E5E5E5] dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-[#B45309] dark:text-[#FBBF24] font-bold focus:outline-none focus:border-[#FBBF24]"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                      <label className="text-[10px] font-bold text-[#6B7280] dark:text-slate-400 uppercase tracking-wider block mb-1">
                         Valid Until Date
                       </label>
                       <input
                         type="date"
                         value={validUntil}
                         onChange={(e) => setValidUntil(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                        className="w-full bg-white dark:bg-slate-950 border border-[#E5E5E5] dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-[#111111] dark:text-white focus:outline-none focus:border-[#FBBF24]"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                      <label className="text-[10px] font-bold text-[#6B7280] dark:text-slate-400 uppercase tracking-wider block mb-1">
                         Issuer Business Name
                       </label>
                       <input
                         type="text"
                         readOnly
                         value={business.businessName}
-                        className="w-full bg-slate-950/60 border border-slate-850 rounded-xl px-3 py-2 text-xs text-slate-300 font-semibold cursor-not-allowed"
+                        className="w-full bg-slate-100 dark:bg-slate-950/60 border border-[#E5E5E5] dark:border-slate-850 rounded-xl px-3 py-2 text-xs text-[#6B7280] dark:text-slate-300 font-semibold cursor-not-allowed"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* Client Details */}
-                <div className="bg-slate-900/80 border border-slate-800 p-4 sm:p-5 rounded-2xl space-y-4">
-                  <div className="text-xs font-black text-amber-500 uppercase tracking-wider">CLIENT & PROJECT DETAILS</div>
+                <div className="bg-[#F7F7F5] dark:bg-slate-900/80 border border-[#E5E5E5] dark:border-slate-800 p-4 sm:p-5 rounded-2xl space-y-4">
+                  <div className="text-xs font-black text-[#B45309] dark:text-[#FBBF24] uppercase tracking-wider">CLIENT & PROJECT DETAILS</div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                      <label className="text-[10px] font-bold text-[#6B7280] dark:text-slate-400 uppercase tracking-wider block mb-1">
                         Client Name *
                       </label>
                       <input
@@ -554,12 +554,12 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                         required
                         value={clientName}
                         onChange={(e) => setClientName(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                        className="w-full bg-white dark:bg-slate-950 border border-[#E5E5E5] dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-[#111111] dark:text-white focus:outline-none focus:border-[#FBBF24]"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                      <label className="text-[10px] font-bold text-[#6B7280] dark:text-slate-400 uppercase tracking-wider block mb-1">
                         Client Phone Number *
                       </label>
                       <input
@@ -567,24 +567,24 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                         required
                         value={clientPhone}
                         onChange={(e) => setClientPhone(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                        className="w-full bg-white dark:bg-slate-950 border border-[#E5E5E5] dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-[#111111] dark:text-white focus:outline-none focus:border-[#FBBF24]"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                      <label className="text-[10px] font-bold text-[#6B7280] dark:text-slate-400 uppercase tracking-wider block mb-1">
                         Client Email
                       </label>
                       <input
                         type="email"
                         value={clientEmail}
                         onChange={(e) => setClientEmail(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                        className="w-full bg-white dark:bg-slate-950 border border-[#E5E5E5] dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-[#111111] dark:text-white focus:outline-none focus:border-[#FBBF24]"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                      <label className="text-[10px] font-bold text-[#6B7280] dark:text-slate-400 uppercase tracking-wider block mb-1">
                         Project Name *
                       </label>
                       <input
@@ -592,12 +592,12 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                         required
                         value={projectName}
                         onChange={(e) => setProjectName(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                        className="w-full bg-white dark:bg-slate-950 border border-[#E5E5E5] dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-[#111111] dark:text-white focus:outline-none focus:border-[#FBBF24]"
                       />
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                      <label className="text-[10px] font-bold text-[#6B7280] dark:text-slate-400 uppercase tracking-wider block mb-1">
                         Project Location *
                       </label>
                       <input
@@ -605,22 +605,22 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                         required
                         value={projectLocation}
                         onChange={(e) => setProjectLocation(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                        className="w-full bg-white dark:bg-slate-950 border border-[#E5E5E5] dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-[#111111] dark:text-white focus:outline-none focus:border-[#FBBF24]"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* Line Items Table */}
-                <div className="bg-slate-900/80 border border-slate-800 p-4 sm:p-5 rounded-2xl space-y-4">
+                <div className="bg-[#F7F7F5] dark:bg-slate-900/80 border border-[#E5E5E5] dark:border-slate-800 p-4 sm:p-5 rounded-2xl space-y-4">
                   <div className="flex items-center justify-between">
-                    <div className="text-xs font-black text-amber-500 uppercase tracking-wider">
+                    <div className="text-xs font-black text-[#B45309] dark:text-[#FBBF24] uppercase tracking-wider">
                       ITEMIZED RESOURCES & SERVICES
                     </div>
                     <button
                       type="button"
                       onClick={handleAddItem}
-                      className="px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 text-xs font-bold rounded-xl transition-all flex items-center gap-1 cursor-pointer"
+                      className="px-3 py-1.5 bg-[#FBBF24]/15 border border-[#FBBF24]/30 text-[#B45309] dark:text-[#FBBF24] hover:bg-[#FBBF24]/25 text-xs font-bold rounded-xl transition-all flex items-center gap-1 cursor-pointer"
                     >
                       <Plus className="h-3.5 w-3.5" /> Add Line Item
                     </button>
@@ -630,23 +630,23 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                     {items.map((item, index) => (
                       <div
                         key={item.itemId || index}
-                        className="p-3 bg-slate-950 border border-slate-800/80 rounded-2xl space-y-3"
+                        className="p-3 bg-white dark:bg-slate-950 border border-[#E5E5E5] dark:border-slate-800/80 rounded-2xl space-y-3 shadow-2xs"
                       >
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                           <div className="sm:col-span-2">
-                            <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">
+                            <label className="text-[9px] font-bold text-[#6B7280] dark:text-slate-500 uppercase block mb-1">
                               Item / Resource Name
                             </label>
                             <input
                               type="text"
                               value={item.item}
                               onChange={(e) => handleItemChange(index, 'item', e.target.value)}
-                              className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 font-bold"
+                              className="w-full bg-[#F7F7F5] dark:bg-slate-900 border border-[#E5E5E5] dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs text-[#111111] dark:text-white focus:outline-none focus:border-[#FBBF24] font-bold"
                             />
                           </div>
 
                           <div>
-                            <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">
+                            <label className="text-[9px] font-bold text-[#6B7280] dark:text-slate-500 uppercase block mb-1">
                               Quantity
                             </label>
                             <input
@@ -654,26 +654,26 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                               min="1"
                               value={item.quantity}
                               onChange={(e) => handleItemChange(index, 'quantity', Number(e.target.value))}
-                              className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 font-mono font-bold"
+                              className="w-full bg-[#F7F7F5] dark:bg-slate-900 border border-[#E5E5E5] dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs text-[#111111] dark:text-white focus:outline-none focus:border-[#FBBF24] font-mono font-bold"
                             />
                           </div>
 
                           <div>
-                            <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">
+                            <label className="text-[9px] font-bold text-[#6B7280] dark:text-slate-500 uppercase block mb-1">
                               Unit (e.g. Bags, Trips, Days)
                             </label>
                             <input
                               type="text"
                               value={item.unit}
                               onChange={(e) => handleItemChange(index, 'unit', e.target.value)}
-                              className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500"
+                              className="w-full bg-[#F7F7F5] dark:bg-slate-900 border border-[#E5E5E5] dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs text-[#111111] dark:text-white focus:outline-none focus:border-[#FBBF24]"
                             />
                           </div>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-center">
                           <div className="sm:col-span-2">
-                            <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">
+                            <label className="text-[9px] font-bold text-[#6B7280] dark:text-slate-500 uppercase block mb-1">
                               Description / Specification
                             </label>
                             <input
@@ -681,13 +681,13 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                               value={item.description || ''}
                               onChange={(e) => handleItemChange(index, 'description', e.target.value)}
                               placeholder="e.g. Grade 42.5N, 20-ton tipper delivery"
-                              className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-amber-500"
+                              className="w-full bg-[#F7F7F5] dark:bg-slate-900 border border-[#E5E5E5] dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs text-[#111111] dark:text-slate-300 focus:outline-none focus:border-[#FBBF24]"
                             />
                           </div>
 
                           <div className="flex items-center gap-2">
                             <div className="flex-1">
-                              <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">
+                              <label className="text-[9px] font-bold text-[#6B7280] dark:text-slate-500 uppercase block mb-1">
                                 Unit Price (₦)
                               </label>
                               <input
@@ -695,15 +695,15 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                                 min="0"
                                 value={item.unitPrice}
                                 onChange={(e) => handleItemChange(index, 'unitPrice', Number(e.target.value))}
-                                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-amber-400 font-mono font-bold focus:outline-none focus:border-amber-500"
+                                className="w-full bg-[#F7F7F5] dark:bg-slate-900 border border-[#E5E5E5] dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs text-[#B45309] dark:text-[#FBBF24] font-mono font-bold focus:outline-none focus:border-[#FBBF24]"
                               />
                             </div>
 
                             <div className="shrink-0 text-right min-w-[90px]">
-                              <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">
+                              <label className="text-[9px] font-bold text-[#6B7280] dark:text-slate-500 uppercase block mb-1">
                                 Total (₦)
                               </label>
-                              <div className="text-xs font-mono font-extrabold text-white py-1.5">
+                              <div className="text-xs font-mono font-extrabold text-[#111111] dark:text-white py-1.5">
                                 ₦{(Number(item.total) || 0).toLocaleString()}
                               </div>
                             </div>
@@ -711,7 +711,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                             <button
                               type="button"
                               onClick={() => handleRemoveItem(index)}
-                              className="text-slate-500 hover:text-red-400 p-2 rounded-lg hover:bg-red-500/10 transition-colors mt-3"
+                              className="text-[#6B7280] dark:text-slate-500 hover:text-red-500 p-2 rounded-lg hover:bg-red-500/10 transition-colors mt-3 cursor-pointer"
                               title="Remove Item"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -726,14 +726,14 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                 {/* Additional Fees & Calculation Summary */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {/* Fee Inputs */}
-                  <div className="bg-slate-900/80 border border-slate-800 p-4 sm:p-5 rounded-2xl space-y-3">
-                    <div className="text-xs font-black text-amber-500 uppercase tracking-wider">
+                  <div className="bg-[#F7F7F5] dark:bg-slate-900/80 border border-[#E5E5E5] dark:border-slate-800 p-4 sm:p-5 rounded-2xl space-y-3">
+                    <div className="text-xs font-black text-[#B45309] dark:text-[#FBBF24] uppercase tracking-wider">
                       LOGISTICS, LABOUR & TAX ADJUSTMENTS
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 text-xs">
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
+                        <label className="text-[10px] font-bold text-[#6B7280] dark:text-slate-400 uppercase block mb-1">
                           Delivery / Haulage Fee (₦)
                         </label>
                         <input
@@ -741,12 +741,12 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                           min="0"
                           value={deliveryFee}
                           onChange={(e) => setDeliveryFee(Number(e.target.value))}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-amber-500 font-bold"
+                          className="w-full bg-white dark:bg-slate-950 border border-[#E5E5E5] dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-[#111111] dark:text-white focus:outline-none focus:border-[#FBBF24] font-bold"
                         />
                       </div>
 
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
+                        <label className="text-[10px] font-bold text-[#6B7280] dark:text-slate-400 uppercase block mb-1">
                           Labour / Operator Fee (₦)
                         </label>
                         <input
@@ -754,12 +754,12 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                           min="0"
                           value={labourFee}
                           onChange={(e) => setLabourFee(Number(e.target.value))}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-amber-500 font-bold"
+                          className="w-full bg-white dark:bg-slate-950 border border-[#E5E5E5] dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-[#111111] dark:text-white focus:outline-none focus:border-[#FBBF24] font-bold"
                         />
                       </div>
 
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
+                        <label className="text-[10px] font-bold text-[#6B7280] dark:text-slate-400 uppercase block mb-1">
                           Discount Offered (₦)
                         </label>
                         <input
@@ -767,12 +767,12 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                           min="0"
                           value={discount}
                           onChange={(e) => setDiscount(Number(e.target.value))}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-emerald-400 focus:outline-none focus:border-amber-500 font-bold"
+                          className="w-full bg-white dark:bg-slate-950 border border-[#E5E5E5] dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-emerald-600 dark:text-emerald-400 focus:outline-none focus:border-[#FBBF24] font-bold"
                         />
                       </div>
 
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
+                        <label className="text-[10px] font-bold text-[#6B7280] dark:text-slate-400 uppercase block mb-1">
                           Tax / VAT (₦)
                         </label>
                         <input
@@ -780,50 +780,50 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                           min="0"
                           value={tax}
                           onChange={(e) => setTax(Number(e.target.value))}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-amber-500 font-bold"
+                          className="w-full bg-white dark:bg-slate-950 border border-[#E5E5E5] dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-[#111111] dark:text-white focus:outline-none focus:border-[#FBBF24] font-bold"
                         />
                       </div>
                     </div>
                   </div>
 
                   {/* Summary Box */}
-                  <div className="bg-slate-900/80 border border-slate-800 p-4 sm:p-5 rounded-2xl flex flex-col justify-between space-y-3">
-                    <div className="text-xs font-black text-amber-500 uppercase tracking-wider">
+                  <div className="bg-[#F7F7F5] dark:bg-slate-900/80 border border-[#E5E5E5] dark:border-slate-800 p-4 sm:p-5 rounded-2xl flex flex-col justify-between space-y-3">
+                    <div className="text-xs font-black text-[#B45309] dark:text-[#FBBF24] uppercase tracking-wider">
                       QUOTATION FINANCIAL SUMMARY
                     </div>
 
                     <div className="space-y-1.5 text-xs font-semibold">
-                      <div className="flex justify-between text-slate-400">
+                      <div className="flex justify-between text-[#6B7280] dark:text-slate-400">
                         <span>Items Subtotal:</span>
-                        <span className="font-mono text-white font-bold">₦{subtotal.toLocaleString()}</span>
+                        <span className="font-mono text-[#111111] dark:text-white font-bold">₦{subtotal.toLocaleString()}</span>
                       </div>
                       {discount > 0 && (
-                        <div className="flex justify-between text-emerald-400">
+                        <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
                           <span>Discount:</span>
                           <span className="font-mono font-bold">-₦{discount.toLocaleString()}</span>
                         </div>
                       )}
                       {deliveryFee > 0 && (
-                        <div className="flex justify-between text-slate-400">
+                        <div className="flex justify-between text-[#6B7280] dark:text-slate-400">
                           <span>Delivery Fee:</span>
-                          <span className="font-mono text-white font-bold">₦{deliveryFee.toLocaleString()}</span>
+                          <span className="font-mono text-[#111111] dark:text-white font-bold">₦{deliveryFee.toLocaleString()}</span>
                         </div>
                       )}
                       {labourFee > 0 && (
-                        <div className="flex justify-between text-slate-400">
+                        <div className="flex justify-between text-[#6B7280] dark:text-slate-400">
                           <span>Labour / Operator:</span>
-                          <span className="font-mono text-white font-bold">₦{labourFee.toLocaleString()}</span>
+                          <span className="font-mono text-[#111111] dark:text-white font-bold">₦{labourFee.toLocaleString()}</span>
                         </div>
                       )}
                       {tax > 0 && (
-                        <div className="flex justify-between text-slate-400">
+                        <div className="flex justify-between text-[#6B7280] dark:text-slate-400">
                           <span>Tax / VAT:</span>
-                          <span className="font-mono text-white font-bold">₦{tax.toLocaleString()}</span>
+                          <span className="font-mono text-[#111111] dark:text-white font-bold">₦{tax.toLocaleString()}</span>
                         </div>
                       )}
                     </div>
 
-                    <div className="p-3.5 bg-amber-500 text-black rounded-xl flex items-center justify-between font-black text-base shadow-lg shadow-amber-500/10 mt-2">
+                    <div className="p-3.5 bg-[#FBBF24] text-[#111111] rounded-xl flex items-center justify-between font-black text-base shadow-sm mt-2">
                       <span>GRAND TOTAL</span>
                       <span className="font-mono text-xl">₦{grandTotal.toLocaleString()}</span>
                     </div>
@@ -831,8 +831,8 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                 </div>
 
                 {/* Notes & Terms */}
-                <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl space-y-2">
-                  <label className="text-xs font-black text-amber-500 uppercase tracking-wider block">
+                <div className="bg-[#F7F7F5] dark:bg-slate-900/80 border border-[#E5E5E5] dark:border-slate-800 p-4 rounded-2xl space-y-2">
+                  <label className="text-xs font-black text-[#B45309] dark:text-[#FBBF24] uppercase tracking-wider block">
                     NOTES & TERMS OF QUOTATION
                   </label>
                   <textarea
@@ -840,7 +840,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Prices valid for 7 days..."
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-amber-500 resize-none"
+                    className="w-full bg-white dark:bg-slate-950 border border-[#E5E5E5] dark:border-slate-800 rounded-xl p-3 text-xs text-[#111111] dark:text-white focus:outline-none focus:border-[#FBBF24] resize-none"
                   />
                 </div>
               </div>
@@ -853,10 +853,10 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
           </div>
 
           {/* Bottom Action Bar */}
-          <div className="border-t border-slate-800 pt-4 mt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="text-xs font-bold text-slate-300 w-full sm:w-auto flex items-center justify-between sm:justify-start gap-3">
+          <div className="border-t border-[#E5E5E5] dark:border-slate-800 pt-4 mt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="text-xs font-bold text-[#6B7280] dark:text-slate-300 w-full sm:w-auto flex items-center justify-between sm:justify-start gap-3">
               <span>GRAND TOTAL:</span>
-              <span className="text-amber-400 font-mono text-xl font-black">₦{grandTotal.toLocaleString()}</span>
+              <span className="text-[#B45309] dark:text-[#FBBF24] font-mono text-xl font-black">₦{grandTotal.toLocaleString()}</span>
             </div>
 
             {/* Sharing & Export Action Buttons */}
@@ -865,10 +865,10 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                 type="button"
                 onClick={handleSaveQuote}
                 disabled={saving}
-                className="flex-1 sm:flex-none px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                className="flex-1 sm:flex-none px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-[#111111] dark:text-white font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
                 title="Save record to Firestore"
               >
-                <Save className="h-4 w-4 text-amber-400" />
+                <Save className="h-4 w-4 text-[#F59E0B]" />
                 <span>{saving ? 'Saving...' : 'Save Record'}</span>
               </button>
 
@@ -876,7 +876,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                 type="button"
                 onClick={() => handleShareDocument('pdf')}
                 disabled={exporting !== null}
-                className="flex-1 sm:flex-none px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 uppercase"
+                className="flex-1 sm:flex-none px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm uppercase"
                 title="Share quotation via native share sheet or download fallback"
               >
                 <Share2 className="h-4 w-4" />
@@ -887,7 +887,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                 type="button"
                 onClick={handleExportPDF}
                 disabled={exporting !== null}
-                className="flex-1 sm:flex-none px-3.5 py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20 uppercase"
+                className="flex-1 sm:flex-none px-3.5 py-2.5 bg-[#FBBF24] hover:bg-[#F59E0B] text-[#111111] font-extrabold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm uppercase"
               >
                 <Download className="h-4 w-4" />
                 <span>{exporting === 'pdf' ? 'PDF...' : 'Download PDF'}</span>
@@ -897,7 +897,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                 type="button"
                 onClick={handleShareAsImage}
                 disabled={exporting !== null}
-                className="flex-1 sm:flex-none px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 uppercase"
+                className="flex-1 sm:flex-none px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-[#111111] dark:text-[#FBBF24] font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 uppercase"
               >
                 <ImageIcon className="h-4 w-4" />
                 <span>Download PNG</span>
@@ -914,47 +914,47 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-slate-900 border border-slate-700 rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4"
+                className="bg-white dark:bg-slate-900 border border-[#E5E5E5] dark:border-slate-700 rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4 text-[#111111] dark:text-white"
               >
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center justify-between border-b border-[#E5E5E5] dark:border-slate-800 pb-3">
                   <div className="flex items-center gap-2.5">
-                    <div className="p-2 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400">
+                    <div className="p-2 bg-[#FBBF24]/15 border border-[#FBBF24]/30 rounded-xl text-[#B45309] dark:text-[#FBBF24]">
                       <Share2 className="h-5 w-5" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-black text-white">Share Quotation</h3>
-                      <p className="text-[10px] text-slate-400">Step-by-step sharing instructions</p>
+                      <h3 className="text-sm font-black text-[#111111] dark:text-white">Share Quotation</h3>
+                      <p className="text-[10px] text-[#6B7280] dark:text-slate-400">Step-by-step sharing instructions</p>
                     </div>
                   </div>
                   <button
                     onClick={() => setIsShareFallbackOpen(false)}
-                    className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                    className="p-1 text-[#6B7280] hover:text-[#111111] dark:text-slate-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                   >
                     <X className="h-5 w-5" />
                   </button>
                 </div>
 
-                <div className="bg-emerald-950/40 border border-emerald-500/30 rounded-2xl p-3.5 flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
-                  <div className="text-xs text-emerald-200">
+                <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/30 rounded-2xl p-3.5 flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                  <div className="text-xs text-emerald-800 dark:text-emerald-200">
                     <p className="font-bold">File downloaded to your device!</p>
-                    <p className="text-[11px] text-emerald-300/80 mt-0.5 font-mono break-all">{fallbackFileName}</p>
+                    <p className="text-[11px] text-emerald-700 dark:text-emerald-300/80 mt-0.5 font-mono break-all">{fallbackFileName}</p>
                   </div>
                 </div>
 
-                <div className="space-y-2.5 text-xs text-slate-300">
-                  <p className="font-bold text-slate-200">How to send to {clientName}:</p>
+                <div className="space-y-2.5 text-xs text-[#111111] dark:text-slate-300">
+                  <p className="font-bold text-[#111111] dark:text-slate-200">How to send to {clientName}:</p>
                   <ol className="space-y-2 pl-1">
                     <li className="flex items-start gap-2.5">
-                      <span className="flex items-center justify-center h-5 w-5 rounded-full bg-slate-800 text-amber-400 font-bold text-[10px] shrink-0">1</span>
+                      <span className="flex items-center justify-center h-5 w-5 rounded-full bg-[#FBBF24] text-[#111111] font-black text-[10px] shrink-0">1</span>
                       <span>Your <strong>{fallbackFileType.toUpperCase()}</strong> file is now in your device's <strong>Downloads</strong> folder.</span>
                     </li>
                     <li className="flex items-start gap-2.5">
-                      <span className="flex items-center justify-center h-5 w-5 rounded-full bg-slate-800 text-amber-400 font-bold text-[10px] shrink-0">2</span>
+                      <span className="flex items-center justify-center h-5 w-5 rounded-full bg-[#FBBF24] text-[#111111] font-black text-[10px] shrink-0">2</span>
                       <span>Open WhatsApp, Email, Telegram, or any chat app.</span>
                     </li>
                     <li className="flex items-start gap-2.5">
-                      <span className="flex items-center justify-center h-5 w-5 rounded-full bg-slate-800 text-amber-400 font-bold text-[10px] shrink-0">3</span>
+                      <span className="flex items-center justify-center h-5 w-5 rounded-full bg-[#FBBF24] text-[#111111] font-black text-[10px] shrink-0">3</span>
                       <span>Attach the downloaded file from Downloads to send to <strong>{clientName}</strong>.</span>
                     </li>
                   </ol>
@@ -968,7 +968,7 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                       )}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 uppercase transition-all"
+                      className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-2 shadow-sm uppercase transition-all cursor-pointer"
                     >
                       <MessageSquare className="h-4 w-4" />
                       <span>Open WhatsApp Chat ({clientPhone})</span>
@@ -981,15 +981,15 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
                       <a
                         href={fallbackFileUrl}
                         download={fallbackFileName}
-                        className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors text-center"
+                        className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-[#111111] dark:text-slate-300 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors text-center cursor-pointer"
                       >
-                        <Download className="h-3.5 w-3.5 text-amber-400" />
+                        <Download className="h-3.5 w-3.5 text-[#B45309] dark:text-[#FBBF24]" />
                         <span>Re-Download</span>
                       </a>
                     )}
                     <button
                       onClick={() => setIsShareFallbackOpen(false)}
-                      className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs rounded-xl transition-colors cursor-pointer"
+                      className="flex-1 py-2.5 bg-[#FBBF24] hover:bg-[#F59E0B] text-[#111111] font-extrabold text-xs rounded-xl transition-colors cursor-pointer"
                     >
                       Got It
                     </button>

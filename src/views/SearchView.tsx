@@ -139,11 +139,11 @@ export const SearchView: React.FC<SearchViewProps> = ({
   return (
     <div className="space-y-6 pb-20">
       {/* Search Header */}
-      <div className="rounded-2xl bg-[#121418] border border-slate-800 p-4 space-y-4">
+      <div className="rounded-2xl bg-white dark:bg-[#121418] border border-[#E5E5E5] dark:border-slate-800 p-4 space-y-4 shadow-2xs">
         {onBack && (
           <button
             onClick={onBack}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#6B7280] hover:text-[#111111] dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4" /> Back
           </button>
@@ -152,23 +152,23 @@ export const SearchView: React.FC<SearchViewProps> = ({
         <div className="flex flex-col sm:flex-row items-center gap-3">
           {/* Main Search Input */}
           <div className="relative flex-1 w-full">
-            <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-500" />
+            <Search className="absolute left-3.5 top-3 h-4 w-4 text-[#6B7280] dark:text-slate-500" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search equipment (CAT 320), materials (Dangote Cement), logistics (10T Tipper)..."
-              className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-3 py-2.5 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-[#F7F7F5] dark:bg-slate-900 border border-[#E5E5E5] dark:border-slate-800 rounded-xl pl-10 pr-3 py-2.5 text-xs font-bold text-[#111111] dark:text-white placeholder-[#6B7280] focus:outline-none focus:border-[#FBBF24] transition-colors"
             />
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
             {/* View Mode Switcher */}
-            <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
+            <div className="flex bg-[#F7F7F5] dark:bg-slate-900 p-1 rounded-xl border border-[#E5E5E5] dark:border-slate-800 text-xs">
               <button
                 onClick={() => setViewMode('list')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
-                  viewMode === 'list' ? 'bg-amber-500 text-black' : 'text-slate-400 hover:text-white'
+                  viewMode === 'list' ? 'bg-[#FBBF24] text-[#111111]' : 'text-[#6B7280] dark:text-slate-400 hover:text-[#111111] dark:hover:text-white'
                 }`}
               >
                 <List className="h-3.5 w-3.5" /> List
@@ -176,7 +176,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
               <button
                 onClick={() => setViewMode('map')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
-                  viewMode === 'map' ? 'bg-amber-500 text-black' : 'text-slate-400 hover:text-white'
+                  viewMode === 'map' ? 'bg-[#FBBF24] text-[#111111]' : 'text-[#6B7280] dark:text-slate-400 hover:text-[#111111] dark:hover:text-white'
                 }`}
               >
                 <Map className="h-3.5 w-3.5" /> Map
@@ -188,8 +188,8 @@ export const SearchView: React.FC<SearchViewProps> = ({
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                 showFilters
-                  ? 'bg-amber-500/20 border-amber-500 text-amber-400'
-                  : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'
+                  ? 'bg-[#FBBF24]/15 border-[#FBBF24] text-[#B45309] dark:text-[#FBBF24]'
+                  : 'bg-[#F7F7F5] dark:bg-slate-900 border-[#E5E5E5] dark:border-slate-800 text-[#111111] dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700'
               }`}
             >
               <Filter className="h-3.5 w-3.5" /> Filters
@@ -210,8 +210,8 @@ export const SearchView: React.FC<SearchViewProps> = ({
               onClick={() => setFilters({ ...filters, category: cat.value })}
               className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap cursor-pointer transition-all text-xs ${
                 filters.category === cat.value
-                  ? 'bg-amber-500 text-black shadow'
-                  : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'
+                  ? 'bg-[#FBBF24] text-[#111111] shadow-sm'
+                  : 'bg-[#F7F7F5] dark:bg-slate-900 text-[#6B7280] dark:text-slate-400 border border-[#E5E5E5] dark:border-slate-800 hover:text-[#111111] dark:hover:text-white'
               }`}
             >
               {cat.label}
@@ -222,9 +222,9 @@ export const SearchView: React.FC<SearchViewProps> = ({
 
       {/* Expanded Filter Controls Panel */}
       {showFilters && (
-        <div className="rounded-2xl bg-[#121418] border border-amber-500/30 p-4 space-y-4 text-xs">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-            <h4 className="font-bold text-amber-400 flex items-center gap-1.5">
+        <div className="rounded-2xl bg-white dark:bg-[#121418] border border-[#FBBF24]/40 p-4 space-y-4 text-xs shadow-sm">
+          <div className="flex items-center justify-between border-b border-[#E5E5E5] dark:border-slate-800 pb-2">
+            <h4 className="font-bold text-[#B45309] dark:text-[#FBBF24] flex items-center gap-1.5">
               <SlidersHorizontal className="h-4 w-4" /> Filter Resources
             </h4>
             <button
@@ -243,7 +243,7 @@ export const SearchView: React.FC<SearchViewProps> = ({
                   sortBy: 'nearest',
                 })
               }
-              className="text-slate-400 hover:text-amber-400 underline text-[11px]"
+              className="text-[#6B7280] hover:text-[#B45309] dark:text-slate-400 dark:hover:text-[#FBBF24] underline text-[11px] cursor-pointer"
             >
               Reset All
             </button>
@@ -252,8 +252,8 @@ export const SearchView: React.FC<SearchViewProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Max Distance Slider */}
             <div>
-              <label className="font-bold text-slate-300 block mb-1">
-                Max Distance from Site: <span className="text-amber-400">{filters.maxDistanceKm} km</span>
+              <label className="font-bold text-[#374151] dark:text-slate-300 block mb-1">
+                Max Distance from Site: <span className="text-[#B45309] dark:text-[#FBBF24] font-extrabold">{filters.maxDistanceKm} km</span>
               </label>
               <input
                 type="range"
@@ -262,17 +262,17 @@ export const SearchView: React.FC<SearchViewProps> = ({
                 step={5}
                 value={filters.maxDistanceKm}
                 onChange={(e) => setFilters({ ...filters, maxDistanceKm: Number(e.target.value) })}
-                className="w-full accent-amber-500 cursor-pointer"
+                className="w-full accent-[#FBBF24] cursor-pointer"
               />
             </div>
 
             {/* Sort Dropdown */}
             <div>
-              <label className="font-bold text-slate-300 block mb-1">Sort By</label>
+              <label className="font-bold text-[#374151] dark:text-slate-300 block mb-1">Sort By</label>
               <select
                 value={filters.sortBy}
                 onChange={(e) => setFilters({ ...filters, sortBy: e.target.value as FilterState['sortBy'] })}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-[#F7F7F5] dark:bg-slate-900 border border-[#E5E5E5] dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-[#111111] dark:text-white focus:outline-none focus:border-[#FBBF24]"
               >
                 <option value="nearest">Nearest to Project Site</option>
                 <option value="price_asc">Lowest Price First</option>
@@ -283,32 +283,32 @@ export const SearchView: React.FC<SearchViewProps> = ({
 
             {/* Checkbox Toggles */}
             <div className="flex flex-col gap-2 pt-1">
-              <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-300">
+              <label className="flex items-center gap-2 cursor-pointer font-bold text-[#374151] dark:text-slate-300">
                 <input
                   type="checkbox"
                   checked={filters.verifiedOnly}
                   onChange={(e) => setFilters({ ...filters, verifiedOnly: e.target.checked })}
-                  className="accent-amber-500 rounded"
+                  className="accent-[#FBBF24] rounded cursor-pointer"
                 />
                 <span>✓ Verified Suppliers Only</span>
               </label>
 
-              <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-300">
+              <label className="flex items-center gap-2 cursor-pointer font-bold text-[#374151] dark:text-slate-300">
                 <input
                   type="checkbox"
                   checked={filters.availableOnly}
                   onChange={(e) => setFilters({ ...filters, availableOnly: e.target.checked })}
-                  className="accent-amber-500 rounded"
+                  className="accent-[#FBBF24] rounded cursor-pointer"
                 />
                 <span>Currently Available Only</span>
               </label>
 
-              <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-300">
+              <label className="flex items-center gap-2 cursor-pointer font-bold text-[#374151] dark:text-slate-300">
                 <input
                   type="checkbox"
                   checked={filters.deliveryOnly}
                   onChange={(e) => setFilters({ ...filters, deliveryOnly: e.target.checked })}
-                  className="accent-amber-500 rounded"
+                  className="accent-[#FBBF24] rounded cursor-pointer"
                 />
                 <span>Site Delivery Available</span>
               </label>
@@ -318,10 +318,10 @@ export const SearchView: React.FC<SearchViewProps> = ({
       )}
 
       {/* Results Header Summary */}
-      <div className="flex items-center justify-between text-xs text-slate-400 px-1">
+      <div className="flex items-center justify-between text-xs text-[#6B7280] dark:text-slate-400 px-1">
         <div>
-          Showing <strong className="text-white">{filteredListings.length}</strong> resources around{' '}
-          <strong className="text-amber-400">{activeProject.name}</strong> ({activeProject.location.city})
+          Showing <strong className="text-[#111111] dark:text-white">{filteredListings.length}</strong> resources around{' '}
+          <strong className="text-[#B45309] dark:text-[#FBBF24]">{activeProject.name}</strong> ({activeProject.location.city})
         </div>
       </div>
 
@@ -340,10 +340,10 @@ export const SearchView: React.FC<SearchViewProps> = ({
             ))}
           </div>
         ) : (
-          <div className="rounded-2xl bg-[#121418] border border-slate-800 p-12 text-center space-y-3">
-            <Search className="h-10 w-10 text-amber-500 mx-auto" />
-            <h3 className="font-bold text-white text-base">No construction resources found</h3>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+          <div className="rounded-2xl bg-white dark:bg-[#121418] border border-[#E5E5E5] dark:border-slate-800 p-12 text-center space-y-3 shadow-2xs">
+            <Search className="h-10 w-10 text-[#F59E0B] mx-auto" />
+            <h3 className="font-bold text-[#111111] dark:text-white text-base">No construction resources found</h3>
+            <p className="text-xs text-[#6B7280] dark:text-slate-400 max-w-sm mx-auto">
               Try a different search or adjust your filters.
             </p>
           </div>

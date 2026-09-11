@@ -7,7 +7,6 @@ import {
   Truck,
   Building2,
   ArrowRight,
-  ShieldCheck,
   Bookmark,
   Layers,
 } from 'lucide-react';
@@ -25,7 +24,6 @@ interface HomeViewProps {
   onOpenProjectModal: () => void;
   onCompareToggle: (listing: Listing) => void;
   comparedListings: Listing[];
-  onNavigateToAdmin?: () => void;
 }
 
 const SEARCH_PLACEHOLDERS = [
@@ -45,7 +43,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onOpenProjectModal,
   onCompareToggle,
   comparedListings,
-  onNavigateToAdmin,
 }) => {
   const { activeProject } = useProject();
   const { currentUser } = useAuth();
@@ -119,69 +116,58 @@ export const HomeView: React.FC<HomeViewProps> = ({
   return (
     <div className="space-y-8 pb-20">
       {/* Client Discovery Header */}
-      <div className="rounded-3xl bg-[#121418] border border-slate-800 p-6 sm:p-10 space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
+      <div className="rounded-3xl bg-[#F7F7F5] dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] p-6 sm:p-10 space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E5E5] dark:border-[#374151] pb-4">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-black uppercase tracking-widest text-amber-500 bg-amber-500/10 px-3 py-1 rounded-lg border border-amber-500/20">
+            <span className="text-xs font-black uppercase tracking-widest text-[#111111] dark:text-[#FBBF24] bg-[#FBBF24]/20 px-3 py-1 rounded-lg border border-[#FBBF24]/40">
               CONSTRORA DISCOVERY
             </span>
           </div>
-
-          {onNavigateToAdmin && (
-            <button
-              type="button"
-              onClick={onNavigateToAdmin}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 px-3 py-1.5 text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer"
-            >
-              <ShieldCheck className="h-4 w-4 text-amber-500" />
-              <span>ADMIN PORTAL</span>
-            </button>
-          )}
         </div>
 
         {/* User Greeting & Question */}
         <div className="space-y-1">
-          <p className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider">
+          <p className="text-xs sm:text-sm font-bold text-[#6B7280] dark:text-[#9CA3AF] uppercase tracking-wider">
             {getGreetingTime()}, {userName}
           </p>
-          <h1 className="font-['Cabinet_Grotesk'] text-3xl sm:text-5xl font-black text-white leading-tight uppercase tracking-tight">
-            WHAT DO YOU NEED TO <span className="text-amber-500">BUILD?</span>
+          <h1 className="font-['Cabinet_Grotesk'] text-3xl sm:text-5xl font-black text-[#111111] dark:text-white leading-tight uppercase tracking-tight">
+            WHAT DO YOU NEED TO <span className="text-[#F59E0B] dark:text-[#FBBF24]">BUILD?</span>
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 font-medium">
+          <p className="text-xs sm:text-sm text-[#6B7280] dark:text-[#9CA3AF] font-medium">
             Find what you need to build — heavy equipment, materials & transport near{' '}
-            <strong className="text-white">{activeProject.name}</strong> ({activeProject.location.city}).
+            <strong className="text-[#111111] dark:text-white">{activeProject.name}</strong> ({activeProject.location.city}).
           </p>
         </div>
 
         {/* Search Field */}
         <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2 pt-1">
           <div className="relative flex-1">
-            <Search className="absolute left-4 top-4 h-5 w-5 text-slate-500" />
+            <Search className="absolute left-4 top-4 h-5 w-5 text-[#6B7280] dark:text-[#9CA3AF]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]}
-              className="w-full bg-slate-900 border border-slate-800 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-white dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#374151] rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold text-[#111111] dark:text-white placeholder-[#9CA3AF] focus:outline-none focus:border-[#FBBF24] focus:ring-2 focus:ring-[#FBBF24]/20 transition-all"
             />
           </div>
           <button
             type="submit"
-            className="bg-amber-500 hover:bg-amber-400 text-black font-black px-8 py-3.5 rounded-2xl text-xs sm:text-sm transition-all cursor-pointer uppercase tracking-wider shrink-0"
+            className="bg-[#FBBF24] hover:bg-[#F59E0B] text-[#111111] font-black px-8 py-3.5 rounded-2xl text-xs sm:text-sm transition-all cursor-pointer uppercase tracking-wider shrink-0 shadow-xs"
           >
             Search Resources
           </button>
         </form>
 
         {/* Popular Search Chips */}
-        <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-400 pt-1">
-          <span className="text-slate-500 text-[11px] uppercase tracking-wider">POPULAR:</span>
+        <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-[#6B7280] dark:text-[#9CA3AF] pt-1">
+          <span className="text-[#6B7280] dark:text-[#9CA3AF] text-[11px] uppercase tracking-wider">POPULAR:</span>
           {['CAT 320 Excavator', 'Dangote Cement 50kg', '350L Concrete Mixer', '10 Ton Tipper'].map(
             (term, idx) => (
               <button
                 key={idx}
                 onClick={() => onSearchSubmit(term)}
-                className="bg-slate-900 hover:bg-amber-500/10 text-slate-300 px-3 py-1 rounded-xl border border-slate-800 hover:border-amber-500/40 text-[11px] font-semibold transition-colors cursor-pointer"
+                className="bg-white dark:bg-[#111111] hover:bg-[#FBBF24]/10 text-[#111111] dark:text-[#F3F4F6] px-3 py-1 rounded-xl border border-[#E5E5E5] dark:border-[#374151] hover:border-[#FBBF24] text-[11px] font-bold transition-colors cursor-pointer"
               >
                 {term}
               </button>
@@ -192,7 +178,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
       {/* Category Shortcuts */}
       <div className="space-y-3">
-        <h2 className="text-xs font-black uppercase tracking-widest text-slate-400 px-1">
+        <h2 className="text-xs font-black uppercase tracking-widest text-[#6B7280] dark:text-[#9CA3AF] px-1">
           Resource Categories
         </h2>
 
@@ -203,23 +189,23 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <button
                 key={cat.id}
                 onClick={() => onSelectCategory(cat.id)}
-                className="group p-4 rounded-2xl bg-[#121418] border border-slate-800 hover:border-amber-500/80 transition-all text-left flex items-center justify-between cursor-pointer"
+                className="group p-4 rounded-2xl bg-white dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] hover:border-[#FBBF24] dark:hover:border-[#FBBF24] transition-all text-left flex items-center justify-between cursor-pointer shadow-xs"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-amber-500 shrink-0 group-hover:border-amber-500/40 transition-colors">
+                  <div className="p-2.5 rounded-xl bg-[#F7F7F5] dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#374151] text-[#F59E0B] dark:text-[#FBBF24] shrink-0 group-hover:border-[#FBBF24]/60 transition-colors">
                     <IconComponent className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="font-['Cabinet_Grotesk'] text-sm font-black text-white group-hover:text-amber-500 transition-colors truncate">
+                    <h3 className="font-['Cabinet_Grotesk'] text-sm font-black text-[#111111] dark:text-white group-hover:text-[#F59E0B] dark:group-hover:text-[#FBBF24] transition-colors truncate">
                       {cat.title}
                     </h3>
-                    <p className="text-[11px] text-slate-400 truncate">
+                    <p className="text-[11px] text-[#6B7280] dark:text-[#9CA3AF] truncate font-medium">
                       {cat.subtitle}
                     </p>
                   </div>
                 </div>
 
-                <ArrowRight className="h-4 w-4 text-slate-600 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+                <ArrowRight className="h-4 w-4 text-[#6B7280] dark:text-[#9CA3AF] group-hover:text-[#F59E0B] dark:group-hover:text-[#FBBF24] group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
               </button>
             );
           })}
@@ -230,20 +216,20 @@ export const HomeView: React.FC<HomeViewProps> = ({
       <div className="space-y-4">
         <div className="flex items-center justify-between px-1">
           <div>
-            <h2 className="font-['Cabinet_Grotesk'] text-xl sm:text-2xl font-black text-white uppercase tracking-tight flex items-center gap-2">
+            <h2 className="font-['Cabinet_Grotesk'] text-xl sm:text-2xl font-black text-[#111111] dark:text-white uppercase tracking-tight flex items-center gap-2">
               <span>Near Your Project</span>
-              <span className="text-xs bg-amber-500/10 text-amber-400 font-bold px-2.5 py-0.5 rounded-lg border border-amber-500/20">
+              <span className="text-xs bg-[#FBBF24]/15 text-[#111111] dark:text-[#FBBF24] font-black px-2.5 py-0.5 rounded-lg border border-[#FBBF24]/40">
                 📍 {activeProject.location.city}
               </span>
             </h2>
-            <p className="text-xs text-slate-400 font-medium mt-0.5">
+            <p className="text-xs text-[#6B7280] dark:text-[#9CA3AF] font-medium mt-0.5">
               Available equipment, materials & transport near {activeProject.name}
             </p>
           </div>
 
           <button
             onClick={() => onSelectCategory('ALL')}
-            className="text-xs font-black text-amber-500 hover:text-amber-400 flex items-center gap-1 uppercase tracking-wider shrink-0"
+            className="text-xs font-black text-[#F59E0B] dark:text-[#FBBF24] hover:text-[#D97706] flex items-center gap-1 uppercase tracking-wider shrink-0"
           >
             <span>See all ({listings.length})</span>
             <ArrowRight className="h-4 w-4" />
@@ -263,10 +249,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
             ))}
           </div>
         ) : (
-          <div className="rounded-2xl bg-[#121418] border border-slate-800 p-10 text-center space-y-3">
-            <MapPin className="h-10 w-10 text-amber-500 mx-auto" />
-            <h3 className="font-black text-white text-sm uppercase">No construction resources found</h3>
-            <p className="text-xs text-slate-400 max-w-xs mx-auto">
+          <div className="rounded-2xl bg-[#F7F7F5] dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] p-10 text-center space-y-3">
+            <MapPin className="h-10 w-10 text-[#F59E0B] mx-auto" />
+            <h3 className="font-black text-[#111111] dark:text-white text-sm uppercase">No construction resources found</h3>
+            <p className="text-xs text-[#6B7280] dark:text-[#9CA3AF] max-w-xs mx-auto">
               Try a different search or adjust your active project location.
             </p>
           </div>
@@ -275,10 +261,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
       {/* Saved Section Entry Point if User has saved items */}
       {savedListings.length > 0 && (
-        <div className="space-y-4 pt-4 border-t border-slate-800/80">
+        <div className="space-y-4 pt-4 border-t border-[#E5E5E5] dark:border-[#374151]">
           <div className="flex items-center justify-between px-1">
-            <h2 className="font-['Cabinet_Grotesk'] text-lg font-black text-white uppercase tracking-tight flex items-center gap-2">
-              <Bookmark className="h-4 w-4 text-amber-500" />
+            <h2 className="font-['Cabinet_Grotesk'] text-lg font-black text-[#111111] dark:text-white uppercase tracking-tight flex items-center gap-2">
+              <Bookmark className="h-4 w-4 text-[#F59E0B]" />
               <span>Saved Resources</span>
             </h2>
           </div>
@@ -288,20 +274,20 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <div
                 key={item.listingId}
                 onClick={() => onSelectListing(item)}
-                className="p-3.5 rounded-2xl bg-[#121418] border border-slate-800 hover:border-amber-500/60 transition-colors cursor-pointer flex items-center gap-3"
+                className="p-3.5 rounded-2xl bg-white dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] hover:border-[#FBBF24] transition-colors cursor-pointer flex items-center gap-3 shadow-xs"
               >
-                <div className="h-12 w-12 rounded-xl bg-slate-900 overflow-hidden shrink-0 border border-slate-800">
+                <div className="h-12 w-12 rounded-xl bg-[#F7F7F5] dark:bg-[#111111] overflow-hidden shrink-0 border border-[#E5E5E5] dark:border-[#374151]">
                   {item.photos && item.photos[0] ? (
                     <img src={item.photos[0]} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                   ) : (
-                    <div className="h-full w-full flex items-center justify-center text-slate-600">
+                    <div className="h-full w-full flex items-center justify-center text-[#6B7280] dark:text-slate-600">
                       <Layers className="h-5 w-5" />
                     </div>
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h4 className="text-xs font-black text-white truncate">{item.title}</h4>
-                  <p className="text-[10px] font-bold text-amber-400 mt-0.5">
+                  <h4 className="text-xs font-black text-[#111111] dark:text-white truncate">{item.title}</h4>
+                  <p className="text-[10px] font-bold text-[#111111] dark:text-[#FBBF24] mt-0.5">
                     {item.rental?.dailyPrice ? `₦${item.rental.dailyPrice.toLocaleString()}/day` : item.price ? `₦${item.price.toLocaleString()}` : 'Contact'}
                   </p>
                 </div>

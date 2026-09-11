@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { MapPin, Search, User, Shield, ShieldCheck, Scale, Sun, Moon } from 'lucide-react';
+import React from 'react';
+import { MapPin, Search, User, Scale, Sun, Moon } from 'lucide-react';
 import { useProject } from '../context/ProjectContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -32,7 +32,6 @@ export const Header: React.FC<HeaderProps> = ({
   const { activeProject } = useProject();
   const { currentUser } = useAuth();
   const { isDark, setTheme } = useTheme();
-  const [deniedModal, setDeniedModal] = useState(false);
 
   const effectiveRole = currentUser?.role || userRole || 'client';
   const isSupplier = effectiveRole === 'supplier';
@@ -45,12 +44,8 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
 
-  const handleShieldClick = () => {
-    onChangeTab('admin');
-  };
-
   return (
-    <header className="sticky top-0 z-40 bg-[#0B0C0E]/90 dark:bg-[#0B0C0E]/90 light:bg-white/90 backdrop-blur-md border-b border-slate-800/80 dark:border-slate-800/80 light:border-slate-200 px-4 py-3 transition-colors">
+    <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border-b border-[#E5E5E5] dark:border-[#374151] px-4 py-3 transition-colors">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
         {/* Logo & Desktop Nav Links */}
         <div className="flex items-center gap-6">
@@ -64,45 +59,45 @@ export const Header: React.FC<HeaderProps> = ({
               className="h-9 w-9 rounded-xl object-contain shadow-sm group-hover:scale-105 transition-transform"
             />
             <div>
-              <span className="font-['Cabinet_Grotesk'] text-xl font-black tracking-tight text-white dark:text-white light:text-slate-900">
-                CONSTR<span className="text-amber-500">ORA</span>
+              <span className="font-['Cabinet_Grotesk'] text-xl font-black tracking-tight text-[#111111] dark:text-white">
+                CONSTR<span className="text-[#FBBF24]">ORA</span>
               </span>
-              <span className="hidden sm:block text-[9px] uppercase tracking-[0.18em] text-slate-400 font-bold -mt-1">
+              <span className="hidden sm:block text-[9px] uppercase tracking-[0.18em] text-[#6B7280] dark:text-[#9CA3AF] font-bold -mt-1">
                 {isSupplier ? 'SUPPLIER PORTAL' : 'FIND WHAT YOU NEED TO BUILD'}
               </span>
             </div>
           </button>
 
           {/* Desktop Navigation Links - SUPPLIER VS CLIENT SEPARATION */}
-          <nav className="hidden md:flex items-center gap-1 bg-slate-900/60 dark:bg-slate-900/60 light:bg-slate-100 p-1 rounded-xl border border-slate-800/60 dark:border-slate-800/60 light:border-slate-200">
+          <nav className="hidden md:flex items-center gap-1 bg-[#F7F7F5] dark:bg-[#1F2937] p-1 rounded-xl border border-[#E5E5E5] dark:border-[#374151]">
             {isSupplier ? (
               <>
                 <button
                   onClick={() => onChangeTab('supplier')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
                     activeTab === 'supplier' || activeTab === 'home'
-                      ? 'bg-amber-500 text-black shadow-sm'
-                      : 'text-slate-400 hover:text-white dark:hover:text-white light:hover:text-slate-900'
+                      ? 'bg-[#FBBF24] text-[#111111] shadow-sm'
+                      : 'text-[#6B7280] hover:text-[#111111] dark:text-[#9CA3AF] dark:hover:text-white'
                   }`}
                 >
                   HOME & LISTINGS
                 </button>
                 <button
                   onClick={() => onChangeTab('quotes')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
                     activeTab === 'quotes'
-                      ? 'bg-amber-500 text-black shadow-sm'
-                      : 'text-slate-400 hover:text-white dark:hover:text-white light:hover:text-slate-900'
+                      ? 'bg-[#FBBF24] text-[#111111] shadow-sm'
+                      : 'text-[#6B7280] hover:text-[#111111] dark:text-[#9CA3AF] dark:hover:text-white'
                   }`}
                 >
                   QUOTE REQUESTS
                 </button>
                 <button
                   onClick={() => onChangeTab('profile')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
                     activeTab === 'profile'
-                      ? 'bg-amber-500 text-black shadow-sm'
-                      : 'text-slate-400 hover:text-white dark:hover:text-white light:hover:text-slate-900'
+                      ? 'bg-[#FBBF24] text-[#111111] shadow-sm'
+                      : 'text-[#6B7280] hover:text-[#111111] dark:text-[#9CA3AF] dark:hover:text-white'
                   }`}
                 >
                   PROFILE
@@ -112,40 +107,40 @@ export const Header: React.FC<HeaderProps> = ({
               <>
                 <button
                   onClick={() => onChangeTab('home')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
                     activeTab === 'home'
-                      ? 'bg-amber-500 text-black shadow-sm'
-                      : 'text-slate-400 hover:text-white dark:hover:text-white light:hover:text-slate-900'
+                      ? 'bg-[#FBBF24] text-[#111111] shadow-sm'
+                      : 'text-[#6B7280] hover:text-[#111111] dark:text-[#9CA3AF] dark:hover:text-white'
                   }`}
                 >
                   HOME
                 </button>
                 <button
                   onClick={() => onChangeTab('search')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
                     activeTab === 'search'
-                      ? 'bg-amber-500 text-black shadow-sm'
-                      : 'text-slate-400 hover:text-white dark:hover:text-white light:hover:text-slate-900'
+                      ? 'bg-[#FBBF24] text-[#111111] shadow-sm'
+                      : 'text-[#6B7280] hover:text-[#111111] dark:text-[#9CA3AF] dark:hover:text-white'
                   }`}
                 >
                   DISCOVER
                 </button>
                 <button
                   onClick={() => onChangeTab('saved')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
                     activeTab === 'saved'
-                      ? 'bg-amber-500 text-black shadow-sm'
-                      : 'text-slate-400 hover:text-white dark:hover:text-white light:hover:text-slate-900'
+                      ? 'bg-[#FBBF24] text-[#111111] shadow-sm'
+                      : 'text-[#6B7280] hover:text-[#111111] dark:text-[#9CA3AF] dark:hover:text-white'
                   }`}
                 >
                   SAVED
                 </button>
                 <button
                   onClick={() => onChangeTab('profile')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
                     activeTab === 'profile'
-                      ? 'bg-amber-500 text-black shadow-sm'
-                      : 'text-slate-400 hover:text-white dark:hover:text-white light:hover:text-slate-900'
+                      ? 'bg-[#FBBF24] text-[#111111] shadow-sm'
+                      : 'text-[#6B7280] hover:text-[#111111] dark:text-[#9CA3AF] dark:hover:text-white'
                   }`}
                 >
                   PROFILE
@@ -159,13 +154,13 @@ export const Header: React.FC<HeaderProps> = ({
         {!isSupplier && (
           <button
             onClick={onOpenProjectModal}
-            className="flex items-center gap-2 bg-slate-900/90 dark:bg-slate-900/90 light:bg-slate-100 border border-amber-500/30 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-200 dark:text-slate-200 light:text-slate-800 transition-all cursor-pointer hover:border-amber-500 max-w-[180px] sm:max-w-xs truncate"
+            className="flex items-center gap-2 bg-[#F7F7F5] dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] px-3 py-1.5 rounded-xl text-xs font-bold text-[#111111] dark:text-white transition-all cursor-pointer hover:border-[#FBBF24] max-w-[180px] sm:max-w-xs truncate shadow-xs"
           >
-            <MapPin className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+            <MapPin className="h-3.5 w-3.5 text-[#F59E0B] shrink-0" />
             <span className="truncate">
               {activeProject ? `${activeProject.name} · ${activeProject.location.city}` : 'Set Project Site'}
             </span>
-            <span className="text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded font-bold uppercase shrink-0">
+            <span className="text-[10px] text-[#111111] bg-[#FBBF24] px-1.5 py-0.5 rounded font-black uppercase shrink-0">
               Site
             </span>
           </button>
@@ -177,11 +172,11 @@ export const Header: React.FC<HeaderProps> = ({
           {!isSupplier && comparedCount > 0 && (
             <button
               onClick={onOpenCompareDrawer}
-              className="relative flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/40 text-amber-500 hover:bg-amber-500/20 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              className="relative flex items-center gap-1.5 bg-[#FBBF24]/15 border border-[#FBBF24]/50 text-[#111111] dark:text-[#FBBF24] hover:bg-[#FBBF24]/25 px-2.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer"
             >
-              <Scale className="h-4 w-4" />
+              <Scale className="h-4 w-4 text-[#F59E0B]" />
               <span className="hidden sm:inline">Compare</span>
-              <span className="bg-amber-500 text-black text-[10px] font-black h-4 w-4 rounded-full flex items-center justify-center">
+              <span className="bg-[#FBBF24] text-[#111111] text-[10px] font-black h-4 w-4 rounded-full flex items-center justify-center">
                 {comparedCount}
               </span>
             </button>
@@ -190,71 +185,36 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Theme Switcher Toggle */}
           <button
             onClick={() => setTheme(isDark ? 'light' : 'dark')}
-            className="p-2 rounded-xl bg-slate-900/80 dark:bg-slate-900/80 light:bg-slate-100 border border-slate-800 dark:border-slate-800 light:border-slate-200 text-slate-400 hover:text-amber-500 transition-colors cursor-pointer"
+            className="p-2 rounded-xl bg-[#F7F7F5] dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] text-[#6B7280] dark:text-[#9CA3AF] hover:text-[#111111] dark:hover:text-[#FBBF24] transition-colors cursor-pointer"
             title="Toggle Theme"
           >
-            {isDark ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-700" />}
+            {isDark ? <Sun className="h-4 w-4 text-[#FBBF24]" /> : <Moon className="h-4 w-4 text-[#111111]" />}
           </button>
 
           {/* Auth Button / User Profile */}
           {currentUser ? (
             <button
               onClick={() => onChangeTab('profile')}
-              className="flex items-center gap-2 bg-slate-900/80 dark:bg-slate-900/80 light:bg-slate-100 border border-slate-800 dark:border-slate-800 light:border-slate-200 p-1 pr-3 rounded-xl hover:border-amber-500 transition-all cursor-pointer"
+              className="flex items-center gap-2 bg-[#F7F7F5] dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] p-1 pr-3 rounded-xl hover:border-[#FBBF24] transition-all cursor-pointer"
             >
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500 text-black font-extrabold text-xs">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FBBF24] text-[#111111] font-black text-xs">
                 {currentUser.displayName.charAt(0).toUpperCase()}
               </div>
-              <span className="hidden lg:inline text-xs font-bold text-slate-200 dark:text-slate-200 light:text-slate-800 max-w-[100px] truncate">
+              <span className="hidden lg:inline text-xs font-bold text-[#111111] dark:text-white max-w-[100px] truncate">
                 {currentUser.displayName}
               </span>
             </button>
           ) : (
             <button
               onClick={handleSignInClick}
-              className="flex items-center gap-1.5 bg-amber-500 text-black font-extrabold px-3.5 py-1.5 rounded-xl text-xs hover:bg-amber-400 transition-all cursor-pointer shadow-md shadow-amber-500/10 uppercase tracking-wider"
+              className="flex items-center gap-1.5 bg-[#FBBF24] hover:bg-[#F59E0B] text-[#111111] font-black px-3.5 py-1.5 rounded-xl text-xs transition-all cursor-pointer shadow-sm uppercase tracking-wider"
             >
               <User className="h-3.5 w-3.5" />
               <span>SIGN IN</span>
             </button>
           )}
-
-          {/* Admin Control Icon Button (Visible only at Landing & Admin pages) */}
-          {(activeTab === 'home' || activeTab === 'admin') && (
-            <button
-              onClick={handleShieldClick}
-              className="flex items-center gap-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shadow-sm shadow-amber-500/5 hover:border-amber-500/60"
-              title="Access Constrora Admin Control Portal"
-            >
-              <ShieldCheck className="h-4 w-4 text-amber-500 shrink-0" />
-              <span className="hidden sm:inline text-[11px] uppercase tracking-wider font-black">ADMIN</span>
-            </button>
-          )}
         </div>
       </div>
-
-      {/* Access Denied Modal for Non-Admin Shield Click */}
-      {deniedModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-[#121418] border border-slate-800 p-6 rounded-2xl max-w-sm w-full text-center space-y-4">
-            <div className="mx-auto h-12 w-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500">
-              <Shield className="h-6 w-6" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-white">ACCESS DENIED</h3>
-              <p className="text-xs text-slate-400 mt-1">
-                You don't have permission to access the admin portal. Sign in with an authorized admin account.
-              </p>
-            </div>
-            <button
-              onClick={() => setDeniedModal(false)}
-              className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl cursor-pointer"
-            >
-              CLOSE
-            </button>
-          </div>
-        </div>
-      )}
     </header>
   );
 };

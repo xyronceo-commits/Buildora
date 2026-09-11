@@ -37,15 +37,15 @@ export const AdminSignInView: React.FC<AdminSignInViewProps> = ({
 
   return (
     <div className="min-h-[80vh] flex flex-col items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md space-y-8 bg-[#121418] border border-slate-800 p-8 sm:p-10 rounded-3xl shadow-2xl relative overflow-hidden">
+      <div className="w-full max-w-md space-y-8 bg-white dark:bg-[#121418] border border-[#E5E5E5] dark:border-slate-800 p-8 sm:p-10 rounded-3xl shadow-sm relative overflow-hidden">
         {/* Decorative Top Accent Bar */}
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600" />
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-[#FBBF24]" />
 
         {/* Top Navigation Back */}
         {onReturnHome && (
           <button
             onClick={onReturnHome}
-            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors cursor-pointer font-semibold mb-2"
+            className="flex items-center gap-1.5 text-xs text-[#6B7280] dark:text-slate-400 hover:text-[#111111] dark:hover:text-white transition-colors cursor-pointer font-bold mb-2"
           >
             <ArrowLeft className="h-4 w-4" /> Return to Main Portal
           </button>
@@ -53,15 +53,15 @@ export const AdminSignInView: React.FC<AdminSignInViewProps> = ({
 
         {/* Header Icon & Title */}
         <div className="text-center space-y-3">
-          <div className="mx-auto h-16 w-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500 shadow-lg shadow-amber-500/5">
+          <div className="mx-auto h-16 w-16 rounded-2xl bg-[#FBBF24]/15 border border-[#FBBF24]/30 flex items-center justify-center text-[#B45309] dark:text-[#FBBF24] shadow-xs">
             <ShieldCheck className="h-9 w-9" />
           </div>
 
           <div className="space-y-1">
-            <h1 className="font-['Cabinet_Grotesk'] text-2xl sm:text-3xl font-black text-white tracking-tight">
+            <h1 className="font-['Cabinet_Grotesk'] text-2xl sm:text-3xl font-black text-[#111111] dark:text-white tracking-tight">
               Constrora Admin
             </h1>
-            <p className="text-xs sm:text-sm text-slate-400 max-w-xs mx-auto leading-relaxed">
+            <p className="text-xs sm:text-sm text-[#6B7280] dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
               Sign in with your authorized Google account to continue.
             </p>
           </div>
@@ -69,10 +69,10 @@ export const AdminSignInView: React.FC<AdminSignInViewProps> = ({
 
         {/* Error Alert Box */}
         {error && (
-          <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-start gap-3 text-red-400 text-xs leading-relaxed animate-in fade-in duration-200">
+          <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-3 text-rose-600 dark:text-rose-400 text-xs leading-relaxed animate-in fade-in duration-200">
             <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
             <div>
-              <strong className="font-bold block text-red-300">Access Restricted</strong>
+              <strong className="font-bold block text-rose-700 dark:text-rose-300">Access Restricted</strong>
               <span>{error}</span>
             </div>
           </div>
@@ -84,7 +84,7 @@ export const AdminSignInView: React.FC<AdminSignInViewProps> = ({
             type="button"
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-100 text-slate-900 font-extrabold py-3.5 px-4 rounded-2xl text-sm transition-all shadow-xl hover:shadow-2xl cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed group"
+            className="w-full flex items-center justify-center gap-3 bg-[#F7F7F5] hover:bg-slate-200 dark:bg-white dark:hover:bg-slate-100 text-[#111111] border border-[#E5E5E5] dark:border-transparent font-extrabold py-3.5 px-4 rounded-2xl text-sm transition-all shadow-xs hover:shadow-sm cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed group"
           >
             {loading ? (
               <>
@@ -118,7 +118,7 @@ export const AdminSignInView: React.FC<AdminSignInViewProps> = ({
             )}
           </button>
 
-          <p className="text-[11px] text-center text-slate-500 leading-snug pt-2">
+          <p className="text-[11px] text-center text-[#6B7280] dark:text-slate-500 leading-snug pt-2">
             Only authorized administrator accounts can access the Constrora control system. Unauthorized access attempts are monitored and logged.
           </p>
         </div>

@@ -30,19 +30,19 @@ export const ListingCard: React.FC<ListingCardProps> = ({
     switch (listing.type) {
       case 'equipment':
         return (
-          <span className="inline-flex items-center gap-1 bg-amber-500 text-black text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">
+          <span className="inline-flex items-center gap-1 bg-[#FBBF24] text-[#111111] text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-xs">
             <Wrench className="h-3 w-3" /> EQUIPMENT
           </span>
         );
       case 'material':
         return (
-          <span className="inline-flex items-center gap-1 bg-blue-600 text-white text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">
+          <span className="inline-flex items-center gap-1 bg-[#111111] text-white dark:bg-white dark:text-[#111111] text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-xs">
             <Package className="h-3 w-3" /> MATERIAL
           </span>
         );
       case 'logistics':
         return (
-          <span className="inline-flex items-center gap-1 bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">
+          <span className="inline-flex items-center gap-1 bg-[#1F2937] text-white dark:bg-slate-700 dark:text-white text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-xs">
             <Truck className="h-3 w-3" /> LOGISTICS
           </span>
         );
@@ -91,9 +91,9 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   const specSnippet = getSpecsSnippet();
 
   return (
-    <div className="group relative rounded-2xl bg-[#121418] border border-slate-800 hover:border-amber-500/80 transition-all duration-200 flex flex-col overflow-hidden shadow-lg hover:shadow-xl">
+    <div className="group relative rounded-2xl bg-white dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] hover:border-[#FBBF24] dark:hover:border-[#FBBF24] transition-all duration-200 flex flex-col overflow-hidden shadow-xs hover:shadow-md">
       {/* Image Container */}
-      <div className="relative h-44 sm:h-48 w-full bg-slate-900 overflow-hidden">
+      <div className="relative h-44 sm:h-48 w-full bg-[#F7F7F5] dark:bg-[#111111] overflow-hidden">
         {primaryPhoto ? (
           <img
             src={primaryPhoto}
@@ -103,20 +103,20 @@ export const ListingCard: React.FC<ListingCardProps> = ({
             referrerPolicy="no-referrer"
           />
         ) : (
-          <div className="h-full w-full flex flex-col items-center justify-center bg-slate-900 text-slate-600 p-4 text-center">
+          <div className="h-full w-full flex flex-col items-center justify-center bg-[#F7F7F5] dark:bg-[#111111] text-[#6B7280] p-4 text-center">
             {listing.type === 'equipment' ? (
-              <Wrench className="h-10 w-10 text-slate-700 mb-2" />
+              <Wrench className="h-10 w-10 text-[#6B7280] dark:text-slate-600 mb-2" />
             ) : listing.type === 'material' ? (
-              <Package className="h-10 w-10 text-slate-700 mb-2" />
+              <Package className="h-10 w-10 text-[#6B7280] dark:text-slate-600 mb-2" />
             ) : (
-              <Truck className="h-10 w-10 text-slate-700 mb-2" />
+              <Truck className="h-10 w-10 text-[#6B7280] dark:text-slate-600 mb-2" />
             )}
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#6B7280] dark:text-slate-400">
               No Image Uploaded
             </span>
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#121418] via-transparent to-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
 
         {/* Top Badges */}
         <div className="absolute top-3 left-3 flex items-center gap-2">
@@ -134,8 +134,8 @@ export const ListingCard: React.FC<ListingCardProps> = ({
           }}
           className={`absolute top-3 right-3 h-8 w-8 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
             saved
-              ? 'bg-amber-500 text-black font-extrabold shadow-md'
-              : 'bg-black/60 text-slate-300 hover:text-white backdrop-blur-md border border-slate-700'
+              ? 'bg-[#FBBF24] text-[#111111] font-black shadow-md'
+              : 'bg-black/60 text-white hover:bg-[#FBBF24] hover:text-[#111111] backdrop-blur-md border border-white/20'
           }`}
           title={saved ? 'Saved' : 'Save resource'}
         >
@@ -145,11 +145,11 @@ export const ListingCard: React.FC<ListingCardProps> = ({
         {/* Availability Badge */}
         <div className="absolute bottom-3 left-3">
           {listing.availability.status === 'AVAILABLE' ? (
-            <span className="inline-flex items-center gap-1.5 bg-emerald-500/90 text-black text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow">
-              <span className="h-1.5 w-1.5 rounded-full bg-black animate-pulse" /> AVAILABLE
+            <span className="inline-flex items-center gap-1.5 bg-[#FBBF24] text-[#111111] text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#111111] animate-pulse" /> AVAILABLE
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 bg-amber-500/90 text-black text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow">
+            <span className="inline-flex items-center gap-1.5 bg-[#F7F7F5] dark:bg-[#1F2937] text-[#111111] dark:text-white border border-[#E5E5E5] dark:border-[#374151] text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm">
               {listing.availability.status}
             </span>
           )}
@@ -160,25 +160,25 @@ export const ListingCard: React.FC<ListingCardProps> = ({
       <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
         <div>
           {/* Supplier Name & Verification */}
-          <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-            <span className="truncate font-bold uppercase tracking-wider text-slate-400 text-[11px]">
+          <div className="flex items-center justify-between text-xs text-[#6B7280] dark:text-[#9CA3AF] mb-1">
+            <span className="truncate font-bold uppercase tracking-wider text-[11px]">
               {listing.businessName}
             </span>
             <VerificationBadge status={listing.businessVerification} size="sm" />
           </div>
 
           {/* Listing Title */}
-          <h3 className="font-['Cabinet_Grotesk'] text-base font-black text-white leading-snug group-hover:text-amber-500 transition-colors line-clamp-2">
+          <h3 className="font-['Cabinet_Grotesk'] text-base font-black text-[#111111] dark:text-white leading-snug group-hover:text-[#F59E0B] transition-colors line-clamp-2">
             {listing.title}
           </h3>
 
           {/* Key Specs Pills */}
           {specSnippet.length > 0 && (
-            <div className="mt-2.5 flex flex-wrap gap-1.5 text-[10px] font-bold text-slate-300">
+            <div className="mt-2.5 flex flex-wrap gap-1.5 text-[10px] font-bold text-[#1F2937] dark:text-slate-300">
               {specSnippet.map((spec, idx) => (
                 <span
                   key={idx}
-                  className="bg-slate-900 text-slate-300 px-2 py-0.5 rounded border border-slate-800"
+                  className="bg-[#F7F7F5] dark:bg-[#111111] text-[#1F2937] dark:text-slate-300 px-2 py-0.5 rounded-md border border-[#E5E5E5] dark:border-[#374151]"
                 >
                   {spec}
                 </span>
@@ -188,20 +188,20 @@ export const ListingCard: React.FC<ListingCardProps> = ({
         </div>
 
         {/* Price & Location Footer */}
-        <div className="pt-3 border-t border-slate-800 space-y-2.5">
+        <div className="pt-3 border-t border-[#E5E5E5] dark:border-[#374151] space-y-2.5">
           <div className="flex items-end justify-between gap-2">
             <div>
-              <div className="text-xs text-slate-400 font-semibold flex items-center gap-1">
-                <MapPin className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+              <div className="text-xs text-[#6B7280] dark:text-[#9CA3AF] font-semibold flex items-center gap-1">
+                <MapPin className="h-3.5 w-3.5 text-[#F59E0B] shrink-0" />
                 <span className="truncate">{distanceStr} away</span>
               </div>
             </div>
 
             <div className="text-right shrink-0">
-              <div className="text-base font-black text-amber-400 leading-none">
+              <div className="text-base font-black text-[#111111] dark:text-[#FBBF24] leading-none">
                 {priceObj.price}
               </div>
-              <div className="text-[9px] font-extrabold text-slate-500 uppercase tracking-widest mt-0.5">
+              <div className="text-[9px] font-black text-[#6B7280] dark:text-[#9CA3AF] uppercase tracking-widest mt-0.5">
                 PER {priceObj.unit}
               </div>
             </div>
@@ -211,7 +211,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={() => onViewDetails(listing)}
-              className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black py-2 px-3 text-xs font-black transition-all cursor-pointer uppercase tracking-wider shadow-sm"
+              className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-[#FBBF24] hover:bg-[#F59E0B] text-[#111111] py-2 px-3 text-xs font-black transition-all cursor-pointer uppercase tracking-wider shadow-xs"
             >
               <Eye className="h-3.5 w-3.5" /> View
             </button>
@@ -221,8 +221,8 @@ export const ListingCard: React.FC<ListingCardProps> = ({
                 onClick={() => onCompareToggle(listing)}
                 className={`p-2 rounded-xl border transition-all cursor-pointer ${
                   isCompared
-                    ? 'bg-amber-500/20 border-amber-500 text-amber-400'
-                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                    ? 'bg-[#FBBF24]/20 border-[#FBBF24] text-[#111111] dark:text-[#FBBF24]'
+                    : 'bg-[#F7F7F5] dark:bg-[#111111] border-[#E5E5E5] dark:border-[#374151] text-[#6B7280] dark:text-slate-400 hover:text-[#111111] dark:hover:text-white hover:border-[#FBBF24]'
                 }`}
                 title={isCompared ? 'Comparing' : 'Compare'}
               >

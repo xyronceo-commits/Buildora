@@ -17,11 +17,11 @@ export const VerificationBadge: React.FC<VerificationBadgeProps> = ({
   if (normStatus === 'VERIFIED') {
     return (
       <span
-        className={`inline-flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-extrabold rounded ${
-          size === 'sm' ? 'px-1.5 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'
+        className={`inline-flex items-center gap-1 bg-[#FBBF24]/15 border border-[#FBBF24]/50 text-[#92400E] dark:text-[#FBBF24] font-black rounded-lg ${
+          size === 'sm' ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'
         }`}
       >
-        <ShieldCheck className={size === 'sm' ? 'h-3 w-3' : 'h-4 w-4'} />
+        <ShieldCheck className={size === 'sm' ? 'h-3.5 w-3.5 text-[#F59E0B]' : 'h-4 w-4 text-[#F59E0B]'} />
         <span>✓ VERIFIED SUPPLIER</span>
       </span>
     );
@@ -30,11 +30,11 @@ export const VerificationBadge: React.FC<VerificationBadgeProps> = ({
   if (normStatus === 'VERIFICATION_PENDING') {
     return (
       <span
-        className={`inline-flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold rounded ${
-          size === 'sm' ? 'px-1.5 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'
+        className={`inline-flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 font-bold rounded-lg ${
+          size === 'sm' ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'
         }`}
       >
-        <Clock className={size === 'sm' ? 'h-3 w-3' : 'h-4 w-4'} />
+        <Clock className={size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
         <span>VERIFICATION PENDING</span>
       </span>
     );
@@ -43,11 +43,11 @@ export const VerificationBadge: React.FC<VerificationBadgeProps> = ({
   if (normStatus === 'REJECTED') {
     return (
       <span
-        className={`inline-flex items-center gap-1 bg-red-500/10 border border-red-500/30 text-red-400 font-bold rounded ${
-          size === 'sm' ? 'px-1.5 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'
+        className={`inline-flex items-center gap-1 bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 font-bold rounded-lg ${
+          size === 'sm' ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'
         }`}
       >
-        <ShieldAlert className={size === 'sm' ? 'h-3 w-3' : 'h-4 w-4'} />
+        <ShieldAlert className={size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
         <span>REJECTED</span>
       </span>
     );
@@ -55,11 +55,11 @@ export const VerificationBadge: React.FC<VerificationBadgeProps> = ({
 
   return (
     <span
-      className={`inline-flex items-center gap-1 bg-slate-800 text-slate-300 font-medium rounded ${
-        size === 'sm' ? 'px-1.5 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'
+      className={`inline-flex items-center gap-1 bg-[#F7F7F5] dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] text-[#6B7280] dark:text-slate-300 font-bold rounded-lg ${
+        size === 'sm' ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'
       }`}
     >
-      <Building className={size === 'sm' ? 'h-3 w-3 text-slate-400' : 'h-4 w-4 text-slate-400'} />
+      <Building className={size === 'sm' ? 'h-3.5 w-3.5 text-[#6B7280] dark:text-slate-400' : 'h-4 w-4 text-[#6B7280] dark:text-slate-400'} />
       <span>LISTED SUPPLIER</span>
     </span>
   );

@@ -75,24 +75,24 @@ export const EmailVerificationBanner: React.FC = () => {
   };
 
   return (
-    <div className="bg-amber-500/15 border-b border-amber-500/30 text-amber-200 px-4 py-3 text-xs font-medium relative transition-all">
+    <div className="bg-[#FBBF24]/15 dark:bg-[#1F2937] border-b border-[#FBBF24]/40 dark:border-[#374151] px-4 py-3 text-xs font-medium relative transition-all">
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-start gap-2.5">
-          <div className="p-1.5 bg-amber-500/20 text-amber-400 rounded-lg shrink-0 mt-0.5 sm:mt-0">
-            <Mail className="h-4 w-4 animate-pulse" />
+          <div className="p-1.5 bg-[#FBBF24]/30 text-[#111111] dark:text-[#FBBF24] rounded-lg shrink-0 mt-0.5 sm:mt-0">
+            <Mail className="h-4 w-4 animate-pulse text-[#111111] dark:text-[#FBBF24]" />
           </div>
           <div>
-            <div className="font-extrabold text-white flex items-center gap-2">
+            <div className="font-extrabold text-[#111111] dark:text-white flex items-center gap-2">
               <span>EMAIL NOT CONFIRMED YET</span>
-              <span className="text-[10px] bg-amber-500 text-black font-black px-2 py-0.5 rounded uppercase">
+              <span className="text-[10px] bg-[#FBBF24] text-[#111111] font-black px-2 py-0.5 rounded uppercase">
                 ACTION REQUIRED
               </span>
             </div>
-            <p className="text-slate-300 text-[11px] mt-0.5">
-              Verification link sent to <strong className="text-amber-300">{currentUser.email}</strong>. Check your <strong className="text-amber-400 underline uppercase">Inbox & SPAM folder</strong>. The system will detect confirmation automatically once clicked.
+            <p className="text-[#6B7280] dark:text-slate-300 text-[11px] mt-0.5">
+              Verification link sent to <strong className="text-[#111111] dark:text-[#FBBF24]">{currentUser.email}</strong>. Check your <strong className="text-[#111111] dark:text-white underline uppercase">Inbox & SPAM folder</strong>. The system will detect confirmation automatically once clicked.
             </p>
             {statusMessage && (
-              <div className={`mt-1.5 text-[11px] font-bold flex items-center gap-1 ${isError ? 'text-rose-400' : 'text-emerald-400'}`}>
+              <div className={`mt-1.5 text-[11px] font-bold flex items-center gap-1 ${isError ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                 {isError ? <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> : <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />}
                 <span>{statusMessage}</span>
               </div>
@@ -104,18 +104,18 @@ export const EmailVerificationBanner: React.FC = () => {
           <button
             onClick={handleManualCheck}
             disabled={checking}
-            className="flex-1 sm:flex-initial px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-[11px] rounded-lg transition-all flex items-center justify-center gap-1.5 uppercase cursor-pointer"
+            className="flex-1 sm:flex-initial px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-[#111111] dark:text-slate-200 border border-[#E5E5E5] dark:border-slate-700 font-bold text-[11px] rounded-lg transition-all flex items-center justify-center gap-1.5 uppercase cursor-pointer"
           >
-            <RefreshCw className={`h-3.5 w-3.5 text-amber-400 ${checking ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-3.5 w-3.5 text-[#F59E0B] ${checking ? 'animate-spin' : ''}`} />
             <span>Check Status</span>
           </button>
 
           <button
             onClick={handleResendEmail}
             disabled={resending}
-            className="flex-1 sm:flex-initial px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-black text-[11px] rounded-lg transition-all flex items-center justify-center gap-1.5 shadow-sm uppercase cursor-pointer"
+            className="flex-1 sm:flex-initial px-3 py-1.5 bg-[#FBBF24] hover:bg-[#F59E0B] text-[#111111] font-black text-[11px] rounded-lg transition-all flex items-center justify-center gap-1.5 shadow-xs uppercase cursor-pointer"
           >
-            <Send className="h-3.5 w-3.5 text-black" />
+            <Send className="h-3.5 w-3.5 text-[#111111]" />
             <span>Resend Link</span>
           </button>
         </div>

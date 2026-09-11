@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+:root {
+  --constrora-yellow: #FBBF24;
+  --constrora-yellow-dark: #F59E0B;
+  --constrora-black: #111111;
+  --constrora-dark-secondary: #1F2937;
+  --constrora-white: #FFFFFF;
+  --constrora-light-secondary: #F7F7F5;
+  --constrora-border-light: #E5E5E5;
+  --constrora-border-dark: #374151;
+  --constrora-muted-light: #6B7280;
+  --constrora-muted-dark: #9CA3AF;
+}
+
 @layer utilities {
   .bg-grid-industrial {
     background-size: 32px 32px;
@@ -11,34 +24,99 @@
   .bg-grid-industrial-light {
     background-size: 32px 32px;
     background-image: 
-      linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+      linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
   }
 
   .bg-blueprint-dots {
-    background-image: radial-gradient(rgba(249, 115, 22, 0.15) 1px, transparent 1px);
+    background-image: radial-gradient(rgba(251, 191, 36, 0.2) 1px, transparent 1px);
     background-size: 16px 16px;
   }
 }
 
-/* Custom industrial scrollbars */
+/* Custom CONSTRORA industrial scrollbars */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
-::-webkit-scrollbar-track {
-  background: #0B0C0E;
+.light ::-webkit-scrollbar-track, ::-webkit-scrollbar-track {
+  background: #F7F7F5;
 }
-::-webkit-scrollbar-thumb {
-  background: #272A30;
+.dark ::-webkit-scrollbar-track {
+  background: #111111;
+}
+.light ::-webkit-scrollbar-thumb, ::-webkit-scrollbar-thumb {
+  background: #D1D5DB;
+  border-radius: 4px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #1F2937;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #F97316;
+  background: #FBBF24;
 }
 
 /* Heavy construction heading font family priority */
 h1, h2, h3, .font-construction {
   font-family: 'Cabinet Grotesk', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   letter-spacing: -0.02em;
+}
+
+/* CONSTRORA Design System Primitives */
+.constrora-btn-primary {
+  background-color: #FBBF24;
+  color: #111111;
+  font-weight: 800;
+  transition: all 0.15s ease-in-out;
+}
+.constrora-btn-primary:hover:not(:disabled) {
+  background-color: #F59E0B;
+}
+
+.constrora-btn-secondary {
+  background-color: transparent;
+  color: #111111;
+  border: 1.5px solid #111111;
+  font-weight: 700;
+  transition: all 0.15s ease-in-out;
+}
+.dark .constrora-btn-secondary {
+  color: #FFFFFF;
+  border-color: #E5E5E5;
+}
+.constrora-btn-secondary:hover:not(:disabled) {
+  background-color: rgba(251, 191, 36, 0.1);
+  border-color: #FBBF24;
+  color: #111111;
+}
+.dark .constrora-btn-secondary:hover:not(:disabled) {
+  color: #FBBF24;
+}
+
+.constrora-input {
+  background-color: #FFFFFF;
+  color: #111111;
+  border: 1.5px solid #E5E5E5;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.dark .constrora-input {
+  background-color: #1F2937;
+  color: #FFFFFF;
+  border-color: #374151;
+}
+.constrora-input:focus {
+  outline: none;
+  border-color: #FBBF24;
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.25);
+}
+
+.constrora-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E5E5E5;
+  border-radius: 1rem;
+}
+.dark .constrora-card {
+  background-color: #1F2937;
+  border-color: #374151;
 }

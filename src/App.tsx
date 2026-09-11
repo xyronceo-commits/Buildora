@@ -548,7 +548,6 @@ export function App() {
         onOpenProjectModal={() => setIsProjectModalOpen(true)}
         onCompareToggle={handleToggleCompare}
         comparedListings={comparedListings}
-        onNavigateToAdmin={() => setActiveTab('admin')}
       />
     );
   };
