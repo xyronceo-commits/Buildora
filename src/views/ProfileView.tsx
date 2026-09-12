@@ -26,12 +26,15 @@ import {
   X,
   Loader2,
   Lock,
+  Shield,
+  Scale,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme, Theme } from '../context/ThemeContext';
 import { useProject } from '../context/ProjectContext';
 import { UserRole, QuoteRequest } from '../types';
 import { NavTab } from '../components/BottomNav';
+import { LegalModal } from '../components/LegalModal';
 
 interface ProfileViewProps {
   onOpenAuthModal: () => void;
@@ -53,6 +56,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const { activeProject } = useProject();
 
   const [activeSubTab, setActiveSubTab] = useState<'profile' | 'requests' | 'settings' | 'help'>('profile');
+  const [legalModalType, setLegalModalType] = useState<'terms' | 'privacy' | null>(null);
 
   // Account Deletion State Machine
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -519,6 +523,30 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <ChevronRight className="h-4 w-4 text-[#6B7280] dark:text-[#9CA3AF]" />
             </a>
 
+            <button
+              type="button"
+              onClick={() => setLegalModalType('terms')}
+              className="w-full flex items-center justify-between p-3.5 rounded-xl bg-[#F7F7F5] dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#374151] text-[#111111] dark:text-white hover:border-[#FBBF24] transition-colors cursor-pointer text-left"
+            >
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-[#F59E0B]" />
+                <span>Terms & Conditions</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-[#6B7280] dark:text-[#9CA3AF]" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setLegalModalType('privacy')}
+              className="w-full flex items-center justify-between p-3.5 rounded-xl bg-[#F7F7F5] dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#374151] text-[#111111] dark:text-white hover:border-[#FBBF24] transition-colors cursor-pointer text-left"
+            >
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-[#F59E0B]" />
+                <span>Privacy Policy</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-[#6B7280] dark:text-[#9CA3AF]" />
+            </button>
+
             <div className="p-4 bg-[#F7F7F5] dark:bg-[#111111] rounded-xl border border-[#E5E5E5] dark:border-[#374151] text-[#6B7280] dark:text-[#9CA3AF] text-[11px] space-y-1">
               <div className="font-black text-[#111111] dark:text-white">
                 CONSTRORA PLATFORM V1.0
@@ -528,6 +556,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* LEGAL DOCUMENT MODAL */}
+      <LegalModal
+        type={legalModalType}
+        onClose={() => setLegalModalType(null)}
+      />
 
       {/* DELETE ACCOUNT CONFIRMATION MODALS */}
       {showDeleteModal && (
