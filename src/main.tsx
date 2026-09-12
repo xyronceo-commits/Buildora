@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext.tsx';
 import { ProjectProvider } from './context/ProjectContext.tsx';
 import { SavedProvider } from './context/SavedContext.tsx';
 import { ThemeProvider } from './context/ThemeContext.tsx';
+import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import { migrateLocalStorageKeys } from './utils/migration.ts';
 import './index.css';
 
@@ -13,15 +14,17 @@ migrateLocalStorageKeys();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ThemeProvider>
-      <AuthProvider>
-        <ProjectProvider>
-          <SavedProvider>
-            <App />
-          </SavedProvider>
-        </ProjectProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AuthProvider>
+          <ProjectProvider>
+            <SavedProvider>
+              <App />
+            </SavedProvider>
+          </ProjectProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );
 

@@ -11,7 +11,8 @@ export const Splash: React.FC<SplashProps> = ({ onFinish }) => {
       onFinish();
     }, 1400);
     return () => clearTimeout(timer);
-  }, [onFinish]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0B0C0E] text-white p-6">

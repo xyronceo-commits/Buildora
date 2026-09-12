@@ -66,9 +66,12 @@ export const QuoteBuilderModal: React.FC<QuoteBuilderModalProps> = ({
   const [projectName, setProjectName] = useState(
     existingQuote?.projectName || quoteRequest?.projectName || 'Site Construction Project'
   );
-  const [projectLocation, setProjectLocation] = useState(
-    existingQuote?.projectLocation || quoteRequest?.projectLocation || 'Osogbo, Osun State'
-  );
+  const [projectLocation, setProjectLocation] = useState<string>(() => {
+    const raw = existingQuote?.projectLocation || quoteRequest?.projectLocation;
+    if (!raw) return 'Osogbo, Osun State';
+    if (typeof raw === 'string') return raw;
+    return `${raw.address ? raw.address + ', ' : ''}${raw.city || 'Osogbo'}, ${raw.state || 'Osun State'}`;
+  });
 
   // Validity Date
   const [validUntil, setValidUntil] = useState(() => {

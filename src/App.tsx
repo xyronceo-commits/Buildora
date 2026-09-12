@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { collection, collectionGroup, onSnapshot, doc, setDoc, updateDoc, query, where } from 'firebase/firestore';
 import { db, sanitizeForFirestore } from './lib/firebase';
 import { useAuth } from './context/AuthContext';
 import { useProject } from './context/ProjectContext';
 import { useTheme } from './context/ThemeContext';
-import { Listing, Business, UserRole, QuoteRequest } from './types';
+import { Listing, Business, UserRole, QuoteRequest, AvailabilityStatus } from './types';
 
 // Layout & Global Components
 import { Header } from './components/Header';
@@ -65,6 +65,7 @@ export function App() {
 
   // App Initialization Flow
   const [showSplash, setShowSplash] = useState(true);
+  const handleSplashFinish = useCallback(() => setShowSplash(false), []);
 
   // Role and Onboarding State Management
   const [selectedRole, setSelectedRole] = useState<UserRole>(() => {
@@ -322,7 +323,7 @@ export function App() {
     }
   };
 
-  const handleUpdateAvailability = async (listingId: string, status: 'AVAILABLE' | 'RENTED' | 'MAINTENANCE' | 'OUT_OF_STOCK') => {
+  const handleUpdateAvailability = async (listingId: string, status: AvailabilityStatus) => {
     const target = listings.find((l) => l.listingId === listingId);
     if (target) {
       try {
@@ -359,7 +360,7 @@ export function App() {
 
   // Splash Screen
   if (showSplash) {
-    return <Splash onFinish={() => setShowSplash(false)} />;
+    return <Splash onFinish={handleSplashFinish} />;
   }
 
   // Initial Onboarding Screen with Role Choice

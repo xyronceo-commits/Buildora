@@ -75,6 +75,7 @@ export interface Business {
     businessRegNumber?: string;
     tinNumber?: string;
     idCardUrl?: string;
+    notes?: string;
   };
   rejectionReason?: string;
   rating: number;
@@ -96,6 +97,7 @@ export interface RentalPricing {
   monthlyPrice?: number;
   contactForPrice?: boolean;
   securityDeposit?: number;
+  minimumPeriod?: string;
   operatorIncluded?: 'Included' | 'Not included' | 'Optional';
   fuelIncluded?: 'Included' | 'Not included' | 'Depends';
 }
@@ -161,6 +163,7 @@ export interface Listing {
   location: LocationData;
   delivery: DeliveryInfo;
   photos: string[];
+  contactPhone?: string;
   description?: string;
   status: 'active' | 'unavailable' | 'under_maintenance' | 'paused';
   viewCount?: number;
@@ -204,7 +207,7 @@ export interface QuoteRequest {
   userPhone?: string;
   clientEmail: string;
   projectName: string;
-  projectLocation: string; // string or location summary
+  projectLocation: string | LocationData; // string or location summary
   requiredDate: string;
   items: QuoteRequestItem[];
   itemName: string;

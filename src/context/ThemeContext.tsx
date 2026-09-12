@@ -12,12 +12,12 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
-    const saved = (localStorage.getItem('constrora_theme') || localStorage.getItem('buildora_theme')) as Theme;
+    const saved = localStorage.getItem('constrora_theme') as Theme;
     return saved || 'light';
   });
 
   const [isDark, setIsDark] = useState<boolean>(() => {
-    const saved = (localStorage.getItem('constrora_theme') || localStorage.getItem('buildora_theme')) as Theme;
+    const saved = localStorage.getItem('constrora_theme') as Theme;
     if (saved === 'dark') return true;
     if (saved === 'light') return false;
     if (typeof window !== 'undefined') {

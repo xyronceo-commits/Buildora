@@ -61,6 +61,10 @@ interface AuthContextType {
       location?: string;
       businessName?: string;
       businessCategory?: string;
+      address?: string;
+      city?: string;
+      state?: string;
+      description?: string;
     }
   ) => Promise<void>;
   signInWithGoogleAdmin: () => Promise<void>;
