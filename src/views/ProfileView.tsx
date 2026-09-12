@@ -55,7 +55,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const { theme, setTheme } = useTheme();
   const { activeProject } = useProject();
 
-  const [activeSubTab, setActiveSubTab] = useState<'profile' | 'requests' | 'settings' | 'help'>('profile');
+  const [activeSubTab, setActiveSubTab] = useState<'profile' | 'requests' | 'settings' | 'help' | 'legal'>('profile');
   const [legalModalType, setLegalModalType] = useState<'terms' | 'privacy' | null>(null);
 
   // Account Deletion State Machine
@@ -192,7 +192,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
         </div>
 
-        {/* Tab Selector */}
+        {/* Subtab Selector */}
         <div className="flex items-center gap-2 border-t border-[#E5E5E5] dark:border-[#374151] pt-4 mt-6 overflow-x-auto text-xs font-black">
           <button
             onClick={() => setActiveSubTab('profile')}
@@ -222,7 +222,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 : 'text-[#6B7280] dark:text-[#9CA3AF] hover:text-[#111111] dark:hover:text-white'
             }`}
           >
-            SETTINGS
+            ACCOUNT SETTINGS
           </button>
           <button
             onClick={() => setActiveSubTab('help')}
@@ -233,6 +233,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             }`}
           >
             HELP & SUPPORT
+          </button>
+          <button
+            onClick={() => setActiveSubTab('legal')}
+            className={`px-4 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+              activeSubTab === 'legal'
+                ? 'bg-[#FBBF24] text-[#111111] shadow-xs'
+                : 'text-[#6B7280] dark:text-[#9CA3AF] hover:text-[#111111] dark:hover:text-white'
+            }`}
+          >
+            LEGAL
           </button>
         </div>
       </div>
@@ -321,30 +331,24 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             )}
           </div>
 
-          {/* Account Actions Section: SIGN OUT & DELETE ACCOUNT side by side */}
-          <div className="p-4 rounded-2xl bg-white dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] space-y-3 shadow-xs">
-            <label className="text-[11px] font-black uppercase text-[#6B7280] dark:text-[#9CA3AF] tracking-wider block">
-              ACCOUNT ACTIONS
-            </label>
-            <div className="flex flex-col sm:flex-row items-center gap-2.5">
-              <button
-                type="button"
-                onClick={signOut}
-                className="w-full sm:flex-1 py-3 px-4 rounded-xl border border-[#E5E5E5] dark:border-[#374151] bg-[#F7F7F5] dark:bg-[#111111] hover:bg-slate-200 dark:hover:bg-[#1F2937] text-[#111111] dark:text-white text-xs font-black transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
-              >
-                <LogOut className="h-4 w-4 text-[#F59E0B]" />
-                <span>SIGN OUT</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleStartDeleteFlow}
-                className="w-full sm:flex-1 py-3 px-4 rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-black transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
-              >
-                <Trash2 className="h-4 w-4 text-rose-500" />
-                <span>DELETE ACCOUNT</span>
-              </button>
+          {/* Role Switching Quick Action */}
+          <div className="p-4 rounded-2xl bg-white dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] flex items-center justify-between shadow-xs text-xs">
+            <div className="space-y-0.5">
+              <span className="font-bold text-[#111111] dark:text-white block">
+                Current Role: <span className="text-[#F59E0B] uppercase font-black">{currentUser.role}</span>
+              </span>
+              <p className="text-[11px] text-[#6B7280] dark:text-[#9CA3AF]">
+                {currentUser.role === 'supplier'
+                  ? 'Switch to Client mode to explore listings and hire other trade suppliers.'
+                  : 'Switch to Supplier mode to list your machinery, services, or building inventory.'}
+              </p>
             </div>
+            <button
+              onClick={() => setUserRole(currentUser.role === 'supplier' ? 'client' : 'supplier')}
+              className="px-3.5 py-2 rounded-xl bg-[#FBBF24]/20 hover:bg-[#FBBF24]/30 border border-[#FBBF24]/40 text-[#111111] dark:text-[#FBBF24] font-black uppercase text-[10px] tracking-wider cursor-pointer shrink-0"
+            >
+              Switch Role
+            </button>
           </div>
         </div>
       )}
@@ -395,107 +399,124 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </div>
       )}
 
-      {/* SETTINGS TAB */}
+      {/* ACCOUNT SETTINGS TAB */}
       {activeSubTab === 'settings' && (
-        <div className="rounded-3xl bg-white dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] p-6 space-y-6 shadow-xs">
-          <h3 className="font-['Cabinet_Grotesk'] text-lg font-extrabold text-[#111111] dark:text-white border-b border-[#E5E5E5] dark:border-[#374151] pb-3">
-            PLATFORM SETTINGS
-          </h3>
+        <div className="space-y-6">
+          {/* Section 1: Account Information */}
+          <div className="rounded-3xl bg-white dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] p-6 space-y-4 shadow-xs">
+            <div className="flex items-center gap-2 border-b border-[#E5E5E5] dark:border-[#374151] pb-3">
+              <User className="h-5 w-5 text-[#F59E0B]" />
+              <h3 className="font-['Cabinet_Grotesk'] text-base font-extrabold text-[#111111] dark:text-white">
+                ACCOUNT DETAILS
+              </h3>
+            </div>
 
-          {/* Theme Switcher */}
-          <div className="space-y-3">
-            <label className="text-xs font-bold text-[#6B7280] dark:text-[#9CA3AF] uppercase tracking-wider block">
-              APPEARANCE & THEME
-            </label>
-            <div className="grid grid-cols-3 gap-2 text-xs">
+            <div className="space-y-2 text-xs">
+              <div className="p-3.5 bg-[#F7F7F5] dark:bg-[#111111] rounded-xl flex items-center justify-between border border-[#E5E5E5] dark:border-[#374151]">
+                <span className="text-[#6B7280] dark:text-[#9CA3AF] font-medium">Display Name</span>
+                <span className="font-bold text-[#111111] dark:text-white">
+                  {currentUser.displayName}
+                </span>
+              </div>
+              <div className="p-3.5 bg-[#F7F7F5] dark:bg-[#111111] rounded-xl flex items-center justify-between border border-[#E5E5E5] dark:border-[#374151]">
+                <span className="text-[#6B7280] dark:text-[#9CA3AF] font-medium">Email Address</span>
+                <span className="font-bold text-[#111111] dark:text-white">
+                  {currentUser.email}
+                </span>
+              </div>
+              <div className="p-3.5 bg-[#F7F7F5] dark:bg-[#111111] rounded-xl flex items-center justify-between border border-[#E5E5E5] dark:border-[#374151]">
+                <span className="text-[#6B7280] dark:text-[#9CA3AF] font-medium">Account Role</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-black text-[#111111] dark:text-[#FBBF24] uppercase">{currentUser.role}</span>
+                  <button
+                    onClick={() => setUserRole(currentUser.role === 'supplier' ? 'client' : 'supplier')}
+                    className="text-[10px] bg-[#FBBF24] text-[#111111] font-black px-2 py-0.5 rounded cursor-pointer uppercase"
+                  >
+                    Change to {currentUser.role === 'supplier' ? 'client' : 'supplier'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Appearance & Theme */}
+          <div className="rounded-3xl bg-white dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] p-6 space-y-4 shadow-xs">
+            <div className="flex items-center gap-2 border-b border-[#E5E5E5] dark:border-[#374151] pb-3">
+              <Sun className="h-5 w-5 text-[#F59E0B]" />
+              <h3 className="font-['Cabinet_Grotesk'] text-base font-extrabold text-[#111111] dark:text-white">
+                APPEARANCE & THEME
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 text-xs">
               <button
                 type="button"
                 onClick={() => setTheme('light')}
-                className={`p-3 rounded-xl border flex flex-col items-center gap-1.5 font-black cursor-pointer transition-all ${
+                className={`p-4 rounded-xl border flex flex-col items-center gap-2 font-black cursor-pointer transition-all ${
                   theme === 'light'
                     ? 'bg-[#FBBF24] text-[#111111] border-[#FBBF24] shadow-xs'
                     : 'bg-[#F7F7F5] dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#374151] text-[#6B7280] dark:text-[#9CA3AF]'
                 }`}
               >
-                <Sun className="h-4 w-4" />
-                <span>LIGHT</span>
+                <Sun className="h-5 w-5" />
+                <span>LIGHT MODE</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setTheme('dark')}
-                className={`p-3 rounded-xl border flex flex-col items-center gap-1.5 font-black cursor-pointer transition-all ${
+                className={`p-4 rounded-xl border flex flex-col items-center gap-2 font-black cursor-pointer transition-all ${
                   theme === 'dark'
                     ? 'bg-[#FBBF24] text-[#111111] border-[#FBBF24] shadow-xs'
                     : 'bg-[#F7F7F5] dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#374151] text-[#6B7280] dark:text-[#9CA3AF]'
                 }`}
               >
-                <Moon className="h-4 w-4" />
-                <span>DARK</span>
+                <Moon className="h-5 w-5" />
+                <span>DARK MODE</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setTheme('system')}
-                className={`p-3 rounded-xl border flex flex-col items-center gap-1.5 font-black cursor-pointer transition-all ${
+                className={`p-4 rounded-xl border flex flex-col items-center gap-2 font-black cursor-pointer transition-all ${
                   theme === 'system'
                     ? 'bg-[#FBBF24] text-[#111111] border-[#FBBF24] shadow-xs'
                     : 'bg-[#F7F7F5] dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#374151] text-[#6B7280] dark:text-[#9CA3AF]'
                 }`}
               >
-                <Laptop className="h-4 w-4" />
-                <span>SYSTEM</span>
+                <Laptop className="h-5 w-5" />
+                <span>SYSTEM DEFAULT</span>
               </button>
             </div>
           </div>
 
-          {/* Account Profile Info */}
-          <div className="space-y-3">
-            <label className="text-xs font-bold text-[#6B7280] dark:text-[#9CA3AF] uppercase tracking-wider block">
-              ACCOUNT INFORMATION
-            </label>
-            <div className="space-y-2 text-xs">
-              <div className="p-3 bg-[#F7F7F5] dark:bg-[#111111] rounded-xl flex items-center justify-between border border-[#E5E5E5] dark:border-[#374151]">
-                <span className="text-[#6B7280] dark:text-[#9CA3AF]">Display Name:</span>
-                <span className="font-bold text-[#111111] dark:text-white">
-                  {currentUser.displayName}
-                </span>
-              </div>
-              <div className="p-3 bg-[#F7F7F5] dark:bg-[#111111] rounded-xl flex items-center justify-between border border-[#E5E5E5] dark:border-[#374151]">
-                <span className="text-[#6B7280] dark:text-[#9CA3AF]">Email Address:</span>
-                <span className="font-bold text-[#111111] dark:text-white">
-                  {currentUser.email}
-                </span>
-              </div>
-              <div className="p-3 bg-[#F7F7F5] dark:bg-[#111111] rounded-xl flex items-center justify-between border border-[#E5E5E5] dark:border-[#374151]">
-                <span className="text-[#6B7280] dark:text-[#9CA3AF]">Account Role:</span>
-                <span className="font-black text-[#111111] dark:text-[#FBBF24] uppercase">{currentUser.role}</span>
-              </div>
+          {/* Section 3: Security & Session Management */}
+          <div className="rounded-3xl bg-white dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] p-6 space-y-4 shadow-xs">
+            <div className="flex items-center gap-2 border-b border-[#E5E5E5] dark:border-[#374151] pb-3">
+              <Lock className="h-5 w-5 text-[#F59E0B]" />
+              <h3 className="font-['Cabinet_Grotesk'] text-base font-extrabold text-[#111111] dark:text-white">
+                SECURITY & SESSION ACTIONS
+              </h3>
             </div>
 
-            <div className="pt-3">
-              <label className="text-[11px] font-black uppercase text-[#6B7280] dark:text-[#9CA3AF] tracking-wider block mb-2">
-                ACCOUNT ACTIONS
-              </label>
-              <div className="flex flex-col sm:flex-row items-center gap-2.5">
-                <button
-                  type="button"
-                  onClick={signOut}
-                  className="w-full sm:flex-1 py-3 px-4 rounded-xl border border-[#E5E5E5] dark:border-[#374151] bg-[#F7F7F5] dark:bg-[#111111] hover:bg-slate-200 dark:hover:bg-[#1F2937] text-[#111111] dark:text-white text-xs font-black transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
-                >
-                  <LogOut className="h-4 w-4 text-[#F59E0B]" />
-                  <span>SIGN OUT</span>
-                </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={signOut}
+                className="py-3.5 px-4 rounded-xl border border-[#E5E5E5] dark:border-[#374151] bg-[#F7F7F5] dark:bg-[#111111] hover:bg-slate-200 dark:hover:bg-[#1F2937] text-[#111111] dark:text-white text-xs font-black transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
+              >
+                <LogOut className="h-4 w-4 text-[#F59E0B]" />
+                <span>SIGN OUT OF CONSTRORA</span>
+              </button>
 
-                <button
-                  type="button"
-                  onClick={handleStartDeleteFlow}
-                  className="w-full sm:flex-1 py-3 px-4 rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-black transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
-                >
-                  <Trash2 className="h-4 w-4 text-rose-500" />
-                  <span>DELETE ACCOUNT</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={handleStartDeleteFlow}
+                className="py-3.5 px-4 rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-black transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
+              >
+                <Trash2 className="h-4 w-4 text-rose-500" />
+                <span>DELETE ACCOUNT DATA</span>
+              </button>
             </div>
           </div>
         </div>
@@ -503,56 +524,138 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
       {/* HELP & SUPPORT TAB */}
       {activeSubTab === 'help' && (
-        <div className="rounded-3xl bg-white dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] p-6 space-y-4 shadow-xs">
-          <h3 className="font-['Cabinet_Grotesk'] text-lg font-extrabold text-[#111111] dark:text-white">
-            HELP & SUPPORT
-          </h3>
-          <p className="text-xs text-[#6B7280] dark:text-[#9CA3AF] leading-relaxed">
-            Need help finding specific construction machinery, adding a supplier fleet, or verifying your business CAC documents?
-          </p>
+        <div className="space-y-6">
+          {/* Section 1: Contact Support */}
+          <div className="rounded-3xl bg-white dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] p-6 space-y-4 shadow-xs">
+            <div className="flex items-center gap-2 border-b border-[#E5E5E5] dark:border-[#374151] pb-3">
+              <HelpCircle className="h-5 w-5 text-[#F59E0B]" />
+              <h3 className="font-['Cabinet_Grotesk'] text-base font-extrabold text-[#111111] dark:text-white">
+                HELP & CUSTOMER DESK
+              </h3>
+            </div>
 
-          <div className="space-y-3 pt-2 text-xs font-bold">
+            <p className="text-xs text-[#6B7280] dark:text-[#9CA3AF] leading-relaxed">
+              Have questions regarding machinery listings, supplier CAC business verification, or requesting bulk building material quotes? Our platform assistance team is here to help.
+            </p>
+
             <a
               href="mailto:support@constrora.ng"
-              className="flex items-center justify-between p-3.5 rounded-xl bg-[#F7F7F5] dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#374151] text-[#111111] dark:text-[#FBBF24] hover:border-[#FBBF24] transition-colors"
+              className="flex items-center justify-between p-4 rounded-xl bg-[#F7F7F5] dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#374151] text-[#111111] dark:text-[#FBBF24] hover:border-[#FBBF24] transition-colors font-bold text-xs"
             >
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-[#F59E0B]" />
-                <span>Contact Constrora Support</span>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-[#FBBF24]/20 text-[#F59E0B]">
+                  <Mail className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="text-[#111111] dark:text-white font-extrabold">Contact Constrora Support</div>
+                  <div className="text-[11px] text-[#6B7280] dark:text-[#9CA3AF] font-normal">Direct email response within 24 hours</div>
+                </div>
               </div>
               <ChevronRight className="h-4 w-4 text-[#6B7280] dark:text-[#9CA3AF]" />
             </a>
+          </div>
 
-            <button
-              type="button"
-              onClick={() => setLegalModalType('terms')}
-              className="w-full flex items-center justify-between p-3.5 rounded-xl bg-[#F7F7F5] dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#374151] text-[#111111] dark:text-white hover:border-[#FBBF24] transition-colors cursor-pointer text-left"
-            >
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-[#F59E0B]" />
-                <span>Terms & Conditions</span>
-              </div>
-              <ChevronRight className="h-4 w-4 text-[#6B7280] dark:text-[#9CA3AF]" />
-            </button>
+          {/* Section 2: Platform Guide & FAQ */}
+          <div className="rounded-3xl bg-white dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] p-6 space-y-4 shadow-xs">
+            <h4 className="text-xs font-black uppercase text-[#6B7280] dark:text-[#9CA3AF] tracking-wider block">
+              PLATFORM HOW-TO GUIDES
+            </h4>
 
-            <button
-              type="button"
-              onClick={() => setLegalModalType('privacy')}
-              className="w-full flex items-center justify-between p-3.5 rounded-xl bg-[#F7F7F5] dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#374151] text-[#111111] dark:text-white hover:border-[#FBBF24] transition-colors cursor-pointer text-left"
-            >
-              <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-[#F59E0B]" />
-                <span>Privacy Policy</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="p-4 rounded-2xl bg-[#F7F7F5] dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#374151] space-y-1.5">
+                <div className="font-extrabold text-[#111111] dark:text-white flex items-center gap-2">
+                  <HardHat className="h-4 w-4 text-[#F59E0B]" />
+                  <span>Requesting Quotes</span>
+                </div>
+                <p className="text-[11px] text-[#6B7280] dark:text-[#9CA3AF]">
+                  Select any supplier listing or catalog item, specify your site location and required dates, and send formal RFQs directly to verified vendors.
+                </p>
               </div>
-              <ChevronRight className="h-4 w-4 text-[#6B7280] dark:text-[#9CA3AF]" />
-            </button>
 
-            <div className="p-4 bg-[#F7F7F5] dark:bg-[#111111] rounded-xl border border-[#E5E5E5] dark:border-[#374151] text-[#6B7280] dark:text-[#9CA3AF] text-[11px] space-y-1">
-              <div className="font-black text-[#111111] dark:text-white">
-                CONSTRORA PLATFORM V1.0
+              <div className="p-4 rounded-2xl bg-[#F7F7F5] dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#374151] space-y-1.5">
+                <div className="font-extrabold text-[#111111] dark:text-white flex items-center gap-2">
+                  <Truck className="h-4 w-4 text-[#F59E0B]" />
+                  <span>Supplier Verification</span>
+                </div>
+                <p className="text-[11px] text-[#6B7280] dark:text-[#9CA3AF]">
+                  Suppliers can submit CAC registration documents and identity proof for administrative review to earn the Verified Supplier badge.
+                </p>
               </div>
-              <div>Find what you need to build. DISCOVER · COMPARE · CONNECT.</div>
             </div>
+          </div>
+
+          {/* Section 3: System Information */}
+          <div className="p-4 rounded-2xl bg-[#F7F7F5] dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#374151] text-[#6B7280] dark:text-[#9CA3AF] text-[11px] space-y-1">
+            <div className="font-black text-[#111111] dark:text-white">
+              CONSTRORA PLATFORM V1.0
+            </div>
+            <div>Construct & Build Marketplace · Active Region: Nigeria / West Africa</div>
+          </div>
+        </div>
+      )}
+
+      {/* LEGAL TAB */}
+      {activeSubTab === 'legal' && (
+        <div className="space-y-6">
+          {/* Section 1: Legal Documents & Policies */}
+          <div className="rounded-3xl bg-white dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] p-6 space-y-4 shadow-xs">
+            <div className="flex items-center gap-2 border-b border-[#E5E5E5] dark:border-[#374151] pb-3">
+              <Scale className="h-5 w-5 text-[#F59E0B]" />
+              <h3 className="font-['Cabinet_Grotesk'] text-base font-extrabold text-[#111111] dark:text-white">
+                LEGAL POLICIES & AGREEMENTS
+              </h3>
+            </div>
+
+            <p className="text-xs text-[#6B7280] dark:text-[#9CA3AF] leading-relaxed">
+              Review Constrora's binding terms of service, platform disclaimers, and user privacy protections.
+            </p>
+
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={() => setLegalModalType('terms')}
+                className="w-full flex items-center justify-between p-4 rounded-xl bg-[#F7F7F5] dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#374151] text-[#111111] dark:text-white hover:border-[#FBBF24] transition-colors cursor-pointer text-left text-xs"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-[#FBBF24]/20 text-[#F59E0B]">
+                    <FileText className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <div className="font-extrabold text-[#111111] dark:text-white">Terms & Conditions</div>
+                    <div className="text-[11px] text-[#6B7280] dark:text-[#9CA3AF]">Facilitator model, content licensing, off-platform payments & liabilities</div>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-[#6B7280] dark:text-[#9CA3AF]" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setLegalModalType('privacy')}
+                className="w-full flex items-center justify-between p-4 rounded-xl bg-[#F7F7F5] dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#374151] text-[#111111] dark:text-white hover:border-[#FBBF24] transition-colors cursor-pointer text-left text-xs"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-[#FBBF24]/20 text-[#F59E0B]">
+                    <Shield className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <div className="font-extrabold text-[#111111] dark:text-white">Privacy Policy</div>
+                    <div className="text-[11px] text-[#6B7280] dark:text-[#9CA3AF]">Personal data collection, Google Cloud subprocessors & data subject rights</div>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-[#6B7280] dark:text-[#9CA3AF]" />
+              </button>
+            </div>
+          </div>
+
+          {/* Section 2: Marketplace Governance Summary */}
+          <div className="rounded-3xl bg-white dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] p-6 space-y-3 shadow-xs text-xs">
+            <h4 className="font-extrabold text-sm text-[#111111] dark:text-white flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-[#F59E0B]" />
+              <span>MARKETPLACE FACILITATOR NOTICE</span>
+            </h4>
+            <p className="text-[#6B7280] dark:text-[#9CA3AF] leading-relaxed">
+              Constrora acts as a neutral technology venue connecting Clients with independent trade Suppliers. Constrora is not a party to direct service agreements, does not process construction project funds directly on-platform, and disclaims guarantees regarding site work outcomes.
+            </p>
           </div>
         </div>
       )}
