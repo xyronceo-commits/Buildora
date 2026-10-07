@@ -69,6 +69,41 @@
 
 ---
 
+## 🚀 Production Deployment Notes (Cloud Run)
+
+### 1. Build and Container Deployment
+Deploying the full-stack service to Google Cloud Run:
+```bash
+# Build the production bundle
+npm run build
+
+# Deploy container service to Cloud Run (use --allow-unauthenticated for public web traffic)
+gcloud run deploy constrora \
+  --image gcr.io/buildora-ed329/constrora:latest \
+  --region europe-west2 \
+  --platform managed \
+  --allow-unauthenticated \
+  --set-env-vars FIREBASE_PROJECT_ID=buildora-ed329,FIRESTORE_DATABASE_ID=ai-studio-buildora-e6d60954-84ab-4902-b369-54ba7da18316
+```
+> **Note on `--allow-unauthenticated`**: This flag is required so that external public visitors and construction clients can access the web application interface without needing GCP IAM-level authentication headers.
+
+### 2. Cross-Project IAM Policy Bindings
+If the Cloud Run service runs inside a compute/staging project different from the primary Firebase project (`buildora-ed329`), the service account executing Cloud Run (e.g. `PROJECT_NUMBER-compute@developer.gserviceaccount.com` or custom service account) requires explicit IAM roles granted on `buildora-ed329`:
+
+```bash
+# 1. Grant Firestore / Datastore User access
+gcloud projects add-iam-policy-binding buildora-ed329 \
+  --member="serviceAccount:<SERVICE_ACCOUNT_EMAIL>" \
+  --role="roles/datastore.user"
+
+# 2. Grant Firebase Authentication Admin access (for user claims, disabling accounts, and token revocation)
+gcloud projects add-iam-policy-binding buildora-ed329 \
+  --member="serviceAccount:<SERVICE_ACCOUNT_EMAIL>" \
+  --role="roles/firebaseauth.admin"
+```
+
+---
+
 ## 🔒 Admin Portal Access
 
 The CONSTRORA Admin Portal provides administrative management over platform listings, verified suppliers, and site logistics. Authorized administrative credentials (`buildsafe247@gmail.com`) automatically receive administrative privileges upon signing in.

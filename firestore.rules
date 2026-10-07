@@ -11,11 +11,12 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    // Server-minted custom claim check for designated admin with verified email
     function isAdmin() {
-      return isSignedIn() && (
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
-      );
+      return isSignedIn() &&
+        request.auth.token.admin == true &&
+        request.auth.token.email == "buildsafe247@gmail.com" &&
+        request.auth.token.email_verified == true;
     }
 
     // Default deny
@@ -25,22 +26,24 @@ service cloud.firestore {
 
     // Admin collection
     match /admins/{adminId} {
-      allow read: if isOwner(adminId) || isAdmin();
-      allow write: if isAdmin();
+      allow read, write: if isAdmin();
     }
 
     // Users collection
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId) && (request.resource.data.get('role', '') != 'admin' || isAdmin());
-      allow update: if (isOwner(userId) &&
-        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])
+      allow create: if isOwner(userId) && 
+        (!('role' in request.resource.data) || request.resource.data.role in ['client', 'supplier']) &&
+        (!('status' in request.resource.data) || request.resource.data.status == 'active');
+      allow update: if (
+        isOwner(userId) &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'admin', 'isAdmin', 'status', 'emailVerified'])
       ) || isAdmin();
       allow delete: if isOwner(userId) || isAdmin();
       
       // Saved subcollection
       match /saved/{savedId} {
-        allow read, write: if isOwner(userId);
+        allow read, write: if isOwner(userId) || isAdmin();
       }
     }
 
@@ -55,7 +58,11 @@ service cloud.firestore {
     match /businesses/{businessId} {
       allow read: if true;
       allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
-      allow update, delete: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow update: if (
+        isSignedIn() && resource.data.ownerId == request.auth.uid &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['verificationStatus', 'isVerified'])
+      ) || isAdmin();
+      allow delete: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
 
       // Listings subcollection
       match /listings/{listingId} {
@@ -113,7 +120,7 @@ service cloud.firestore {
       allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
-    // Reports
+    // Reports / Audit logs
     match /reports/{reportId} {
       allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;

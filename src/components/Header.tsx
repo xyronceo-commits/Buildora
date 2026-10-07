@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Search, User, Scale, Sun, Moon } from 'lucide-react';
+import { MapPin, User, Scale, Sun, Moon } from 'lucide-react';
 import { useProject } from '../context/ProjectContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -45,9 +45,9 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border-b border-[#E5E5E5] dark:border-[#374151] px-4 py-3 transition-colors">
+    <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 px-4 py-2.5 transition-colors">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
-        {/* Logo & Desktop Nav Links */}
+        {/* Brand Logo & Desktop Nav Links */}
         <div className="flex items-center gap-6">
           <button
             onClick={() => onChangeTab(isSupplier ? 'supplier' : 'home')}
@@ -56,127 +56,131 @@ export const Header: React.FC<HeaderProps> = ({
             <img
               src="/constrora-logo.svg"
               alt="CONSTRORA Logo"
-              className="h-9 w-9 rounded-xl object-contain shadow-sm group-hover:scale-105 transition-transform"
+              className="h-8 w-8 rounded-lg object-contain group-hover:scale-102 transition-transform"
             />
-            <div>
-              <span className="font-['Cabinet_Grotesk'] text-xl font-black tracking-tight text-[#111111] dark:text-white">
-                CONSTR<span className="text-[#FBBF24]">ORA</span>
-              </span>
-              <span className="hidden sm:block text-[9px] uppercase tracking-[0.18em] text-[#6B7280] dark:text-[#9CA3AF] font-bold -mt-1">
-                {isSupplier ? 'SUPPLIER PORTAL' : 'FIND WHAT YOU NEED TO BUILD'}
-              </span>
-            </div>
+            <span className="font-['Cabinet_Grotesk'] text-xl font-black tracking-tight text-zinc-950 dark:text-white">
+              CONSTR<span className="text-[#FBBF24]">ORA</span>
+            </span>
           </button>
 
-          {/* Desktop Navigation Links - SUPPLIER VS CLIENT SEPARATION */}
-          <nav className="hidden md:flex items-center gap-1 bg-[#F7F7F5] dark:bg-[#1F2937] p-1 rounded-xl border border-[#E5E5E5] dark:border-[#374151]">
+          {/* Desktop Navigation Links */}
+          <nav className="hidden md:flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800">
             {isSupplier ? (
               <>
                 <button
                   onClick={() => onChangeTab('supplier')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-colors cursor-pointer uppercase tracking-wider ${
                     activeTab === 'supplier' || activeTab === 'home'
-                      ? 'bg-[#FBBF24] text-[#111111] shadow-sm'
-                      : 'text-[#6B7280] hover:text-[#111111] dark:text-[#9CA3AF] dark:hover:text-white'
+                      ? 'bg-[#FBBF24] text-zinc-950'
+                      : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'
                   }`}
                 >
-                  HOME & LISTINGS
+                  My Listings
                 </button>
                 <button
                   onClick={() => onChangeTab('quotes')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-colors cursor-pointer uppercase tracking-wider ${
                     activeTab === 'quotes'
-                      ? 'bg-[#FBBF24] text-[#111111] shadow-sm'
-                      : 'text-[#6B7280] hover:text-[#111111] dark:text-[#9CA3AF] dark:hover:text-white'
+                      ? 'bg-[#FBBF24] text-zinc-950'
+                      : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'
                   }`}
                 >
-                  QUOTE REQUESTS
+                  Quote Requests
                 </button>
                 <button
                   onClick={() => onChangeTab('profile')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-colors cursor-pointer uppercase tracking-wider ${
                     activeTab === 'profile'
-                      ? 'bg-[#FBBF24] text-[#111111] shadow-sm'
-                      : 'text-[#6B7280] hover:text-[#111111] dark:text-[#9CA3AF] dark:hover:text-white'
+                      ? 'bg-[#FBBF24] text-zinc-950'
+                      : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'
                   }`}
                 >
-                  PROFILE
+                  Profile
                 </button>
               </>
             ) : (
               <>
                 <button
                   onClick={() => onChangeTab('home')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-colors cursor-pointer uppercase tracking-wider ${
                     activeTab === 'home'
-                      ? 'bg-[#FBBF24] text-[#111111] shadow-sm'
-                      : 'text-[#6B7280] hover:text-[#111111] dark:text-[#9CA3AF] dark:hover:text-white'
+                      ? 'bg-[#FBBF24] text-zinc-950'
+                      : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'
                   }`}
                 >
-                  HOME
+                  Home
                 </button>
                 <button
                   onClick={() => onChangeTab('search')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-colors cursor-pointer uppercase tracking-wider ${
                     activeTab === 'search'
-                      ? 'bg-[#FBBF24] text-[#111111] shadow-sm'
-                      : 'text-[#6B7280] hover:text-[#111111] dark:text-[#9CA3AF] dark:hover:text-white'
+                      ? 'bg-[#FBBF24] text-zinc-950'
+                      : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'
                   }`}
                 >
-                  DISCOVER
+                  Discover
+                </button>
+                <button
+                  onClick={() => onChangeTab('projects')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-colors cursor-pointer uppercase tracking-wider ${
+                    activeTab === 'projects'
+                      ? 'bg-[#FBBF24] text-zinc-950'
+                      : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'
+                  }`}
+                >
+                  Projects
                 </button>
                 <button
                   onClick={() => onChangeTab('saved')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-colors cursor-pointer uppercase tracking-wider ${
                     activeTab === 'saved'
-                      ? 'bg-[#FBBF24] text-[#111111] shadow-sm'
-                      : 'text-[#6B7280] hover:text-[#111111] dark:text-[#9CA3AF] dark:hover:text-white'
+                      ? 'bg-[#FBBF24] text-zinc-950'
+                      : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'
                   }`}
                 >
-                  SAVED
+                  Saved
                 </button>
                 <button
                   onClick={() => onChangeTab('profile')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-colors cursor-pointer uppercase tracking-wider ${
                     activeTab === 'profile'
-                      ? 'bg-[#FBBF24] text-[#111111] shadow-sm'
-                      : 'text-[#6B7280] hover:text-[#111111] dark:text-[#9CA3AF] dark:hover:text-white'
+                      ? 'bg-[#FBBF24] text-zinc-950'
+                      : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'
                   }`}
                 >
-                  PROFILE
+                  Profile
                 </button>
               </>
             )}
           </nav>
         </div>
 
-        {/* Active Project Location Pill for Clients */}
+        {/* Active Project Location for Clients */}
         {!isSupplier && (
           <button
             onClick={onOpenProjectModal}
-            className="flex items-center gap-2 bg-[#F7F7F5] dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] px-3 py-1.5 rounded-xl text-xs font-bold text-[#111111] dark:text-white transition-all cursor-pointer hover:border-[#FBBF24] max-w-[180px] sm:max-w-xs truncate shadow-xs"
+            className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 rounded-lg text-xs font-bold text-zinc-900 dark:text-zinc-100 hover:border-[#FBBF24] transition-colors cursor-pointer max-w-[200px] sm:max-w-xs truncate"
+            title="Switch active project site"
+            aria-label="Switch active project site"
           >
-            <MapPin className="h-3.5 w-3.5 text-[#F59E0B] shrink-0" />
+            <MapPin className="h-3.5 w-3.5 text-amber-500 shrink-0" />
             <span className="truncate">
-              {activeProject ? `${activeProject.name} · ${activeProject.location.city}` : 'Set Project Site'}
-            </span>
-            <span className="text-[10px] text-[#111111] bg-[#FBBF24] px-1.5 py-0.5 rounded font-black uppercase shrink-0">
-              Site
+              {activeProject ? `${activeProject.name} · ${activeProject.location.city}` : 'Select Site'}
             </span>
           </button>
         )}
 
-        {/* Right side actions */}
+        {/* Right Side Utility Actions */}
         <div className="flex items-center gap-2">
-          {/* Compare Drawer Indicator for Clients */}
+          {/* Compare Indicator */}
           {!isSupplier && comparedCount > 0 && (
             <button
               onClick={onOpenCompareDrawer}
-              className="relative flex items-center gap-1.5 bg-[#FBBF24]/15 border border-[#FBBF24]/50 text-[#111111] dark:text-[#FBBF24] hover:bg-[#FBBF24]/25 px-2.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer"
+              className="relative flex items-center gap-1.5 bg-[#FBBF24]/15 border border-[#FBBF24]/50 text-zinc-900 dark:text-[#FBBF24] hover:bg-[#FBBF24]/25 px-2.5 py-1.5 rounded-lg text-xs font-extrabold transition-colors cursor-pointer"
             >
-              <Scale className="h-4 w-4 text-[#F59E0B]" />
+              <Scale className="h-4 w-4 text-amber-500" />
               <span className="hidden sm:inline">Compare</span>
-              <span className="bg-[#FBBF24] text-[#111111] text-[10px] font-black h-4 w-4 rounded-full flex items-center justify-center">
+              <span className="bg-[#FBBF24] text-zinc-950 text-[10px] font-black h-4 w-4 rounded-full flex items-center justify-center">
                 {comparedCount}
               </span>
             </button>
@@ -185,32 +189,33 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Theme Switcher Toggle */}
           <button
             onClick={() => setTheme(isDark ? 'light' : 'dark')}
-            className="p-2 rounded-xl bg-[#F7F7F5] dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] text-[#6B7280] dark:text-[#9CA3AF] hover:text-[#111111] dark:hover:text-[#FBBF24] transition-colors cursor-pointer"
-            title="Toggle Theme"
+            className="p-2 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-[#FBBF24] transition-colors cursor-pointer"
+            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           >
-            {isDark ? <Sun className="h-4 w-4 text-[#FBBF24]" /> : <Moon className="h-4 w-4 text-[#111111]" />}
+            {isDark ? <Sun className="h-4 w-4 text-[#FBBF24]" /> : <Moon className="h-4 w-4 text-zinc-950" />}
           </button>
 
           {/* Auth Button / User Profile */}
           {currentUser ? (
             <button
               onClick={() => onChangeTab('profile')}
-              className="flex items-center gap-2 bg-[#F7F7F5] dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] p-1 pr-3 rounded-xl hover:border-[#FBBF24] transition-all cursor-pointer"
+              className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-1 pr-3 rounded-lg hover:border-[#FBBF24] transition-colors cursor-pointer"
             >
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FBBF24] text-[#111111] font-black text-xs">
-                {currentUser.displayName.charAt(0).toUpperCase()}
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[#FBBF24] text-zinc-950 font-black text-xs">
+                {currentUser.displayName ? currentUser.displayName.charAt(0).toUpperCase() : 'U'}
               </div>
-              <span className="hidden lg:inline text-xs font-bold text-[#111111] dark:text-white max-w-[100px] truncate">
-                {currentUser.displayName}
+              <span className="hidden lg:inline text-xs font-bold text-zinc-900 dark:text-zinc-100 max-w-[100px] truncate">
+                {currentUser.displayName || 'Profile'}
               </span>
             </button>
           ) : (
             <button
               onClick={handleSignInClick}
-              className="flex items-center gap-1.5 bg-[#FBBF24] hover:bg-[#F59E0B] text-[#111111] font-black px-3.5 py-1.5 rounded-xl text-xs transition-all cursor-pointer shadow-sm uppercase tracking-wider"
+              className="flex items-center gap-1.5 bg-[#FBBF24] hover:bg-[#F59E0B] text-zinc-950 font-black px-3.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer uppercase tracking-wider"
             >
               <User className="h-3.5 w-3.5" />
-              <span>SIGN IN</span>
+              <span>Sign In</span>
             </button>
           )}
         </div>

@@ -13,18 +13,18 @@ import './index.css';
 migrateLocalStorageKeys();
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <ErrorBoundary>
-      <ThemeProvider>
-        <AuthProvider>
-          <ProjectProvider>
-            <SavedProvider>
-              <App />
-            </SavedProvider>
-          </ProjectProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
-  </StrictMode>,
+ <StrictMode>
+ <ErrorBoundary>
+ <ThemeProvider>
+ <AuthProvider>
+ <ProjectProvider>
+ <SavedProvider>
+ <App />
+ </SavedProvider>
+ </ProjectProvider>
+ </AuthProvider>
+ </ThemeProvider>
+ </ErrorBoundary>
+ </StrictMode>,
 );
 

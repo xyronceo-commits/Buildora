@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { collection, collectionGroup, onSnapshot, doc, setDoc, updateDoc, query, where } from 'firebase/firestore';
 import { db, sanitizeForFirestore } from './lib/firebase';
 import { useAuth } from './context/AuthContext';
 import { useProject } from './context/ProjectContext';
 import { useTheme } from './context/ThemeContext';
 import { Listing, Business, UserRole, QuoteRequest, AvailabilityStatus } from './types';
+import { INITIAL_LISTINGS, INITIAL_BUSINESSES } from './data/seedData';
+import { Loader2 } from 'lucide-react';
 
 // Layout & Global Components
 import { Header } from './components/Header';
@@ -28,40 +30,47 @@ import { SupplierDashboardView } from './views/SupplierDashboardView';
 import { AddListingView } from './views/AddListingView';
 import { SupplierOnboardingView } from './views/SupplierOnboardingView';
 import { ClientOnboardingView } from './views/ClientOnboardingView';
-import { AdminDashboardView } from './views/AdminDashboardView';
-import { AdminSignInView } from './views/AdminSignInView';
+
+class ChunkErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 text-center space-y-4">
+          <p className="text-sm font-bold text-red-500">Failed to load this section. Please check your network connection.</p>
+          <button
+            onClick={() => {
+              this.setState({ hasError: false });
+              window.location.reload();
+            }}
+            className="px-5 py-2.5 bg-[#FBBF24] hover:bg-[#F59E0B] text-[#111111] font-black text-xs rounded-xl uppercase tracking-wider cursor-pointer transition-colors"
+          >
+            Retry Loading
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const AdminDashboardView = lazy(() =>
+  import('./views/AdminDashboardView').then((m) => ({ default: m.AdminDashboardView }))
+);
 
 export function App() {
-  const { currentUser, setUserRole, signOut } = useAuth();
+  const { currentUser, isAdmin, loading, signOut } = useAuth();
   const { activeProject } = useProject();
   const { isDark } = useTheme();
-
-  const isAdminAuthorized =
-    Boolean(currentUser) &&
-    (currentUser?.role === 'admin' || currentUser?.email?.toLowerCase() === 'buildsafe247@gmail.com');
-
-  const handleAdminSignOut = async () => {
-    localStorage.removeItem('constrora_onboarding_done');
-    localStorage.removeItem('constrora_temp_role');
-    await signOut();
-    setShowRoleSelection(true);
-    setActiveTab('home');
-    setSubView('none');
-  };
-
-  // Admin Route Listener for /admin and #admin
-  useEffect(() => {
-    const checkAdminRoute = () => {
-      const path = window.location.pathname.toLowerCase();
-      const hash = window.location.hash.toLowerCase();
-      if (path.startsWith('/admin') || hash.startsWith('#admin')) {
-        setActiveTab('admin');
-      }
-    };
-    checkAdminRoute();
-    window.addEventListener('popstate', checkAdminRoute);
-    return () => window.removeEventListener('popstate', checkAdminRoute);
-  }, []);
 
   // App Initialization Flow
   const [showSplash, setShowSplash] = useState(true);
@@ -74,11 +83,22 @@ export function App() {
     return temp || 'client';
   });
 
-  const [showRoleSelection, setShowRoleSelection] = useState(true);
+  // A signed-out visitor sees the Get Started / onboarding screen first
+  const [showRoleSelection, setShowRoleSelection] = useState(() => {
+    if (currentUser) return false;
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search);
+      if (p.get('auth')) return false;
+    }
+    return true;
+  });
 
   // Navigation State
   const [activeTab, setActiveTab] = useState<NavTab>(() => {
-    if (currentUser?.role === 'supplier' && currentUser?.supplierOnboardingCompleted) {
+    if (isAdmin) {
+      return 'admin';
+    }
+    if (currentUser?.role === 'supplier') {
       return 'supplier';
     }
     return 'home';
@@ -96,29 +116,101 @@ export function App() {
 
   // Modals & Drawers
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search);
+      return p.get('auth') === 'forgot' || p.get('auth') === 'signin' || p.get('auth') === 'signup';
+    }
+    return false;
+  });
   const [authModalRole, setAuthModalRole] = useState<UserRole>('client');
   const [authModalIsSignUp, setAuthModalIsSignUp] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'signin' | 'signup' | 'forgot'>(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search);
+      if (p.get('auth') === 'forgot') return 'forgot';
+      if (p.get('auth') === 'signup') return 'signup';
+    }
+    return 'signin';
+  });
   const [isCompareDrawerOpen, setIsCompareDrawerOpen] = useState(false);
 
   const openSignInModal = (role?: UserRole) => {
     setAuthModalRole(role || selectedRole);
     setAuthModalIsSignUp(false);
+    setAuthModalMode('signin');
     setIsAuthModalOpen(true);
   };
 
   const openSignUpModal = (role?: UserRole) => {
     setAuthModalRole(role || selectedRole);
     setAuthModalIsSignUp(true);
+    setAuthModalMode('signup');
     setIsAuthModalOpen(true);
   };
 
+  const openForgotModal = (role?: UserRole) => {
+    setAuthModalRole(role || selectedRole);
+    setAuthModalIsSignUp(false);
+    setAuthModalMode('forgot');
+    setIsAuthModalOpen(true);
+  };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const authParam = params.get('auth');
+    if (authParam === 'forgot') {
+      openForgotModal();
+    } else if (authParam === 'signin') {
+      openSignInModal();
+    }
+  }, []);
+
   // Compared Items & Requests
   const [comparedListings, setComparedListings] = useState<Listing[]>([]);
-
   const [quoteRequests, setQuoteRequests] = useState<QuoteRequest[]>([]);
-  const [listings, setListings] = useState<Listing[]>([]);
-  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [listings, setListings] = useState<Listing[]>(INITIAL_LISTINGS);
+  const [businesses, setBusinesses] = useState<Business[]>(INITIAL_BUSINESSES);
+
+  const handleAdminSignOut = async () => {
+    await signOut();
+    setShowRoleSelection(false);
+    setActiveTab('home');
+    setSubView('none');
+    window.history.replaceState({}, '', '/');
+  };
+
+  // Admin Route Listener for /admin and #admin
+  useEffect(() => {
+    if (loading) return; // Wait for Firebase Auth state to resolve
+
+    const checkAdminRoute = () => {
+      const path = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      const isAdminUrl = path.startsWith('/admin') || hash.startsWith('#admin');
+
+      if (isAdminUrl) {
+        if (isAdmin) {
+          setActiveTab('admin');
+          setShowRoleSelection(false);
+        } else if (currentUser) {
+          // Authenticated non-admin: Immediately redirect to normal portal, do not fetch admin data
+          const normalTab = currentUser.role === 'supplier' ? 'supplier' : 'home';
+          setActiveTab(normalTab);
+          window.history.replaceState({}, '', '/');
+        } else {
+          // Unauthenticated: Redirect to Get Started / Home
+          openSignInModal('admin');
+          setActiveTab('home');
+          window.history.replaceState({}, '', '/');
+        }
+      }
+    };
+
+    checkAdminRoute();
+    window.addEventListener('popstate', checkAdminRoute);
+    return () => window.removeEventListener('popstate', checkAdminRoute);
+  }, [isAdmin, currentUser, loading]);
 
   // Real-time Firestore Sync for Businesses
   useEffect(() => {
@@ -126,7 +218,7 @@ export function App() {
       collection(db, 'businesses'),
       (snap) => {
         const list = snap.docs.map((d) => d.data() as Business);
-        setBusinesses(list);
+        setBusinesses(list.length > 0 ? list : INITIAL_BUSINESSES);
       },
       (err) => console.warn('Businesses listener warning:', err)
     );
@@ -139,21 +231,21 @@ export function App() {
       collectionGroup(db, 'listings'),
       (snap) => {
         const list = snap.docs.map((d) => d.data() as Listing);
-        setListings(list);
+        setListings(list.length > 0 ? list : INITIAL_LISTINGS);
       },
       (err) => console.warn('Listings listener warning:', err)
     );
     return () => unsub();
   }, []);
 
-  // Real-time Firestore Sync for Quote Requests using targeted rules-compliant queries
+  // Real-time Firestore Sync for Quote Requests
   useEffect(() => {
     if (!currentUser) {
       setQuoteRequests([]);
       return;
     }
 
-    if (currentUser.role === 'admin') {
+    if (isAdmin) {
       const unsub = onSnapshot(
         collection(db, 'quoteRequests'),
         (snap) => {
@@ -206,17 +298,22 @@ export function App() {
     }
 
     return () => unsubs.forEach((u) => u());
-  }, [currentUser?.uid, currentUser?.role, currentUser?.businessId]);
+  }, [currentUser?.uid, currentUser?.businessId, isAdmin]);
 
-  // Sync user state on auth change
+  // Synchronize state on authentication change
   useEffect(() => {
+    if (loading) return;
+
     if (currentUser) {
       if (currentUser.role) {
         setSelectedRole(currentUser.role);
       }
       setShowRoleSelection(false);
       setSubView('none');
-      if (currentUser.role === 'supplier') {
+
+      if (isAdmin) {
+        setActiveTab('admin');
+      } else if (currentUser.role === 'supplier') {
         setActiveTab('supplier');
       } else {
         setActiveTab('home');
@@ -226,42 +323,25 @@ export function App() {
       setActiveTab('home');
       setShowRoleSelection(true);
     }
-  }, [currentUser]);
+  }, [currentUser, isAdmin, loading]);
 
   // Handlers
-  const handleRoleSelectionComplete = async (role: UserRole) => {
+  const handleRoleSelectionComplete = (role: UserRole) => {
     localStorage.setItem('constrora_onboarding_done', 'true');
     localStorage.setItem('constrora_temp_role', role);
     setSelectedRole(role);
     setShowRoleSelection(false);
 
-    if (currentUser) {
-      await setUserRole(role);
-      setSubView('none');
-      if (role === 'supplier') {
-        setActiveTab('supplier');
-      } else {
-        setActiveTab('home');
-      }
+    if (role === 'supplier') {
+      setSubView('supplier_onboarding');
     } else {
-      // Unauthenticated user clicking Get Started -> open 1-page AuthModal for registration
-      setAuthModalRole(role);
-      setAuthModalIsSignUp(true);
-      setIsAuthModalOpen(true);
-      if (role === 'supplier') {
-        setActiveTab('supplier');
-      } else {
-        setActiveTab('home');
-      }
+      setSubView('client_onboarding');
     }
   };
 
-  const handleSupplierOnboardingFinished = (newBiz: Business, firstListing?: Listing) => {
-    setBusinesses((prev) => [newBiz, ...prev]);
-    if (firstListing) {
-      setListings((prev) => [firstListing, ...prev]);
-    }
-    setSelectedBusinessId(newBiz.businessId);
+  const handleSupplierOnboardingFinished = (biz: Business) => {
+    setBusinesses((prev) => [biz, ...prev]);
+    setSelectedBusinessId(biz.businessId);
     setSubView('none');
     setActiveTab('supplier');
   };
@@ -271,76 +351,70 @@ export function App() {
     setActiveTab('home');
   };
 
-  const handleSelectCategory = (cat: string) => {
-    setSearchCategory(cat);
-    setSearchQuery('');
-    setSubView('none');
-    setActiveTab('search');
-  };
-
-  const handleSearchSubmit = (query: string) => {
-    setSearchQuery(query);
-    setSearchCategory('ALL');
-    setSubView('none');
-    setActiveTab('search');
-  };
-
   const handleSelectListing = (listing: Listing) => {
     setSelectedListing(listing);
     setSubView('detail');
   };
 
-  const handleSelectBusiness = (businessId: string) => {
-    setSelectedBusinessId(businessId);
+  const handleSelectBusiness = (businessOrId: Business | string) => {
+    const id = typeof businessOrId === 'string' ? businessOrId : businessOrId.businessId;
+    setSelectedBusinessId(id);
     setSubView('business');
   };
 
-  const handleToggleCompare = (listing: Listing) => {
-    if (comparedListings.some((c) => c.listingId === listing.listingId)) {
-      setComparedListings(comparedListings.filter((c) => c.listingId !== listing.listingId));
-    } else {
-      if (comparedListings.length >= 4) {
-        alert('You can compare up to 4 equipment or material listings at a time.');
-        return;
-      }
-      setComparedListings([...comparedListings, listing]);
-      setIsCompareDrawerOpen(true);
-    }
+  const handleSelectCategory = (cat: string) => {
+    setSearchCategory(cat);
+    setActiveTab('search');
   };
 
-  const handleRemoveCompare = (listingId: string) => {
-    setComparedListings(comparedListings.filter((c) => c.listingId !== listingId));
+  const handleSearchSubmit = (queryStr: string) => {
+    setSearchQuery(queryStr);
+    setActiveTab('search');
+  };
+
+  const handleToggleCompare = (listing: Listing) => {
+    setComparedListings((prev) => {
+      const exists = prev.some((c) => c.listingId === listing.listingId);
+      if (exists) {
+        return prev.filter((c) => c.listingId !== listing.listingId);
+      }
+      if (prev.length >= 4) {
+        alert('You can compare a maximum of 4 listings simultaneously.');
+        return prev;
+      }
+      return [...prev, listing];
+    });
   };
 
   const handlePublishListing = async (newListing: Listing) => {
-    setSubView('none');
-    setActiveTab('supplier');
     try {
-      const listingRef = doc(db, 'businesses', newListing.businessId, 'listings', newListing.listingId);
+      const bizId = newListing.businessId;
+      const listingRef = doc(db, 'businesses', bizId, 'listings', newListing.listingId);
       await setDoc(listingRef, sanitizeForFirestore(newListing));
+      setListings((prev) => [newListing, ...prev]);
+      setSubView('none');
+      setActiveTab('supplier');
     } catch (e) {
-      console.error('Error publishing listing to Firestore:', e);
+      console.error('Error saving listing to Firestore:', e);
     }
   };
 
   const handleUpdateAvailability = async (listingId: string, status: AvailabilityStatus) => {
-    const target = listings.find((l) => l.listingId === listingId);
-    if (target) {
-      try {
-        const listingRef = doc(db, 'businesses', target.businessId, 'listings', listingId);
-        await updateDoc(listingRef, { 'availability.status': status, updatedAt: new Date().toISOString() });
-      } catch (e) {
-        console.error('Error updating listing availability in Firestore:', e);
-      }
-    }
-  };
-
-  const handleVerifyBusiness = async (businessId: string, status: 'VERIFIED' | 'REJECTED') => {
     try {
-      const bizRef = doc(db, 'businesses', businessId);
-      await updateDoc(bizRef, { verificationStatus: status, updatedAt: new Date().toISOString() });
+      const listing = listings.find((l) => l.listingId === listingId);
+      if (!listing) return;
+      const listingRef = doc(db, 'businesses', listing.businessId, 'listings', listingId);
+      await updateDoc(listingRef, {
+        'availability.status': status,
+        updatedAt: new Date().toISOString(),
+      });
+      setListings((prev) =>
+        prev.map((l) =>
+          l.listingId === listingId ? { ...l, availability: { ...l.availability, status } } : l
+        )
+      );
     } catch (e) {
-      console.error('Error updating business verification in Firestore:', e);
+      console.error('Error updating availability in Firestore:', e);
     }
   };
 
@@ -358,13 +432,13 @@ export function App() {
     businesses.find((b) => b.ownerId === currentUser?.uid) ||
     businesses[0];
 
-  // Splash Screen
+  // Splash Screen (if explicitly enabled)
   if (showSplash) {
     return <Splash onFinish={handleSplashFinish} />;
   }
 
-  // Initial Onboarding Screen with Role Choice
-  if (showRoleSelection) {
+  // Initial Onboarding Screen with Role Choice (when explicitly requested)
+  if (showRoleSelection && !currentUser && !isAuthModalOpen) {
     return (
       <Onboarding
         onComplete={handleRoleSelectionComplete}
@@ -373,11 +447,6 @@ export function App() {
           setShowRoleSelection(false);
           openSignInModal();
         }}
-        onAdminClick={() => {
-          localStorage.setItem('constrora_onboarding_done', 'true');
-          setShowRoleSelection(false);
-          setActiveTab('admin');
-        }}
       />
     );
   }
@@ -385,36 +454,63 @@ export function App() {
   const effectiveRole: UserRole = currentUser?.role || selectedRole || 'client';
   const isSupplierRole = effectiveRole === 'supplier';
 
-  const renderAdminView = () => {
-    if (isAdminAuthorized) {
-      return (
-        <AdminDashboardView
-          businesses={businesses}
-          listings={listings}
-          quoteRequests={quoteRequests}
-          onVerifyBusiness={handleVerifyBusiness}
-          onSignOutAdmin={handleAdminSignOut}
-        />
-      );
+  // Track auth state transitions: signing out lands on Get Started / Onboarding
+  const prevUserRef = React.useRef(currentUser);
+  useEffect(() => {
+    if (prevUserRef.current && !currentUser) {
+      setShowRoleSelection(true);
+      setActiveTab('home');
+      setSubView('none');
+      window.history.replaceState({}, '', '/');
     }
+    prevUserRef.current = currentUser;
+  }, [currentUser]);
+
+  // Protected Tab Guards: Unauthenticated users attempting to access protected tabs redirect to Get Started
+  const protectedTabs: NavTab[] = ['profile', 'supplier', 'quotes', 'projects', 'saved', 'admin'];
+  if (!currentUser && protectedTabs.includes(activeTab)) {
     return (
-      <AdminSignInView
-        onSuccess={() => setActiveTab('admin')}
-        onReturnHome={() => {
-          setActiveTab('home');
-          if (window.location.pathname.toLowerCase().startsWith('/admin')) {
-            window.history.pushState({}, '', '/');
-          }
+      <Onboarding
+        onComplete={handleRoleSelectionComplete}
+        onSignInClick={() => {
+          localStorage.setItem('constrora_onboarding_done', 'true');
+          setShowRoleSelection(false);
+          openSignInModal();
         }}
-        initialError={
-          currentUser &&
-          currentUser.email?.toLowerCase() !== 'buildsafe247@gmail.com' &&
-          currentUser.role !== 'admin'
-            ? 'Access denied. This Google account is not authorized to access the Constrora admin portal.'
-            : null
-        }
       />
     );
+  }
+
+  const renderAdminView = () => {
+    if (isAdmin) {
+      return (
+        <ChunkErrorBoundary>
+          <Suspense
+            fallback={
+              <div className="min-h-screen bg-[#FFFFFF] dark:bg-[#111111] flex items-center justify-center p-8">
+                <div className="text-center space-y-3">
+                  <Loader2 className="h-8 w-8 animate-spin text-[#F59E0B] mx-auto" />
+                  <p className="text-xs font-bold text-[#6B7280] dark:text-[#9CA3AF] uppercase tracking-wider">
+                    Loading Management Console...
+                  </p>
+                </div>
+              </div>
+            }
+          >
+            <AdminDashboardView
+              onSignOutAdmin={handleAdminSignOut}
+            />
+          </Suspense>
+        </ChunkErrorBoundary>
+      );
+    }
+
+    // Non-admin opens admin route -> Immediately redirect to normal portal without rendering access denied
+    setTimeout(() => {
+      setActiveTab(isSupplierRole ? 'supplier' : 'home');
+      window.history.replaceState({}, '', '/');
+    }, 0);
+    return null;
   };
 
   const renderMainView = () => {
@@ -554,15 +650,11 @@ export function App() {
   };
 
   return (
-    <div
-      className={`min-h-screen flex flex-col font-['Plus_Jakarta_Sans',sans-serif] transition-colors ${
-        isDark ? 'bg-[#0B0C0E] text-slate-100' : 'bg-slate-50 text-slate-900'
-      }`}
-    >
-      {/* Top Email Verification Banner */}
+    <div className={`min-h-screen ${isDark ? 'dark bg-[#111111] text-white' : 'bg-[#FFFFFF] text-[#111111]'} font-sans antialiased transition-colors`}>
+      {/* Email Verification Banner */}
       <EmailVerificationBanner />
 
-      {/* Top Header Navigation */}
+      {/* Header */}
       <Header
         activeTab={activeTab}
         userRole={effectiveRole}
@@ -578,8 +670,8 @@ export function App() {
         comparedCount={comparedListings.length}
       />
 
-      {/* Main Page Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+      {/* Main Content Area */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {renderMainView()}
       </main>
 
@@ -593,7 +685,7 @@ export function App() {
         }}
       />
 
-      {/* Global Modals */}
+      {/* Modals & Drawers */}
       <ProjectSelectorModal
         isOpen={isProjectModalOpen}
         onClose={() => setIsProjectModalOpen(false)}
@@ -604,21 +696,19 @@ export function App() {
         onClose={() => setIsAuthModalOpen(false)}
         initialRole={authModalRole}
         initialIsSignUp={authModalIsSignUp}
-        onOpenAdminPortal={() => {
-          setIsAuthModalOpen(false);
-          setActiveTab('admin');
-        }}
+        initialMode={authModalMode}
       />
 
       <CompareDrawer
         isOpen={isCompareDrawerOpen}
         onClose={() => setIsCompareDrawerOpen(false)}
         listings={comparedListings}
-        onRemove={handleRemoveCompare}
+        onRemove={(id) =>
+          setComparedListings((prev) => prev.filter((l) => l.listingId !== id))
+        }
         onRequestQuote={(listing) => {
-          setSelectedListing(listing);
-          setSubView('detail');
           setIsCompareDrawerOpen(false);
+          handleSelectListing(listing);
         }}
       />
     </div>

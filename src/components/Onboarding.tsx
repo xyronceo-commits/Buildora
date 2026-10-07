@@ -22,7 +22,6 @@ import { UserRole } from '../types';
 interface OnboardingProps {
   onComplete: (role: UserRole) => void;
   onSignInClick: () => void;
-  onAdminClick?: () => void;
 }
 
 const SCREENS = [
@@ -32,7 +31,7 @@ const SCREENS = [
       'Discover construction materials, heavy equipment rentals, logistics and certified suppliers around your project site.',
     badge: 'DISCOVER',
     mockup: (
-      <div className="w-full rounded-2xl bg-[#F7F7F5] dark:bg-slate-900 border border-[#E5E5E5] dark:border-slate-800 p-4 space-y-3">
+      <div className="w-full rounded-2xl bg-[#FFFFFF] dark:bg-slate-900 border border-[#E5E5E5] dark:border-slate-800 p-4 space-y-3">
         <div className="flex items-center justify-between text-xs text-[#6B7280] dark:text-slate-400 pb-2 border-b border-[#E5E5E5] dark:border-slate-800 font-bold">
           <div className="flex items-center gap-1.5 text-[#B45309] dark:text-[#FBBF24]">
             <MapPin className="h-4 w-4" />
@@ -63,7 +62,7 @@ const SCREENS = [
       'Search for specific materials, equipment models and logistics availability — see actual listings with specs and live availability.',
     badge: 'EXACT SEARCH',
     mockup: (
-      <div className="w-full rounded-2xl bg-[#F7F7F5] dark:bg-slate-900 border border-[#E5E5E5] dark:border-slate-800 p-4 space-y-3 text-xs">
+      <div className="w-full rounded-2xl bg-[#FFFFFF] dark:bg-slate-900 border border-[#E5E5E5] dark:border-slate-800 p-4 space-y-3 text-xs">
         <div className="bg-white dark:bg-slate-800 p-3 rounded-xl flex items-center gap-2 border-2 border-[#FBBF24]">
           <Search className="h-4 w-4 text-[#B45309] dark:text-[#FBBF24]" />
           <span className="text-[#111111] dark:text-white font-black text-sm">CAT 320 Excavator</span>
@@ -88,7 +87,7 @@ const SCREENS = [
       'Compare price, distance from site, operator terms, ratings, specifications and verification side-by-side.',
     badge: 'COMPARE',
     mockup: (
-      <div className="w-full rounded-2xl bg-[#F7F7F5] dark:bg-slate-900 border border-[#E5E5E5] dark:border-slate-800 p-4 text-xs space-y-3">
+      <div className="w-full rounded-2xl bg-[#FFFFFF] dark:bg-slate-900 border border-[#E5E5E5] dark:border-slate-800 p-4 text-xs space-y-3">
         <div className="grid grid-cols-2 gap-2 text-center font-black pb-2 border-b border-[#E5E5E5] dark:border-slate-800">
           <div className="text-[#B45309] dark:text-[#FBBF24] p-2 bg-[#FBBF24]/10 border border-[#FBBF24]/30 rounded-lg">CAT 320</div>
           <div className="text-[#111111] dark:text-slate-300 p-2 bg-white dark:bg-slate-800 border border-[#E5E5E5] dark:border-slate-700 rounded-lg">KOMATSU PC210</div>
@@ -112,7 +111,7 @@ const SCREENS = [
       'Contact the supplier directly without unnecessary middlemen. Call, send WhatsApp messages, request formal quotes, or get site directions.',
     badge: 'CONNECT',
     mockup: (
-      <div className="w-full rounded-2xl bg-[#F7F7F5] dark:bg-slate-900 border border-[#E5E5E5] dark:border-slate-800 p-4 grid grid-cols-2 gap-3">
+      <div className="w-full rounded-2xl bg-[#FFFFFF] dark:bg-slate-900 border border-[#E5E5E5] dark:border-slate-800 p-4 grid grid-cols-2 gap-3">
         <div className="bg-[#FBBF24] text-[#111111] font-black p-3 rounded-xl text-center text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer">
           <PhoneCall className="h-4 w-4" /> CALL SUPPLIER
         </div>
@@ -128,7 +127,7 @@ const SCREENS = [
       'Verified construction supplier profiles, ratings, reviews, physical depot location, and equipment fleet photos.',
     badge: 'TRUST',
     mockup: (
-      <div className="w-full rounded-2xl bg-[#F7F7F5] dark:bg-slate-900 border border-[#E5E5E5] dark:border-slate-800 p-4 space-y-2">
+      <div className="w-full rounded-2xl bg-[#FFFFFF] dark:bg-slate-900 border border-[#E5E5E5] dark:border-slate-800 p-4 space-y-2">
         <div className="flex items-center justify-between">
           <h4 className="text-xs font-black text-[#111111] dark:text-white uppercase">Osun Heavy Rental Yard</h4>
           <span className="flex items-center gap-1 text-[10px] bg-emerald-500 text-black font-black px-2 py-0.5 rounded">
@@ -148,7 +147,7 @@ const SCREENS = [
       'Save equipment, building materials, tippers and certified businesses directly to your project binder.',
     badge: 'SAVE',
     mockup: (
-      <div className="w-full rounded-2xl bg-[#F7F7F5] dark:bg-slate-900 border border-[#E5E5E5] dark:border-slate-800 p-3 space-y-2 text-xs">
+      <div className="w-full rounded-2xl bg-[#FFFFFF] dark:bg-slate-900 border border-[#E5E5E5] dark:border-slate-800 p-3 space-y-2 text-xs">
         <div className="p-2.5 bg-white dark:bg-slate-800 rounded-xl flex justify-between items-center text-[#111111] dark:text-slate-200 font-bold border border-[#E5E5E5] dark:border-slate-700">
           <span>Dangote Cement (Apex Depot)</span>
           <span className="text-[#B45309] dark:text-[#FBBF24] font-black">₦10,500/bag</span>
@@ -166,7 +165,7 @@ const SCREENS = [
       'Constrora prioritizes resources around your active construction project site location, not just where your phone happens to be.',
     badge: 'PROJECT SITE',
     mockup: (
-      <div className="w-full rounded-2xl bg-[#F7F7F5] dark:bg-slate-900 border border-[#E5E5E5] dark:border-slate-800 p-4 space-y-3">
+      <div className="w-full rounded-2xl bg-[#FFFFFF] dark:bg-slate-900 border border-[#E5E5E5] dark:border-slate-800 p-4 space-y-3">
         <div className="text-xs text-[#6B7280] dark:text-slate-400 font-bold uppercase tracking-wider">ACTIVE SITE ADDRESS</div>
         <div className="bg-[#FBBF24]/10 border-2 border-[#FBBF24] p-3.5 rounded-xl flex items-center justify-between">
           <div>
@@ -182,7 +181,7 @@ const SCREENS = [
   },
 ];
 
-export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onSignInClick, onAdminClick }) => {
+export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onSignInClick }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showRoleSelection, setShowRoleSelection] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole>('client');
@@ -231,21 +230,17 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onSignInClic
         </div>
 
         <div className="flex items-center gap-3">
-          {onAdminClick && (
+          {!showRoleSelection && (
             <button
-              type="button"
-              onClick={onAdminClick}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#FBBF24]/15 hover:bg-[#FBBF24]/25 text-[#111111] dark:text-[#FBBF24] border border-[#FBBF24]/30 text-xs font-black transition-all cursor-pointer uppercase tracking-wider"
+              onClick={onSignInClick}
+              className="text-xs font-black text-[#111111] dark:text-[#FBBF24] hover:underline transition-colors cursor-pointer uppercase tracking-wider"
             >
-              <ShieldCheck className="h-3.5 w-3.5 text-[#F59E0B]" />
-              <span className="hidden sm:inline">ADMIN PORTAL</span>
-              <span className="sm:hidden">ADMIN</span>
+              Sign In
             </button>
           )}
-
-          {!showRoleSelection && !isFinalSlide && (
+          {!showRoleSelection && (
             <button
-              onClick={() => setCurrentIndex(SCREENS.length)}
+              onClick={() => onComplete('client')}
               className="text-xs font-black text-[#6B7280] hover:text-[#111111] dark:text-slate-400 dark:hover:text-[#FBBF24] transition-colors cursor-pointer uppercase tracking-wider"
             >
               Skip
@@ -286,7 +281,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onSignInClic
                   className={`w-full text-left p-6 rounded-2xl border-2 transition-all cursor-pointer flex items-start gap-4 ${
                     selectedRole === 'client'
                       ? 'bg-[#FBBF24]/10 border-[#FBBF24] shadow-xs'
-                      : 'bg-[#F7F7F5] dark:bg-slate-900 border-[#E5E5E5] dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                      : 'bg-[#FFFFFF] dark:bg-slate-900 border-[#E5E5E5] dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                   }`}
                 >
                   <div
@@ -318,7 +313,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onSignInClic
                   className={`w-full text-left p-6 rounded-2xl border-2 transition-all cursor-pointer flex items-start gap-4 ${
                     selectedRole === 'supplier'
                       ? 'bg-[#FBBF24]/10 border-[#FBBF24] shadow-xs'
-                      : 'bg-[#F7F7F5] dark:bg-slate-900 border-[#E5E5E5] dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                      : 'bg-[#FFFFFF] dark:bg-slate-900 border-[#E5E5E5] dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                   }`}
                 >
                   <div
@@ -352,7 +347,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onSignInClic
                   CONTINUE TO PLATFORM <ArrowRight className="h-5 w-5" />
                 </button>
 
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-1">
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-1">
                   <button
                     type="button"
                     onClick={onSignInClick}
@@ -360,17 +355,6 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onSignInClic
                   >
                     Already have an account? <span className="text-[#111111] dark:text-[#FBBF24] underline">Sign In</span>
                   </button>
-
-                  {onAdminClick && (
-                    <button
-                      type="button"
-                      onClick={onAdminClick}
-                      className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#FBBF24]/15 hover:bg-[#FBBF24]/25 text-[#111111] dark:text-[#FBBF24] border border-[#FBBF24]/30 text-xs font-extrabold transition-all cursor-pointer uppercase tracking-wider"
-                    >
-                      <ShieldCheck className="h-4 w-4 text-[#F59E0B] shrink-0" />
-                      <span>ADMIN PORTAL</span>
-                    </button>
-                  )}
                 </div>
               </div>
             </motion.div>
@@ -430,27 +414,12 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onSignInClic
                   GET STARTED NOW <ArrowRight className="h-5 w-5" />
                 </button>
 
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-1">
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-1">
                   <button
                     onClick={onSignInClick}
                     className="w-full sm:w-auto text-xs font-bold text-[#6B7280] hover:text-[#111111] dark:text-slate-400 dark:hover:text-white transition-colors py-2 cursor-pointer uppercase tracking-wider"
                   >
                     Already have an account? <span className="text-[#111111] dark:text-[#FBBF24] underline">Sign In</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (onAdminClick) {
-                        onAdminClick();
-                      } else {
-                        onSignInClick();
-                      }
-                    }}
-                    className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#FBBF24]/15 hover:bg-[#FBBF24]/25 text-[#111111] dark:text-[#FBBF24] border border-[#FBBF24]/30 text-xs font-extrabold transition-all cursor-pointer uppercase tracking-wider"
-                  >
-                    <ShieldCheck className="h-4 w-4 text-[#F59E0B] shrink-0" />
-                    <span>ADMIN PORTAL</span>
                   </button>
                 </div>
               </div>

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import {
   onAuthStateChanged,
   signOut as firebaseSignOut,
@@ -13,8 +13,9 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   User as FirebaseUser,
+  IdTokenResult,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, getDocs, query, where } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, sanitizeForFirestore, OperationType } from '../lib/firebase';
 import { UserProfile, UserRole, Business } from '../types';
 
@@ -41,6 +42,14 @@ export function getReadableAuthError(error: unknown): string {
       return 'Too many failed attempts. Please wait a few minutes before trying again.';
     case 'auth/requires-recent-login':
       return 'For security reasons, please confirm your password before deleting your account.';
+    case 'auth/popup-closed-by-user':
+      return 'The Google sign-in window was closed before completing. Please try again.';
+    case 'auth/cancelled-popup-request':
+      return 'The sign-in popup was cancelled. Please try again.';
+    case 'auth/popup-blocked':
+      return 'The sign-in popup was blocked by your browser. Please allow popups for this site and try again.';
+    case 'auth/account-exists-with-different-credential':
+      return 'An account already exists with the same email address using a different sign-in method. Please sign in with your email and password.';
     default:
       return errObj.message || 'Authentication failed. Please try again.';
   }
@@ -49,6 +58,7 @@ export function getReadableAuthError(error: unknown): string {
 interface AuthContextType {
   currentUser: UserProfile | null;
   firebaseUser: FirebaseUser | null;
+  isAdmin: boolean;
   loading: boolean;
   signInWithEmail: (email: string, pass: string) => Promise<void>;
   signUpWithEmail: (
@@ -67,7 +77,7 @@ interface AuthContextType {
       description?: string;
     }
   ) => Promise<void>;
-  signInWithGoogleAdmin: () => Promise<void>;
+  signInWithGoogle: (roleOverride?: UserRole) => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
   sendVerificationEmail: () => Promise<void>;
   checkEmailVerification: () => Promise<boolean>;
@@ -75,27 +85,73 @@ interface AuthContextType {
   reauthenticateUser: (password: string) => Promise<void>;
   deleteAccount: (password?: string) => Promise<void>;
   updateUserProfile: (data: Partial<UserProfile>) => Promise<void>;
-  setUserRole: (role: UserRole) => Promise<void>;
+  getAdminToken: () => Promise<string | null>;
   setSupplierOnboardingStep: (step: number) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
-    // Persistent local session backup for offline/demo support
-    const saved = localStorage.getItem('constrora_user_session') || localStorage.getItem('buildora_user_session');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) { return null; }
-    }
-    return null;
-  });
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  // Real-time sync between Firebase Auth state and Firestore 'users' document
+  // Sync admin custom claim server-side if user is the designated admin.
+  // UX-ONLY NOTICE: The client-side admin email check below is strictly UX-only
+  // (to avoid wasteful network requests for regular non-admin users). The server (/api/admin/claim)
+  // and firestore.rules remain the ONLY security authority.
+  const syncAdminClaimIfEligible = useCallback(async (user: FirebaseUser, allowRetry = false): Promise<boolean> => {
+    // UX-only client check: only proceed if email matches designated admin and is verified
+    const targetAdminEmail = 'buildsafe247@gmail.com';
+    if (!user.email || user.email.toLowerCase() !== targetAdminEmail || !user.emailVerified) {
+      return false;
+    }
+
+    const executeCall = async (timeoutMs: number): Promise<boolean> => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+      try {
+        const rawToken = await user.getIdToken();
+        const res = await fetch('/api/admin/claim', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${rawToken}`,
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal,
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.admin) {
+            // Refresh token once so client picks up the new custom claim
+            const refreshedToken = await user.getIdTokenResult(true);
+            return refreshedToken.claims.admin === true;
+          }
+        }
+      } catch (err) {
+        console.warn('[Admin Claim Sync Warning - treated as not admin]:', err);
+      } finally {
+        clearTimeout(timeoutId);
+      }
+      return false;
+    };
+
+    let granted = await executeCall(8000);
+    // If it timed out or failed on a slow cold start and allowRetry is true, run once more after sign-in
+    if (!granted && allowRetry) {
+      console.log('[Admin Claim Sync]: Retrying claim call after cold start...');
+      granted = await executeCall(8000);
+    }
+    return granted;
+  }, []);
+
+  // Real-time sync between Firebase Auth and Firestore 'users' document
   useEffect(() => {
     let unsubscribeSnapshot: (() => void) | null = null;
+    let loadingFallbackTimeout: NodeJS.Timeout | null = null;
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       setFirebaseUser(user);
@@ -104,16 +160,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         unsubscribeSnapshot();
         unsubscribeSnapshot = null;
       }
+      if (loadingFallbackTimeout) {
+        clearTimeout(loadingFallbackTimeout);
+        loadingFallbackTimeout = null;
+      }
 
       if (user) {
+        // Fallback safety timeout: ensure loading is released within 8s regardless of network delay
+        loadingFallbackTimeout = setTimeout(() => {
+          setLoading(false);
+        }, 8000);
+
+        let isUserAdmin = false;
+        try {
+          const idTokenResult: IdTokenResult = await user.getIdTokenResult();
+          isUserAdmin = idTokenResult.claims.admin === true && Boolean(user.emailVerified);
+
+          // Only request server sync if designated admin email, not possessing claim, and verified
+          if (!isUserAdmin && user.emailVerified && user.email?.toLowerCase() === 'buildsafe247@gmail.com') {
+            isUserAdmin = await syncAdminClaimIfEligible(user);
+          }
+        } catch (tokenErr) {
+          console.warn('[Token Claim Inspection Warning]:', tokenErr);
+        }
+
+        setIsAdmin(isUserAdmin);
+
         const userRef = doc(db, 'users', user.uid);
-        const isExactAdmin = user.email?.toLowerCase() === 'buildsafe247@gmail.com';
 
         try {
           const snap = await getDoc(userRef);
           if (!snap.exists()) {
-            // New user document initialization
             const tempRole = (localStorage.getItem('constrora_temp_role') as UserRole) || 'client';
+            const assignedRole: UserRole = tempRole === 'supplier' ? 'supplier' : 'client';
 
             const newProfile: UserProfile = {
               uid: user.uid,
@@ -121,12 +200,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               email: user.email || '',
               photoURL: user.photoURL || undefined,
               phoneNumber: user.phoneNumber || undefined,
-              role: tempRole,
+              role: assignedRole,
               onboardingCompleted: true,
-              supplierOnboardingCompleted: true,
+              supplierOnboardingCompleted: assignedRole === 'supplier',
               supplierOnboardingStep: 6,
-              clientOnboardingCompleted: true,
+              clientOnboardingCompleted: assignedRole === 'client',
               activeProjectId: 'proj_osogbo_01',
+              emailVerified: Boolean(user.emailVerified),
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             };
@@ -135,64 +215,150 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         } catch (error) {
           console.warn('Error verifying or creating initial Firestore user document:', error);
-        }
-
-        if (isExactAdmin) {
-          fetch('/api/admin/bootstrap', { method: 'POST' }).catch(() => {});
+        } finally {
+          // In case snapshot fails or takes time, ensure loading state progresses
+          setLoading(false);
         }
 
         // Real-time listener for user profile document in Firestore
         unsubscribeSnapshot = onSnapshot(
           userRef,
-          async (docSnap) => {
+          (docSnap) => {
+            if (loadingFallbackTimeout) {
+              clearTimeout(loadingFallbackTimeout);
+              loadingFallbackTimeout = null;
+            }
             if (docSnap.exists()) {
               const profile = docSnap.data() as UserProfile;
-              try {
-                const adminDocRef = doc(db, 'admins', user.uid);
-                const adminSnap = await getDoc(adminDocRef);
-                if (adminSnap.exists() || profile.role === 'admin') {
-                  profile.role = 'admin';
-                  profile.emailVerified = true;
-                }
-              } catch (adminErr) {
-                console.warn('Admin authorization status lookup info:', adminErr);
+              if (isUserAdmin) {
+                profile.role = 'admin';
+                profile.emailVerified = true;
               }
               setCurrentUser(profile);
-              localStorage.setItem('constrora_user_session', JSON.stringify(profile));
-              if (profile.role) {
-                localStorage.setItem('constrora_temp_role', profile.role);
-              }
-              if (profile.supplierOnboardingStep !== undefined) {
-                localStorage.setItem('constrora_supplier_onboarding_step', profile.supplierOnboardingStep.toString());
-              }
             }
             setLoading(false);
           },
           (error) => {
+            if (loadingFallbackTimeout) {
+              clearTimeout(loadingFallbackTimeout);
+              loadingFallbackTimeout = null;
+            }
             console.warn('Real-time Firestore user snapshot error:', error);
             setLoading(false);
           }
         );
       } else {
+        if (loadingFallbackTimeout) {
+          clearTimeout(loadingFallbackTimeout);
+          loadingFallbackTimeout = null;
+        }
         setCurrentUser(null);
-        localStorage.removeItem('constrora_user_session');
+        setIsAdmin(false);
         setLoading(false);
       }
     });
 
     return () => {
+      if (loadingFallbackTimeout) clearTimeout(loadingFallbackTimeout);
       if (unsubscribeSnapshot) unsubscribeSnapshot();
       unsubscribeAuth();
     };
-  }, []);
+  }, [syncAdminClaimIfEligible]);
 
   const signInWithEmail = async (email: string, pass: string) => {
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, pass);
-      const isExactAdmin = email.toLowerCase() === 'buildsafe247@gmail.com';
-      if (isExactAdmin) {
-        fetch('/api/admin/bootstrap', { method: 'POST' }).catch(() => {});
+      const cred = await signInWithEmailAndPassword(auth, email, pass);
+      if (cred.user.emailVerified) {
+        // Run claim call with allowRetry=true so slow cold start doesn't leave admin in normal portal
+        const hasClaim = await syncAdminClaimIfEligible(cred.user, true);
+        setIsAdmin(hasClaim);
+      }
+    } catch (error) {
+      throw new Error(getReadableAuthError(error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signInWithGoogle = async (roleOverride?: UserRole) => {
+    setLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      let isUserAdmin = false;
+      if (user.emailVerified) {
+        // Run claim call with allowRetry=true so slow cold start doesn't leave admin in normal portal
+        isUserAdmin = await syncAdminClaimIfEligible(user, true);
+        setIsAdmin(isUserAdmin);
+      }
+
+      // Check if user document exists in Firestore
+      const userRef = doc(db, 'users', user.uid);
+      const snap = await getDoc(userRef);
+
+      if (!snap.exists()) {
+        // Client initializes standard role ('client' or 'supplier'); server Admin SDK elevates to 'admin' via /api/admin/claim
+        const rawRole = roleOverride || (localStorage.getItem('constrora_temp_role') as UserRole);
+        const chosenRole: UserRole = rawRole === 'supplier' ? 'supplier' : 'client';
+
+        const bizId = chosenRole === 'supplier' ? `biz_${user.uid.slice(0, 8)}` : undefined;
+
+        const newProfile: UserProfile = {
+          uid: user.uid,
+          displayName: user.displayName || user.email?.split('@')[0] || 'Constrora Member',
+          email: user.email || '',
+          photoURL: user.photoURL || undefined,
+          phoneNumber: user.phoneNumber || undefined,
+          role: chosenRole,
+          onboardingCompleted: true,
+          supplierOnboardingCompleted: chosenRole === 'supplier',
+          supplierOnboardingStep: 6,
+          clientOnboardingCompleted: chosenRole === 'client',
+          activeProjectId: 'proj_osogbo_01',
+          businessId: bizId,
+          emailVerified: true, // Google accounts have verified email
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+
+        await setDoc(userRef, sanitizeForFirestore(newProfile));
+
+        if (chosenRole === 'supplier' && bizId) {
+          const newBiz: Business = {
+            businessId: bizId,
+            ownerId: user.uid,
+            businessName: user.displayName ? `${user.displayName} Supplies` : 'Supplier Depot',
+            category: 'Equipment Rental',
+            description: 'Certified supplier providing plant machinery and building materials.',
+            phone: user.phoneNumber || '+234 800 000 0000',
+            whatsapp: user.phoneNumber || '+234 800 000 0000',
+            email: user.email || '',
+            location: {
+              address: 'Industrial Layout',
+              city: 'Osogbo',
+              state: 'Osun State',
+              country: 'Nigeria',
+              latitude: 7.7827,
+              longitude: 4.5418,
+            },
+            verificationStatus: 'LISTED',
+            rating: 5.0,
+            reviewCount: 0,
+            deliveryAvailable: true,
+            photos: [
+              'https://images.unsplash.com/photo-1581094288338-2314dddb7ece?auto=format&fit=crop&w=800&q=80',
+            ],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          await setDoc(doc(db, 'businesses', bizId), sanitizeForFirestore(newBiz));
+        }
+
+        setCurrentUser(newProfile);
       }
     } catch (error) {
       throw new Error(getReadableAuthError(error));
@@ -203,17 +369,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const sendPasswordReset = async (email: string) => {
     try {
-      await firebaseSendPasswordResetEmail(auth, email);
-    } catch (error) {
-      throw new Error(getReadableAuthError(error));
+      await firebaseSendPasswordResetEmail(auth, email.trim().toLowerCase());
+    } catch (error: any) {
+      const code = error?.code || '';
+      if (code === 'auth/user-not-found') {
+        // Neutral handling to prevent email enumeration
+        return;
+      }
+      if (code === 'auth/invalid-email') {
+        throw new Error('The email address format is invalid.');
+      }
+      if (code === 'auth/too-many-requests') {
+        throw new Error('Too many attempts. Please wait a few minutes and try again.');
+      }
+      if (code === 'auth/network-request-failed') {
+        throw new Error('Network connection error. Please check your internet connection and try again.');
+      }
+      throw new Error('Failed to send password reset email. Please try again later.');
     }
   };
 
   const sendVerificationEmail = async () => {
-    if (currentUser?.role === 'admin' || currentUser?.email?.toLowerCase() === 'buildsafe247@gmail.com') {
-      return; // Admins do not require email verification
-    }
-    if (auth.currentUser) {
+    if (auth.currentUser && !auth.currentUser.emailVerified) {
       try {
         await sendEmailVerification(auth.currentUser);
       } catch (err) {
@@ -223,9 +400,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const checkEmailVerification = async (): Promise<boolean> => {
-    if (currentUser?.role === 'admin' || currentUser?.email?.toLowerCase() === 'buildsafe247@gmail.com') {
-      return true; // Admins do not require email verification
-    }
     if (auth.currentUser) {
       try {
         await reload(auth.currentUser);
@@ -260,21 +434,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       const res = await createUserWithEmailAndPassword(auth, email, pass);
-      
-      const isExactAdmin = email.toLowerCase() === 'buildsafe247@gmail.com';
+
+      // Email/password signups cannot assign admin role directly (must verify email first)
       const requestedRole = roleOverride || (localStorage.getItem('constrora_temp_role') as UserRole) || 'client';
-      const userRole: UserRole = (requestedRole === 'admin') ? 'client' : requestedRole;
+      const userRole: UserRole = requestedRole === 'admin' ? 'client' : requestedRole;
 
-      if (!isExactAdmin) {
-        try {
-          await sendEmailVerification(res.user);
-        } catch (e) {
-          console.warn('Initial sendEmailVerification error:', e);
-        }
-      }
-
-      if (isExactAdmin) {
-        fetch('/api/admin/bootstrap', { method: 'POST' }).catch(() => {});
+      try {
+        await sendEmailVerification(res.user);
+      } catch (e) {
+        console.warn('Initial sendEmailVerification error:', e);
       }
 
       const bizId = userRole === 'supplier' ? `biz_${res.user.uid.slice(0, 8)}` : undefined;
@@ -291,7 +459,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clientOnboardingCompleted: userRole === 'client',
         activeProjectId: 'proj_osogbo_01',
         businessId: bizId,
-        emailVerified: isExactAdmin ? true : (res.user.emailVerified || false),
+        emailVerified: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -321,7 +489,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             latitude: 7.7827,
             longitude: 4.5418,
           },
-          verificationStatus: 'VERIFICATION_PENDING',
+          verificationStatus: 'LISTED',
           rating: 5.0,
           reviewCount: 0,
           deliveryAvailable: true,
@@ -335,16 +503,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await setDoc(doc(db, 'businesses', bizId), sanitizedBiz);
       }
 
-      localStorage.removeItem('constrora_demo_active');
-      localStorage.setItem('constrora_temp_role', userRole);
-      if (userRole === 'supplier') {
-        localStorage.setItem('constrora_supplier_onboarding_completed', 'true');
-      } else {
-        localStorage.setItem('constrora_client_onboarding_completed', 'true');
-      }
-
       setCurrentUser(sanitizedProfile as UserProfile);
-      localStorage.setItem('constrora_user_session', JSON.stringify(sanitizedProfile));
     } catch (error) {
       throw new Error(getReadableAuthError(error));
     } finally {
@@ -353,12 +512,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    // Clear all cached local session and application state
     localStorage.removeItem('constrora_user_session');
     localStorage.removeItem('constrora_onboarding_done');
     localStorage.removeItem('constrora_temp_role');
     localStorage.removeItem('constrora_supplier_onboarding_completed');
     localStorage.removeItem('constrora_supplier_onboarding_step');
+    localStorage.removeItem('constrora_client_onboarding_completed');
+    localStorage.removeItem('constrora_demo_active');
+    localStorage.removeItem('constrora_saved_items');
+    localStorage.removeItem('constrora_user_projects');
+    localStorage.removeItem('constrora_active_project_id');
+    sessionStorage.clear();
+
     setCurrentUser(null);
+    setFirebaseUser(null);
+    setIsAdmin(false);
+
     try {
       await firebaseSignOut(auth);
     } catch (e) {
@@ -390,15 +560,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error('No active user session found.');
     }
 
-    // Reauthenticate if password provided
     if (password) {
       await reauthenticateUser(password);
     }
 
-    // TODO: Production app should trigger a Cloud Function (e.g. onUserDeleted) for cascade deletion.
-    
-    // 1. Delete Firebase Auth user FIRST.
-    // If reauthentication is needed, deleteUser will fail here without touching Firestore data.
     try {
       await deleteUser(userObj);
     } catch (err: unknown) {
@@ -411,12 +576,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error(getReadableAuthError(err));
     }
 
-    // 2. Auth deletion succeeded — now perform best-effort cleanup of Firestore documents
+    // Cleanup Firestore documents
     try {
-      // a) Delete users/{uid}
       await deleteDoc(doc(db, 'users', uid));
 
-      // b) If supplier: delete business and subcollections
       const bizId = currentUser?.businessId;
       if (bizId) {
         try {
@@ -426,94 +589,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await deleteDoc(listDoc.ref);
           }
         } catch (e) {
-          console.warn('Error deleting business listings subcollection:', e);
-        }
-
-        try {
-          const quotesRef = collection(db, 'businesses', bizId, 'quotes');
-          const quotesSnap = await getDocs(quotesRef);
-          for (const qDoc of quotesSnap.docs) {
-            await deleteDoc(qDoc.ref);
-          }
-        } catch (e) {
-          console.warn('Error deleting business quotes subcollection:', e);
+          console.warn('Error deleting listings:', e);
         }
 
         try {
           await deleteDoc(doc(db, 'businesses', bizId));
         } catch (e) {
-          console.warn('Error deleting business document:', e);
+          console.warn('Error deleting business:', e);
         }
-      } else {
-        try {
-          const bizQuery = query(collection(db, 'businesses'), where('ownerId', '==', uid));
-          const bizSnap = await getDocs(bizQuery);
-          for (const bDoc of bizSnap.docs) {
-            await deleteDoc(bDoc.ref);
-          }
-        } catch (e) {
-          console.warn('Error deleting owner businesses:', e);
-        }
-      }
-
-      // c) Delete projects owned by user
-      try {
-        const projQuery = query(collection(db, 'projects'), where('ownerId', '==', uid));
-        const projSnap = await getDocs(projQuery);
-        for (const pDoc of projSnap.docs) {
-          await deleteDoc(pDoc.ref);
-        }
-      } catch (e) {
-        console.warn('Error deleting user projects:', e);
-      }
-
-      // d) Delete user quote requests
-      try {
-        const qrQuery = query(collection(db, 'quoteRequests'), where('clientId', '==', uid));
-        const qrSnap = await getDocs(qrQuery);
-        for (const qrDoc of qrSnap.docs) {
-          await deleteDoc(qrDoc.ref);
-        }
-      } catch (e) {
-        console.warn('Error deleting user quote requests:', e);
       }
     } catch (err) {
-      console.warn('Error cleaning up Firestore user data after auth deletion:', err);
+      console.warn('Error cleaning up Firestore data:', err);
     }
 
-    // 3. Clear all user session and local storage state
-    localStorage.removeItem('constrora_user_session');
-    localStorage.removeItem('constrora_temp_role');
-    localStorage.removeItem('constrora_supplier_onboarding_completed');
-    localStorage.removeItem('constrora_supplier_onboarding_step');
-    localStorage.removeItem('constrora_client_onboarding_completed');
-    localStorage.removeItem('constrora_demo_active');
-    localStorage.removeItem('constrora_saved_items');
-    localStorage.removeItem('constrora_user_projects');
-    localStorage.removeItem('constrora_active_project_id');
-
-    setCurrentUser(null);
-    setFirebaseUser(null);
-
-    try {
-      await firebaseSignOut(auth);
-    } catch (e) {
-      // Ignore error if user deleted
-    }
+    await signOut();
   };
 
   const updateUserProfile = async (data: Partial<UserProfile>) => {
     if (!currentUser) return;
     const cleanData = { ...data };
-    const isExactAdmin = currentUser.role === 'admin' || currentUser.email?.toLowerCase() === 'buildsafe247@gmail.com';
-    if (cleanData.role === 'admin' && !isExactAdmin) {
-      console.warn('updateUserProfile: Non-admin users cannot promote themselves to admin role.');
+
+    // Disallow self-promotion to admin role through client updates
+    if (cleanData.role === 'admin' && !isAdmin) {
       delete cleanData.role;
     }
+
     const updated = { ...currentUser, ...cleanData, updatedAt: new Date().toISOString() };
     const sanitizedLocal = sanitizeForFirestore(updated);
     setCurrentUser(sanitizedLocal as UserProfile);
-    localStorage.setItem('constrora_user_session', JSON.stringify(sanitizedLocal));
 
     const uid = firebaseUser?.uid || auth.currentUser?.uid || currentUser.uid;
     if (uid) {
@@ -529,81 +632,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signInWithGoogleAdmin = async () => {
-    setLoading(true);
+  const getAdminToken = async (): Promise<string | null> => {
+    const user = auth.currentUser || firebaseUser;
+    if (!user) return null;
     try {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: 'select_account' });
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      const authenticatedEmail = user.email?.toLowerCase() || '';
-
-      const isExactAdmin = authenticatedEmail === 'buildsafe247@gmail.com';
-      if (isExactAdmin) {
-        await fetch('/api/admin/bootstrap', { method: 'POST' }).catch(() => {});
-      }
-
-      const adminDocRef = doc(db, 'admins', user.uid);
-      let isAdminDoc = false;
-      try {
-        const adminSnap = await getDoc(adminDocRef);
-        isAdminDoc = adminSnap.exists();
-      } catch (e) {
-        console.warn('Google admin doc read info:', e);
-      }
-
-      if (!isExactAdmin && !isAdminDoc) {
-        await firebaseSignOut(auth);
-        throw new Error('Access denied. This Google account is not an authorized administrator.');
-      }
-
-      const userRef = doc(db, 'users', user.uid);
-      let snapData: Partial<UserProfile> = {};
-      try {
-        const snap = await getDoc(userRef);
-        if (snap.exists()) {
-          snapData = snap.data() as UserProfile;
-        }
-      } catch (e) {
-        console.warn('Google admin user doc read info:', e);
-      }
-
-      const adminProfile: UserProfile = {
-        uid: user.uid,
-        displayName: user.displayName || snapData.displayName || 'Constrora Admin',
-        email: authenticatedEmail || user.email || 'buildsafe247@gmail.com',
-        photoURL: user.photoURL || undefined,
-        role: 'admin',
-        onboardingCompleted: true,
-        supplierOnboardingCompleted: true,
-        supplierOnboardingStep: 6,
-        clientOnboardingCompleted: true,
-        activeProjectId: 'proj_osogbo_01',
-        createdAt: snapData.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      setCurrentUser(adminProfile);
-      localStorage.setItem('constrora_user_session', JSON.stringify(adminProfile));
-    } catch (error: unknown) {
-      throw new Error(getReadableAuthError(error));
-    } finally {
-      setLoading(false);
+      return await user.getIdToken();
+    } catch {
+      return null;
     }
-  };
-
-  const setUserRole = async (role: UserRole) => {
-    if (role === 'admin' && currentUser?.role !== 'admin' && currentUser?.email?.toLowerCase() !== 'buildsafe247@gmail.com') {
-      console.warn('setUserRole: Self-service users cannot set admin role.');
-      return;
-    }
-    const validRole = (role === 'supplier' ? 'supplier' : 'client') as UserRole;
-    localStorage.setItem('constrora_temp_role', validRole);
-    await updateUserProfile({ role: validRole });
   };
 
   const setSupplierOnboardingStep = async (step: number) => {
-    localStorage.setItem('constrora_supplier_onboarding_step', step.toString());
     await updateUserProfile({ supplierOnboardingStep: step });
   };
 
@@ -612,10 +651,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         currentUser,
         firebaseUser,
+        isAdmin,
         loading,
         signInWithEmail,
         signUpWithEmail,
-        signInWithGoogleAdmin,
+        signInWithGoogle,
         sendPasswordReset,
         sendVerificationEmail,
         checkEmailVerification,
@@ -623,7 +663,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         reauthenticateUser,
         deleteAccount,
         updateUserProfile,
-        setUserRole,
+        getAdminToken,
         setSupplierOnboardingStep,
       }}
     >

@@ -69,7 +69,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   useEffect(() => {
     const timer = setInterval(() => {
       setPlaceholderIndex((prev) => (prev + 1) % SEARCH_PLACEHOLDERS.length);
-    }, 3000);
+    }, 3200);
     return () => clearInterval(timer);
   }, []);
 
@@ -80,29 +80,34 @@ export const HomeView: React.FC<HomeViewProps> = ({
     }
   };
 
+  // Counts by category
+  const materialCount = listings.filter((l) => l.type === 'material').length;
+  const equipmentCount = listings.filter((l) => l.type === 'equipment').length;
+  const logisticsCount = listings.filter((l) => l.type === 'logistics').length;
+
   const categories = [
     {
       id: 'CONSTRUCTION MATERIALS',
       title: 'Materials',
-      subtitle: 'Cement, rebar, blocks, aggregates',
+      subtitle: `${materialCount} listings · Cement, rebar, aggregates`,
       icon: Package,
     },
     {
       id: 'CONSTRUCTION EQUIPMENT',
-      title: 'Equipment',
-      subtitle: 'Excavators, mixers, power, compaction',
+      title: 'Plant & Equipment',
+      subtitle: `${equipmentCount} listings · Excavators, mixers, power`,
       icon: Wrench,
     },
     {
       id: 'CONSTRUCTION LOGISTICS',
-      title: 'Logistics',
-      subtitle: 'Tippers, lowbeds, haulage services',
+      title: 'Site Logistics',
+      subtitle: `${logisticsCount} listings · Tippers, lowbeds, haulage`,
       icon: Truck,
     },
     {
       id: 'CONSTRUCTION BUSINESSES',
-      title: 'Businesses',
-      subtitle: 'Material depots, rental yards',
+      title: 'Verified Suppliers',
+      subtitle: 'Depots, fleet yards, trade stores',
       icon: Building2,
     },
   ];
@@ -115,121 +120,146 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
   return (
     <div className="space-y-8 pb-20">
-      {/* Client Discovery Header */}
-      <div className="rounded-3xl bg-[#F7F7F5] dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] p-6 sm:p-10 space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E5E5] dark:border-[#374151] pb-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-black uppercase tracking-widest text-[#111111] dark:text-[#FBBF24] bg-[#FBBF24]/20 px-3 py-1 rounded-lg border border-[#FBBF24]/40">
-              CONSTRORA DISCOVERY
-            </span>
+      {/* Industrial Hero Discovery Box */}
+      <section className="rounded-xl bg-white dark:bg-[#18181B] border border-zinc-200 dark:border-zinc-800 p-6 sm:p-10 space-y-6">
+        {/* Active Site Header Strip */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 dark:border-zinc-800 pb-4">
+          <div className="flex items-center gap-2 text-xs font-bold text-amber-600 dark:text-[#FBBF24] uppercase tracking-wider">
+            <span>Heavy Machinery</span>
+            <span aria-hidden="true" className="text-zinc-300 dark:text-zinc-700">·</span>
+            <span>Certified Materials</span>
+            <span aria-hidden="true" className="text-zinc-300 dark:text-zinc-700">·</span>
+            <span>Site Logistics</span>
           </div>
+
+          <button
+            onClick={onOpenProjectModal}
+            className="flex items-center gap-1.5 text-xs font-semibold text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white transition-colors cursor-pointer group"
+          >
+            <MapPin className="h-3.5 w-3.5 text-amber-500" />
+            <span>Site: <strong className="text-zinc-900 dark:text-zinc-100">{activeProject.name}</strong> ({activeProject.location.city})</span>
+            <span className="text-amber-500 font-bold ml-1 group-hover:underline">Change</span>
+          </button>
         </div>
 
         {/* User Greeting & Question */}
-        <div className="space-y-1">
-          <p className="text-xs sm:text-sm font-bold text-[#6B7280] dark:text-[#9CA3AF] uppercase tracking-wider">
+        <div className="space-y-2">
+          <p className="text-xs sm:text-sm font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
             {getGreetingTime()}, {userName}
           </p>
-          <h1 className="font-['Cabinet_Grotesk'] text-3xl sm:text-5xl font-black text-[#111111] dark:text-white leading-tight uppercase tracking-tight">
-            WHAT DO YOU NEED TO <span className="text-[#F59E0B] dark:text-[#FBBF24]">BUILD?</span>
+          <h1 className="font-['Cabinet_Grotesk'] text-3xl sm:text-5xl font-black text-zinc-950 dark:text-white leading-tight uppercase tracking-tight text-balance">
+            WHAT DO YOU NEED TO <span className="text-amber-500 dark:text-[#FBBF24]">BUILD?</span>
           </h1>
-          <p className="text-xs sm:text-sm text-[#6B7280] dark:text-[#9CA3AF] font-medium">
-            Find what you need to build — heavy equipment, materials & transport near{' '}
-            <strong className="text-[#111111] dark:text-white">{activeProject.name}</strong> ({activeProject.location.city}).
+          <p className="text-sm text-zinc-600 dark:text-zinc-300 font-medium max-w-2xl text-pretty">
+            Locate heavy machinery, certified building materials and tipper haulage within immediate reach of{' '}
+            <strong className="text-zinc-950 dark:text-white">{activeProject.location.city}</strong>.
           </p>
         </div>
 
         {/* Search Field */}
-        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2 pt-1">
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2.5 pt-1">
           <div className="relative flex-1">
-            <Search className="absolute left-4 top-4 h-5 w-5 text-[#6B7280] dark:text-[#9CA3AF]" />
+            <Search className="absolute left-4 top-3.5 h-5 w-5 text-zinc-400 dark:text-zinc-500" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={SEARCH_PLACEHOLDERS[placeholderIndex]}
-              className="w-full bg-white dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#374151] rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold text-[#111111] dark:text-white placeholder-[#9CA3AF] focus:outline-none focus:border-[#FBBF24] focus:ring-2 focus:ring-[#FBBF24]/20 transition-all"
+              className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg pl-12 pr-10 py-3.5 text-sm font-semibold text-zinc-950 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:border-[#FBBF24] focus:ring-2 focus:ring-[#FBBF24]/20 transition-all"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3.5 top-3.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 p-0.5 cursor-pointer"
+                aria-label="Clear search query"
+              >
+                ✕
+              </button>
+            )}
           </div>
           <button
             type="submit"
-            className="bg-[#FBBF24] hover:bg-[#F59E0B] text-[#111111] font-black px-8 py-3.5 rounded-2xl text-xs sm:text-sm transition-all cursor-pointer uppercase tracking-wider shrink-0 shadow-xs"
+            className="bg-[#FBBF24] hover:bg-[#F59E0B] text-zinc-950 font-black px-8 py-3.5 rounded-lg text-xs sm:text-sm transition-colors cursor-pointer uppercase tracking-wider shrink-0 min-h-[44px]"
           >
             Search Resources
           </button>
         </form>
 
-        {/* Popular Search Chips */}
-        <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-[#6B7280] dark:text-[#9CA3AF] pt-1">
-          <span className="text-[#6B7280] dark:text-[#9CA3AF] text-[11px] uppercase tracking-wider">POPULAR:</span>
-          {['CAT 320 Excavator', 'Dangote Cement 50kg', '350L Concrete Mixer', '10 Ton Tipper'].map(
+        {/* Popular Search Terms */}
+        <div className="flex flex-wrap items-center gap-2 text-xs font-bold pt-1">
+          <span className="text-zinc-400 dark:text-zinc-500 text-[11px] uppercase tracking-wider">POPULAR:</span>
+          {['CAT 320 Excavator', 'Dangote Cement 50kg', '350L Concrete Mixer', '10 Ton Tipper', 'Sharp Sand 20T'].map(
             (term, idx) => (
               <button
                 key={idx}
                 onClick={() => onSearchSubmit(term)}
-                className="bg-white dark:bg-[#111111] hover:bg-[#FBBF24]/10 text-[#111111] dark:text-[#F3F4F6] px-3 py-1 rounded-xl border border-[#E5E5E5] dark:border-[#374151] hover:border-[#FBBF24] text-[11px] font-bold transition-colors cursor-pointer"
+                className="bg-zinc-100 hover:bg-[#FBBF24]/20 text-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 px-3 py-1 rounded border border-zinc-200 dark:border-zinc-800 hover:border-amber-400 text-[11px] font-semibold transition-colors cursor-pointer"
               >
                 {term}
               </button>
             )
           )}
         </div>
-      </div>
+      </section>
 
       {/* Category Shortcuts */}
-      <div className="space-y-3">
-        <h2 className="text-xs font-black uppercase tracking-widest text-[#6B7280] dark:text-[#9CA3AF] px-1">
-          Resource Categories
-        </h2>
+      <section className="space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+            Resource Categories
+          </h2>
+          <span className="text-xs text-zinc-400 dark:text-zinc-500 font-medium">
+            {listings.length} verified listings
+          </span>
+        </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           {categories.map((cat) => {
             const IconComponent = cat.icon;
             return (
               <button
                 key={cat.id}
                 onClick={() => onSelectCategory(cat.id)}
-                className="group p-4 rounded-2xl bg-white dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] hover:border-[#FBBF24] dark:hover:border-[#FBBF24] transition-all text-left flex items-center justify-between cursor-pointer shadow-xs"
+                className="group p-4 rounded-xl bg-white dark:bg-[#18181B] border border-zinc-200 dark:border-zinc-800 hover:border-[#FBBF24] dark:hover:border-[#FBBF24] transition-all text-left flex items-center justify-between cursor-pointer"
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="p-2.5 rounded-xl bg-[#F7F7F5] dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#374151] text-[#F59E0B] dark:text-[#FBBF24] shrink-0 group-hover:border-[#FBBF24]/60 transition-colors">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-500 dark:text-[#FBBF24] shrink-0 group-hover:bg-[#FBBF24] group-hover:text-zinc-950 transition-colors">
                     <IconComponent className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="font-['Cabinet_Grotesk'] text-sm font-black text-[#111111] dark:text-white group-hover:text-[#F59E0B] dark:group-hover:text-[#FBBF24] transition-colors truncate">
+                    <h3 className="font-['Cabinet_Grotesk'] text-sm font-black text-zinc-950 dark:text-white group-hover:text-amber-500 dark:group-hover:text-[#FBBF24] transition-colors truncate">
                       {cat.title}
                     </h3>
-                    <p className="text-[11px] text-[#6B7280] dark:text-[#9CA3AF] truncate font-medium">
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate font-medium">
                       {cat.subtitle}
                     </p>
                   </div>
                 </div>
 
-                <ArrowRight className="h-4 w-4 text-[#6B7280] dark:text-[#9CA3AF] group-hover:text-[#F59E0B] dark:group-hover:text-[#FBBF24] group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+                <ArrowRight className="h-4 w-4 text-zinc-400 group-hover:text-amber-500 dark:group-hover:text-[#FBBF24] group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
               </button>
             );
           })}
         </div>
-      </div>
+      </section>
 
       {/* Near Your Project */}
-      <div className="space-y-4">
+      <section className="space-y-4">
         <div className="flex items-center justify-between px-1">
           <div>
-            <h2 className="font-['Cabinet_Grotesk'] text-xl sm:text-2xl font-black text-[#111111] dark:text-white uppercase tracking-tight flex items-center gap-2">
+            <h2 className="font-['Cabinet_Grotesk'] text-xl sm:text-2xl font-black text-zinc-950 dark:text-white uppercase tracking-tight flex items-baseline gap-2">
               <span>Near Your Project</span>
-              <span className="text-xs bg-[#FBBF24]/15 text-[#111111] dark:text-[#FBBF24] font-black px-2.5 py-0.5 rounded-lg border border-[#FBBF24]/40">
-                📍 {activeProject.location.city}
-              </span>
+              <span className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">· {activeProject.location.city}</span>
             </h2>
-            <p className="text-xs text-[#6B7280] dark:text-[#9CA3AF] font-medium mt-0.5">
-              Available equipment, materials & transport near {activeProject.name}
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 font-medium mt-0.5">
+              Available plant, materials and logistics around {activeProject.name}
             </p>
           </div>
 
           <button
             onClick={() => onSelectCategory('ALL')}
-            className="text-xs font-black text-[#F59E0B] dark:text-[#FBBF24] hover:text-[#D97706] flex items-center gap-1 uppercase tracking-wider shrink-0"
+            className="text-xs font-black text-amber-500 hover:text-amber-600 dark:text-[#FBBF24] flex items-center gap-1 uppercase tracking-wider shrink-0 cursor-pointer"
           >
             <span>See all ({listings.length})</span>
             <ArrowRight className="h-4 w-4" />
@@ -249,22 +279,22 @@ export const HomeView: React.FC<HomeViewProps> = ({
             ))}
           </div>
         ) : (
-          <div className="rounded-2xl bg-[#F7F7F5] dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] p-10 text-center space-y-3">
-            <MapPin className="h-10 w-10 text-[#F59E0B] mx-auto" />
-            <h3 className="font-black text-[#111111] dark:text-white text-sm uppercase">No construction resources found</h3>
-            <p className="text-xs text-[#6B7280] dark:text-[#9CA3AF] max-w-xs mx-auto">
+          <div className="rounded-xl bg-white dark:bg-[#18181B] border border-zinc-200 dark:border-zinc-800 p-10 text-center space-y-3">
+            <MapPin className="h-10 w-10 text-amber-500 mx-auto" />
+            <h3 className="font-black text-zinc-950 dark:text-white text-sm uppercase">No construction resources found</h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-xs mx-auto">
               Try a different search or adjust your active project location.
             </p>
           </div>
         )}
-      </div>
+      </section>
 
-      {/* Saved Section Entry Point if User has saved items */}
+      {/* Saved Resources Section if any */}
       {savedListings.length > 0 && (
-        <div className="space-y-4 pt-4 border-t border-[#E5E5E5] dark:border-[#374151]">
+        <section className="space-y-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
           <div className="flex items-center justify-between px-1">
-            <h2 className="font-['Cabinet_Grotesk'] text-lg font-black text-[#111111] dark:text-white uppercase tracking-tight flex items-center gap-2">
-              <Bookmark className="h-4 w-4 text-[#F59E0B]" />
+            <h2 className="font-['Cabinet_Grotesk'] text-lg font-black text-zinc-950 dark:text-white uppercase tracking-tight flex items-center gap-2">
+              <Bookmark className="h-4 w-4 text-amber-500" />
               <span>Saved Resources</span>
             </h2>
           </div>
@@ -274,29 +304,28 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <div
                 key={item.listingId}
                 onClick={() => onSelectListing(item)}
-                className="p-3.5 rounded-2xl bg-white dark:bg-[#1F2937] border border-[#E5E5E5] dark:border-[#374151] hover:border-[#FBBF24] transition-colors cursor-pointer flex items-center gap-3 shadow-xs"
+                className="p-3.5 rounded-xl bg-white dark:bg-[#18181B] border border-zinc-200 dark:border-zinc-800 hover:border-[#FBBF24] transition-colors cursor-pointer flex items-center gap-3"
               >
-                <div className="h-12 w-12 rounded-xl bg-[#F7F7F5] dark:bg-[#111111] overflow-hidden shrink-0 border border-[#E5E5E5] dark:border-[#374151]">
+                <div className="h-12 w-12 rounded-lg bg-zinc-100 dark:bg-zinc-900 overflow-hidden shrink-0 border border-zinc-200 dark:border-zinc-800">
                   {item.photos && item.photos[0] ? (
                     <img src={item.photos[0]} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                   ) : (
-                    <div className="h-full w-full flex items-center justify-center text-[#6B7280] dark:text-slate-600">
+                    <div className="h-full w-full flex items-center justify-center text-zinc-400">
                       <Layers className="h-5 w-5" />
                     </div>
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h4 className="text-xs font-black text-[#111111] dark:text-white truncate">{item.title}</h4>
-                  <p className="text-[10px] font-bold text-[#111111] dark:text-[#FBBF24] mt-0.5">
+                  <h4 className="text-xs font-black text-zinc-950 dark:text-white truncate">{item.title}</h4>
+                  <p className="text-[11px] font-bold text-amber-600 dark:text-[#FBBF24] mt-0.5">
                     {item.rental?.dailyPrice ? `₦${item.rental.dailyPrice.toLocaleString()}/day` : item.price ? `₦${item.price.toLocaleString()}` : 'Contact'}
                   </p>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
     </div>
   );
 };
-
