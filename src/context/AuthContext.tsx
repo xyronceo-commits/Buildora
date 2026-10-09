@@ -97,61 +97,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Sync admin custom claim server-side if user is the designated admin.
-  // UX-ONLY NOTICE: The client-side admin email check below is strictly UX-only
-  // (to avoid wasteful network requests for regular non-admin users). The server (/api/admin/claim)
-  // and firestore.rules remain the ONLY security authority.
-  const syncAdminClaimIfEligible = useCallback(async (user: FirebaseUser, allowRetry = false): Promise<boolean> => {
-    // UX-only client check: only proceed if email matches designated admin and is verified
-    const targetAdminEmail = 'buildsafe247@gmail.com';
-    if (!user.email || user.email.toLowerCase() !== targetAdminEmail || !user.emailVerified) {
+  // Sync admin custom claim server-side if user is the designated admin
+  const syncAdminClaimIfEligible = useCallback(async (user: FirebaseUser): Promise<boolean> => {
+    if (!user.emailVerified) {
       return false;
     }
 
-    const executeCall = async (timeoutMs: number): Promise<boolean> => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const rawToken = await user.getIdToken();
+      const res = await fetch('/api/admin/claim', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${rawToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      try {
-        const rawToken = await user.getIdToken();
-        const res = await fetch('/api/admin/claim', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${rawToken}`,
-            'Content-Type': 'application/json',
-          },
-          signal: controller.signal,
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && data.admin) {
-            // Refresh token once so client picks up the new custom claim
-            const refreshedToken = await user.getIdTokenResult(true);
-            return refreshedToken.claims.admin === true;
-          }
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.admin) {
+          // Refresh token once so client picks up the new custom claim
+          const refreshedToken = await user.getIdTokenResult(true);
+          return refreshedToken.claims.admin === true;
         }
-      } catch (err) {
-        console.warn('[Admin Claim Sync Warning - treated as not admin]:', err);
-      } finally {
-        clearTimeout(timeoutId);
       }
-      return false;
-    };
-
-    let granted = await executeCall(8000);
-    // If it timed out or failed on a slow cold start and allowRetry is true, run once more after sign-in
-    if (!granted && allowRetry) {
-      console.log('[Admin Claim Sync]: Retrying claim call after cold start...');
-      granted = await executeCall(8000);
+    } catch (err) {
+      console.warn('[Admin Claim Sync Warning]:', err);
     }
-    return granted;
+    return false;
   }, []);
 
   // Real-time sync between Firebase Auth and Firestore 'users' document
   useEffect(() => {
     let unsubscribeSnapshot: (() => void) | null = null;
-    let loadingFallbackTimeout: NodeJS.Timeout | null = null;
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       setFirebaseUser(user);
@@ -160,24 +138,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         unsubscribeSnapshot();
         unsubscribeSnapshot = null;
       }
-      if (loadingFallbackTimeout) {
-        clearTimeout(loadingFallbackTimeout);
-        loadingFallbackTimeout = null;
-      }
 
       if (user) {
-        // Fallback safety timeout: ensure loading is released within 8s regardless of network delay
-        loadingFallbackTimeout = setTimeout(() => {
-          setLoading(false);
-        }, 8000);
-
         let isUserAdmin = false;
         try {
           const idTokenResult: IdTokenResult = await user.getIdTokenResult();
           isUserAdmin = idTokenResult.claims.admin === true && Boolean(user.emailVerified);
 
-          // Only request server sync if designated admin email, not possessing claim, and verified
-          if (!isUserAdmin && user.emailVerified && user.email?.toLowerCase() === 'buildsafe247@gmail.com') {
+          // If not possessing claim and email is verified, request server sync
+          if (!isUserAdmin && user.emailVerified) {
             isUserAdmin = await syncAdminClaimIfEligible(user);
           }
         } catch (tokenErr) {
@@ -191,6 +160,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           const snap = await getDoc(userRef);
           if (!snap.exists()) {
+            // New user document initialization: client always writes 'client' or 'supplier', never 'admin'
+            // Server Admin SDK elevates to 'admin' via /api/admin/claim
             const tempRole = (localStorage.getItem('constrora_temp_role') as UserRole) || 'client';
             const assignedRole: UserRole = tempRole === 'supplier' ? 'supplier' : 'client';
 
@@ -215,19 +186,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         } catch (error) {
           console.warn('Error verifying or creating initial Firestore user document:', error);
-        } finally {
-          // In case snapshot fails or takes time, ensure loading state progresses
-          setLoading(false);
         }
 
         // Real-time listener for user profile document in Firestore
         unsubscribeSnapshot = onSnapshot(
           userRef,
           (docSnap) => {
-            if (loadingFallbackTimeout) {
-              clearTimeout(loadingFallbackTimeout);
-              loadingFallbackTimeout = null;
-            }
             if (docSnap.exists()) {
               const profile = docSnap.data() as UserProfile;
               if (isUserAdmin) {
@@ -239,19 +203,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setLoading(false);
           },
           (error) => {
-            if (loadingFallbackTimeout) {
-              clearTimeout(loadingFallbackTimeout);
-              loadingFallbackTimeout = null;
-            }
             console.warn('Real-time Firestore user snapshot error:', error);
             setLoading(false);
           }
         );
       } else {
-        if (loadingFallbackTimeout) {
-          clearTimeout(loadingFallbackTimeout);
-          loadingFallbackTimeout = null;
-        }
         setCurrentUser(null);
         setIsAdmin(false);
         setLoading(false);
@@ -259,7 +215,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => {
-      if (loadingFallbackTimeout) clearTimeout(loadingFallbackTimeout);
       if (unsubscribeSnapshot) unsubscribeSnapshot();
       unsubscribeAuth();
     };
@@ -270,8 +225,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const cred = await signInWithEmailAndPassword(auth, email, pass);
       if (cred.user.emailVerified) {
-        // Run claim call with allowRetry=true so slow cold start doesn't leave admin in normal portal
-        const hasClaim = await syncAdminClaimIfEligible(cred.user, true);
+        const hasClaim = await syncAdminClaimIfEligible(cred.user);
         setIsAdmin(hasClaim);
       }
     } catch (error) {
@@ -291,8 +245,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       let isUserAdmin = false;
       if (user.emailVerified) {
-        // Run claim call with allowRetry=true so slow cold start doesn't leave admin in normal portal
-        isUserAdmin = await syncAdminClaimIfEligible(user, true);
+        isUserAdmin = await syncAdminClaimIfEligible(user);
         setIsAdmin(isUserAdmin);
       }
 
@@ -368,25 +321,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const sendPasswordReset = async (email: string) => {
+    const trimmed = (email || '').trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!trimmed || !emailRegex.test(trimmed)) {
+      throw new Error('The email address format is invalid.');
+    }
     try {
-      await firebaseSendPasswordResetEmail(auth, email.trim().toLowerCase());
+      await firebaseSendPasswordResetEmail(auth, trimmed);
     } catch (error: any) {
       const code = error?.code || '';
-      if (code === 'auth/user-not-found') {
-        // Neutral handling to prevent email enumeration
+      // Neutral handling for non-existent users to prevent email enumeration
+      if (code === 'auth/user-not-found' || code === 'auth/invalid-credential') {
+        console.log('Reset email requested');
         return;
       }
-      if (code === 'auth/invalid-email') {
-        throw new Error('The email address format is invalid.');
-      }
-      if (code === 'auth/too-many-requests') {
-        throw new Error('Too many attempts. Please wait a few minutes and try again.');
-      }
-      if (code === 'auth/network-request-failed') {
-        throw new Error('Network connection error. Please check your internet connection and try again.');
-      }
-      throw new Error('Failed to send password reset email. Please try again later.');
+      throw new Error(getReadableAuthError(error));
     }
+    console.log('Reset email requested');
   };
 
   const sendVerificationEmail = async () => {

@@ -9,7 +9,6 @@ interface AuthModalProps {
   onClose: () => void;
   initialRole?: UserRole;
   initialIsSignUp?: boolean;
-  initialMode?: 'signin' | 'signup' | 'forgot';
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -17,7 +16,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   initialRole = 'client',
   initialIsSignUp = false,
-  initialMode,
 }) => {
   const {
     signInWithEmail,
@@ -29,7 +27,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   } = useAuth();
 
   const [mode, setMode] = useState<'signin' | 'signup' | 'forgot' | 'verify'>(
-    initialMode || (initialIsSignUp ? 'signup' : 'signin')
+    initialIsSignUp ? 'signup' : 'signin'
   );
   const [role, setRole] = useState<UserRole>(initialRole);
 
@@ -53,20 +51,41 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [resetCooldown, setResetCooldown] = useState(0);
+
+  // 60-Second Cooldown Timer for Password Reset Flow
+  const [cooldown, setCooldown] = useState<number>(() => {
+    try {
+      const stored = sessionStorage.getItem('constrora_reset_cooldown_expiry');
+      if (stored) {
+        const remaining = Math.ceil((parseInt(stored, 10) - Date.now()) / 1000);
+        return remaining > 0 ? remaining : 0;
+      }
+    } catch {
+      // Ignore sessionStorage errors
+    }
+    return 0;
+  });
 
   useEffect(() => {
-    if (resetCooldown <= 0) return;
-    const interval = setInterval(() => {
-      setResetCooldown((prev) => (prev > 1 ? prev - 1 : 0));
+    if (cooldown <= 0) return;
+    const timer = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          try {
+            sessionStorage.removeItem('constrora_reset_cooldown_expiry');
+          } catch {}
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
-    return () => clearInterval(interval);
-  }, [resetCooldown]);
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
   useEffect(() => {
     if (isOpen) {
       setRole(initialRole);
-      setMode(initialMode || (initialIsSignUp ? 'signup' : 'signin'));
+      setMode(initialIsSignUp ? 'signup' : 'signin');
       setError(null);
       setSuccessMsg(null);
       setDisplayName('');
@@ -80,6 +99,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setState('Osun State');
       setBusinessCategory('Equipment Rental');
       setDescription('');
+
+      // Check and sync remaining cooldown from sessionStorage
+      try {
+        const stored = sessionStorage.getItem('constrora_reset_cooldown_expiry');
+        if (stored) {
+          const remaining = Math.ceil((parseInt(stored, 10) - Date.now()) / 1000);
+          setCooldown(remaining > 0 ? remaining : 0);
+        } else {
+          setCooldown(0);
+        }
+      } catch {
+        setCooldown(0);
+      }
     }
   }, [isOpen, initialRole, initialIsSignUp]);
 
@@ -87,7 +119,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const handleRoleSwitch = (newRole: UserRole) => {
     setRole(newRole);
-    localStorage.setItem('constrora_temp_role', newRole);
+    try {
+      localStorage.setItem('constrora_temp_role', newRole);
+    } catch {}
   };
 
   const handleGoogleSignIn = async () => {
@@ -96,7 +130,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setGoogleLoading(true);
 
     try {
-      localStorage.setItem('constrora_temp_role', role);
+      try {
+        localStorage.setItem('constrora_temp_role', role);
+      } catch {}
       await signInWithGoogle(role);
       onClose();
     } catch (err: any) {
@@ -147,10 +183,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       }
     }
 
+    if (mode === 'forgot') {
+      const trimmedEmail = email.trim().toLowerCase();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
+        setError('The email address format is invalid.');
+        return;
+      }
+      if (cooldown > 0) {
+        setError(`Please wait ${cooldown} seconds before requesting another reset link.`);
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
-      localStorage.setItem('constrora_temp_role', role);
+      if (mode !== 'forgot') {
+        try {
+          localStorage.setItem('constrora_temp_role', role);
+        } catch {}
+      }
 
       if (mode === 'signup') {
         await signUpWithEmail(
@@ -177,17 +230,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         onClose();
       } else if (mode === 'forgot') {
         const trimmedEmail = email.trim().toLowerCase();
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
-          setError('The email address format is invalid.');
-          return;
-        }
         await sendPasswordReset(trimmedEmail);
-        setSuccessMsg('If an account exists for this email, a reset link has been sent. Check your inbox and spam folder.');
-        setResetCooldown(60);
+        setSuccessMsg(
+          'If an account exists for this email, a password reset link has been sent. Check your inbox and spam folder.'
+        );
+        const expiry = Date.now() + 60 * 1000;
+        try {
+          sessionStorage.setItem('constrora_reset_cooldown_expiry', expiry.toString());
+        } catch {}
+        setCooldown(60);
       }
     } catch (err: any) {
-      setError(err?.message || 'Authentication failed. Please check your credentials.');
+      setError(err.message || 'Authentication failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -202,7 +256,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           initial={{ scale: 0.98, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.98, opacity: 0 }}
-          className="relative w-full max-w-md rounded-3xl bg-white dark:bg-[#18181B] border border-[#E5E5E5] dark:border-[#27272A] p-6 sm:p-8 text-[#111111] dark:text-white my-8 max-h-[90vh] overflow-y-auto"
+          className="relative w-full max-w-md rounded-3xl bg-white dark:bg-[#18181B] border border-[#E5E5E5] dark:border-[#27272A] p-6 sm:p-8 shadow-2xl text-[#111111] dark:text-white my-8 max-h-[90vh] overflow-y-auto"
         >
           <button
             onClick={onClose}
@@ -221,7 +275,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 onClick={() => handleRoleSwitch('client')}
                 className={`py-2 px-3 rounded-xl flex items-center justify-center gap-2 text-xs font-black transition-all cursor-pointer ${
                   role === 'client'
-                    ? 'bg-[#FBBF24] text-[#111111]'
+                    ? 'bg-[#FBBF24] text-[#111111] shadow-xs'
                     : 'text-[#6B7280] dark:text-[#9CA3AF] hover:text-[#111111] dark:hover:text-white'
                 }`}
               >
@@ -234,7 +288,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 onClick={() => handleRoleSwitch('supplier')}
                 className={`py-2 px-3 rounded-xl flex items-center justify-center gap-2 text-xs font-black transition-all cursor-pointer ${
                   role === 'supplier'
-                    ? 'bg-[#FBBF24] text-[#111111]'
+                    ? 'bg-[#FBBF24] text-[#111111] shadow-xs'
                     : 'text-[#6B7280] dark:text-[#9CA3AF] hover:text-[#111111] dark:hover:text-white'
                 }`}
               >
@@ -250,7 +304,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <img
                 src="/constrora-logo.svg"
                 alt="CONSTRORA Logo"
-                className="h-9 w-9 rounded-xl object-contain"
+                className="h-9 w-9 rounded-xl object-contain shadow-xs"
               />
               <span className="font-['Cabinet_Grotesk'] text-2xl font-black text-[#111111] dark:text-white tracking-tight">
                 CONSTR<span className="text-[#FBBF24]">ORA</span>
@@ -265,6 +319,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 ? 'Reset Account Password'
                 : 'Sign in to Your Account'}
             </p>
+            {mode === 'forgot' && (
+              <p className="text-[11px] text-[#6B7280] dark:text-[#9CA3AF] max-w-xs mx-auto pt-1">
+                Enter your registered email address below. We'll send you a link to reset your password.
+              </p>
+            )}
           </div>
 
           {/* Error & Success Alerts */}
@@ -289,7 +348,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 type="button"
                 disabled={isWorking}
                 onClick={handleGoogleSignIn}
-                className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white dark:bg-[#111111] hover:bg-slate-50 dark:hover:bg-[#111111]/80 text-[#111111] dark:text-white border border-[#E5E5E5] dark:border-[#27272A] rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-60"
+                className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white dark:bg-[#111111] hover:bg-slate-50 dark:hover:bg-[#111111]/80 text-[#111111] dark:text-white border border-[#E5E5E5] dark:border-[#27272A] rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs disabled:opacity-60"
               >
                 {googleLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin text-[#F59E0B]" />
@@ -451,9 +510,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             {mode !== 'forgot' && (
               <div>
-                <label className="block text-[11px] font-bold text-[#111111] dark:text-white mb-1">
-                  Password *
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[11px] font-bold text-[#111111] dark:text-white">
+                    Password *
+                  </label>
+                  {mode === 'signin' && (
+                    <button
+                      type="button"
+                      disabled={isWorking}
+                      onClick={() => {
+                        setMode('forgot');
+                        setError(null);
+                        setSuccessMsg(null);
+                      }}
+                      className="text-[10px] text-[#F59E0B] font-bold hover:underline cursor-pointer"
+                    >
+                      Forgot Password?
+                    </button>
+                  )}
+                </div>
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-3 h-4 w-4 text-[#6B7280] dark:text-[#9CA3AF]" />
                   <input
@@ -466,22 +541,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     className="w-full pl-10 pr-3.5 py-2.5 bg-[#FFFFFF] dark:bg-[#111111] border border-[#E5E5E5] dark:border-[#27272A] rounded-xl text-xs text-[#111111] dark:text-white font-semibold focus:outline-none focus:border-[#FBBF24]"
                   />
                 </div>
-                {mode === 'signin' && (
-                  <div className="flex justify-end pt-1.5">
-                    <button
-                      type="button"
-                      disabled={isWorking}
-                      onClick={() => {
-                        setMode('forgot');
-                        setError(null);
-                        setSuccessMsg(null);
-                      }}
-                      className="text-[11px] text-[#F59E0B] hover:text-[#D97706] font-bold hover:underline cursor-pointer"
-                    >
-                      Forgot password?
-                    </button>
-                  </div>
-                )}
               </div>
             )}
 
@@ -507,19 +566,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             <button
               type="submit"
-              disabled={isWorking || (mode === 'forgot' && resetCooldown > 0)}
-              className="w-full bg-[#FBBF24] hover:bg-[#F59E0B] text-[#111111] font-black py-3 px-4 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer mt-2 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              disabled={isWorking || (mode === 'forgot' && cooldown > 0)}
+              className="w-full bg-[#FBBF24] hover:bg-[#F59E0B] text-[#111111] font-black py-3 px-4 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer shadow-xs mt-2 disabled:opacity-60 flex items-center justify-center gap-2"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin text-[#111111]" />}
               <span>
                 {mode === 'signup'
                   ? 'Create Constrora Account'
                   : mode === 'forgot'
-                  ? loading
-                    ? 'Sending reset link...'
-                    : resetCooldown > 0
-                    ? `Send reset link (${resetCooldown}s)`
-                    : 'Send reset link'
+                  ? cooldown > 0
+                    ? `Send Reset Link (${cooldown}s)`
+                    : 'Send Reset Link'
                   : 'Sign In with Email'}
               </span>
             </button>
@@ -564,6 +621,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               {mode === 'forgot' && (
                 <div>
+                  Remembered your password?{' '}
                   <button
                     type="button"
                     disabled={isWorking}
@@ -572,9 +630,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       setError(null);
                       setSuccessMsg(null);
                     }}
-                    className="text-[#111111] dark:text-[#FBBF24] hover:underline cursor-pointer font-bold inline-flex items-center gap-1"
+                    className="text-[#111111] dark:text-[#FBBF24] hover:underline cursor-pointer font-bold"
                   >
-                    &larr; Back to sign in
+                    Sign In
                   </button>
                 </div>
               )}

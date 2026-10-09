@@ -63,6 +63,27 @@ class ChunkErrorBoundary extends React.Component<
   }
 }
 
+function safeGetLocalStorage(key: string): string | null {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return window.localStorage.getItem(key);
+    }
+  } catch {
+    // ignore storage access error
+  }
+  return null;
+}
+
+function safeSetLocalStorage(key: string, value: string): void {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(key, value);
+    }
+  } catch {
+    // ignore storage access error
+  }
+}
+
 const AdminDashboardView = lazy(() =>
   import('./views/AdminDashboardView').then((m) => ({ default: m.AdminDashboardView }))
 );
@@ -79,7 +100,7 @@ export function App() {
   // Role and Onboarding State Management
   const [selectedRole, setSelectedRole] = useState<UserRole>(() => {
     if (currentUser?.role) return currentUser.role;
-    const temp = localStorage.getItem('constrora_temp_role') as UserRole;
+    const temp = safeGetLocalStorage('constrora_temp_role') as UserRole;
     return temp || 'client';
   });
 
@@ -325,10 +346,22 @@ export function App() {
     }
   }, [currentUser, isAdmin, loading]);
 
+  // Track auth state transitions: signing out lands on Get Started / Onboarding
+  const prevUserRef = React.useRef(currentUser);
+  useEffect(() => {
+    if (prevUserRef.current && !currentUser) {
+      setShowRoleSelection(true);
+      setActiveTab('home');
+      setSubView('none');
+      window.history.replaceState({}, '', '/');
+    }
+    prevUserRef.current = currentUser;
+  }, [currentUser]);
+
   // Handlers
   const handleRoleSelectionComplete = (role: UserRole) => {
-    localStorage.setItem('constrora_onboarding_done', 'true');
-    localStorage.setItem('constrora_temp_role', role);
+    safeSetLocalStorage('constrora_onboarding_done', 'true');
+    safeSetLocalStorage('constrora_temp_role', role);
     setSelectedRole(role);
     setShowRoleSelection(false);
 
@@ -443,7 +476,7 @@ export function App() {
       <Onboarding
         onComplete={handleRoleSelectionComplete}
         onSignInClick={() => {
-          localStorage.setItem('constrora_onboarding_done', 'true');
+          safeSetLocalStorage('constrora_onboarding_done', 'true');
           setShowRoleSelection(false);
           openSignInModal();
         }}
@@ -454,18 +487,6 @@ export function App() {
   const effectiveRole: UserRole = currentUser?.role || selectedRole || 'client';
   const isSupplierRole = effectiveRole === 'supplier';
 
-  // Track auth state transitions: signing out lands on Get Started / Onboarding
-  const prevUserRef = React.useRef(currentUser);
-  useEffect(() => {
-    if (prevUserRef.current && !currentUser) {
-      setShowRoleSelection(true);
-      setActiveTab('home');
-      setSubView('none');
-      window.history.replaceState({}, '', '/');
-    }
-    prevUserRef.current = currentUser;
-  }, [currentUser]);
-
   // Protected Tab Guards: Unauthenticated users attempting to access protected tabs redirect to Get Started
   const protectedTabs: NavTab[] = ['profile', 'supplier', 'quotes', 'projects', 'saved', 'admin'];
   if (!currentUser && protectedTabs.includes(activeTab)) {
@@ -473,7 +494,7 @@ export function App() {
       <Onboarding
         onComplete={handleRoleSelectionComplete}
         onSignInClick={() => {
-          localStorage.setItem('constrora_onboarding_done', 'true');
+          safeSetLocalStorage('constrora_onboarding_done', 'true');
           setShowRoleSelection(false);
           openSignInModal();
         }}
